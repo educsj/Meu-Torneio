@@ -13,6 +13,7 @@ import {
   Users,
 } from 'lucide-react-native';
 
+import { ExportTournamentButton } from '@/components/BackupActions';
 import { EditTournamentNameModal } from '@/components/EditTournamentNameModal';
 import { ParticipantList } from '@/components/ParticipantList';
 import { Button } from '@/components/ui/Button';
@@ -253,6 +254,10 @@ export default function TournamentDetailScreen() {
           {t('tournament.participants')}
         </Text>
         <ParticipantList tournamentId={tournamentId} />
+      </View>
+
+      <View className="mt-6">
+        <ExportTournamentButton tournamentId={tournamentId} />
       </View>
     </Screen>
   );

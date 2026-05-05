@@ -29,13 +29,6 @@
     "settings": "Configurações",
     "about": "Sobre"
   },
-  "home": {
-    "title": "Meus Torneios",
-    "subtitle": "Crie e gerencie seus torneios offline",
-    "newTournament": "Novo torneio",
-    "emptyTitle": "Nenhum torneio criado",
-    "emptyDescription": "Toque em \"Novo torneio\" para começar."
-  },
   "newTournament": {
     "title": "Novo Torneio",
     "name": "Nome do torneio",
@@ -69,6 +62,23 @@
     "notFound": "Torneio não encontrado.",
     "comingSoon": "Em breve.",
     "editTitle": "Renomear torneio"
+  },
+  "backup": {
+    "export": "Exportar torneio",
+    "import": "Importar torneio",
+    "exportTitle": "Backup salvo",
+    "savedTo": "Arquivo salvo em:",
+    "shareDialog": "Compartilhar backup do torneio",
+    "imported": "Torneio importado com sucesso.",
+    "importedTitle": "Importação concluída"
+  },
+  "home": {
+    "title": "Meus Torneios",
+    "subtitle": "Crie e gerencie seus torneios offline",
+    "newTournament": "Novo torneio",
+    "emptyTitle": "Nenhum torneio criado",
+    "emptyDescription": "Toque em \"Novo torneio\" para começar.",
+    "champion": "Campeão"
   },
   "groups": {
     "title": "Grupos",

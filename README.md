@@ -90,7 +90,11 @@ npm run typecheck
 - [x] Pontos corridos (todos contra todos) com tabela de classificação
 - [x] Grupos + Mata-mata (2 grupos, top 2 classificam para semis)
 - [x] Editar nome do torneio
+- [x] Exportar/importar torneio (backup JSON via compartilhamento)
+- [x] Coroa de campeão para torneios finalizados
 - [x] Testes unitários (Vitest) para a lógica pura
+- [ ] Datas/horários/locais por partida
+- [ ] Visualização gráfica de bracket com zoom/pan
 - [ ] Tabela de classificação (Pontos corridos)
 - [ ] Fase de grupos + mata-mata
 - [ ] Lançamento de placares com feedback visual
@@ -184,7 +188,11 @@ npm run typecheck
 - [x] Round robin (everyone plays everyone) with standings table
 - [x] Groups + Knockout (2 groups, top 2 advance to semis)
 - [x] Edit tournament name
+- [x] Export/import tournament (JSON backup via system share)
+- [x] Champion crown for finished tournaments
 - [x] Unit tests (Vitest) for pure logic
+- [ ] Schedule/location per match
+- [ ] Graphical bracket visualization with zoom/pan
 - [ ] Standings table (Round Robin)
 - [ ] Group stage + knockout
 - [ ] Score entry with visual feedback

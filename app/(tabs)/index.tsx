@@ -1,14 +1,16 @@
 import { useEffect } from 'react';
 import { FlatList, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Plus, Trophy } from 'lucide-react-native';
+import { Crown, Plus, Trophy } from 'lucide-react-native';
 
 import { APP_BUILD_TAG } from '@/buildInfo';
+import { ImportTournamentButton } from '@/components/BackupActions';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
+import type { Tournament } from '@/types/tournament';
 
 export default function TournamentsScreen() {
   const { t } = useTranslation();
@@ -20,6 +22,12 @@ export default function TournamentsScreen() {
     refresh();
   }, [refresh]);
 
+  const goToTournament = (id: number) =>
+    router.push({
+      pathname: '/torneios/[id]',
+      params: { id: String(id) },
+    });
+
   return (
     <Screen>
       <View className="pb-4 pt-6">
@@ -29,6 +37,14 @@ export default function TournamentsScreen() {
         <Text className="mt-1 text-base text-slate-600 dark:text-slate-400">
           {t('home.subtitle')}
         </Text>
+      </View>
+
+      <View className="mb-3">
+        <ImportTournamentButton
+          onImported={(newId) => {
+            refresh().then(() => goToTournament(newId));
+          }}
+        />
       </View>
 
       <FlatList
@@ -50,21 +66,7 @@ export default function TournamentsScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <Card
-            onPress={() =>
-              router.push({
-                pathname: '/torneios/[id]',
-                params: { id: String(item.id) },
-              })
-            }
-          >
-            <Text className="text-base font-semibold text-slate-900 dark:text-white">
-              {item.name}
-            </Text>
-            <Text className="mt-1 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              {t(`tournament.status.${item.status}`)}
-            </Text>
-          </Card>
+          <TournamentCard tournament={item} onPress={() => goToTournament(item.id)} />
         )}
       />
 
@@ -79,5 +81,57 @@ export default function TournamentsScreen() {
         </Text>
       </View>
     </Screen>
+  );
+}
+
+function TournamentCard({
+  tournament,
+  onPress,
+}: {
+  tournament: Tournament;
+  onPress: () => void;
+}) {
+  const { t } = useTranslation();
+  const isFinished = tournament.status === 'finished';
+  const isOngoing = tournament.status === 'ongoing';
+
+  return (
+    <Card
+      onPress={onPress}
+      className={
+        isFinished
+          ? 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40'
+          : ''
+      }
+    >
+      <View className="flex-row items-center">
+        {isFinished ? (
+          <View className="mr-3 rounded-full bg-amber-100 p-2 dark:bg-amber-900/40">
+            <Crown size={18} color="#d97706" />
+          </View>
+        ) : null}
+        <View className="flex-1">
+          <Text className="text-base font-semibold text-slate-900 dark:text-white">
+            {tournament.name}
+          </Text>
+          <View className="mt-1 flex-row items-center gap-2">
+            {isOngoing ? (
+              <View className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            ) : null}
+            <Text
+              className={`text-xs uppercase tracking-wide ${
+                isFinished
+                  ? 'font-semibold text-amber-700 dark:text-amber-300'
+                  : isOngoing
+                    ? 'font-semibold text-emerald-700 dark:text-emerald-300'
+                    : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              {t(`tournament.status.${tournament.status}`)}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </Card>
   );
 }

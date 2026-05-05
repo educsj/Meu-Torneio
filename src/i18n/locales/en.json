@@ -29,13 +29,6 @@
     "settings": "Settings",
     "about": "About"
   },
-  "home": {
-    "title": "My Tournaments",
-    "subtitle": "Create and manage tournaments offline",
-    "newTournament": "New tournament",
-    "emptyTitle": "No tournaments yet",
-    "emptyDescription": "Tap \"New tournament\" to get started."
-  },
   "newTournament": {
     "title": "New Tournament",
     "name": "Tournament name",
@@ -69,6 +62,23 @@
     "notFound": "Tournament not found.",
     "comingSoon": "Coming soon.",
     "editTitle": "Rename tournament"
+  },
+  "backup": {
+    "export": "Export tournament",
+    "import": "Import tournament",
+    "exportTitle": "Backup saved",
+    "savedTo": "File saved to:",
+    "shareDialog": "Share tournament backup",
+    "imported": "Tournament imported successfully.",
+    "importedTitle": "Import complete"
+  },
+  "home": {
+    "title": "My Tournaments",
+    "subtitle": "Create and manage tournaments offline",
+    "newTournament": "New tournament",
+    "emptyTitle": "No tournaments yet",
+    "emptyDescription": "Tap \"New tournament\" to get started.",
+    "champion": "Champion"
   },
   "groups": {
     "title": "Groups",
