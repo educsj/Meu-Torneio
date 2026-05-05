@@ -7,6 +7,10 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ## [Unreleased]
 
+### Fixed · Corrigido
+
+- Bundler quebrava com `Cannot find module 'react-native-worklets/plugin'` ao iniciar o app — adicionado `react-native-worklets` (necessário pelo Reanimated v4) e ajustado `babel.config.js` para usar `react-native-worklets/plugin` diretamente. / Bundler crashed with `Cannot find module 'react-native-worklets/plugin'` on startup — added `react-native-worklets` (required by Reanimated v4) and switched `babel.config.js` to `react-native-worklets/plugin`.
+
 ### Added · Adicionado
 
 - Estrutura inicial do projeto com Expo + TypeScript / Initial Expo + TypeScript scaffold
