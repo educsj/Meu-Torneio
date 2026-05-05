@@ -2,6 +2,7 @@ import type {
   Match,
   MatchStage,
   Participant,
+  Phase,
   TournamentType,
 } from '@/types/tournament';
 import {
@@ -15,6 +16,7 @@ import { computeStandings } from '@/utils/standings';
 
 import { getDatabase } from './index';
 import { listParticipants } from './participants';
+import { listPhases, resetPhasesForType } from './phases';
 import { getTournamentById } from './tournaments';
 
 interface MatchRow {
@@ -31,6 +33,7 @@ interface MatchRow {
   location: string | null;
   group_label: string | null;
   stage: MatchStage;
+  phase_id: number | null;
 }
 
 function rowToMatch(row: MatchRow): Match {
@@ -48,6 +51,7 @@ function rowToMatch(row: MatchRow): Match {
     location: row.location,
     groupLabel: row.group_label,
     stage: row.stage,
+    phaseId: row.phase_id,
   };
 }
 
@@ -56,7 +60,7 @@ export async function listMatches(tournamentId: number): Promise<Match[]> {
   const rows = await db.getAllAsync<MatchRow>(
     `SELECT id, tournament_id, round, participant_a_id, participant_b_id,
             score_a, score_b, winner_id, next_match_id, scheduled_at, location,
-            group_label, stage
+            group_label, stage, phase_id
      FROM matches
      WHERE tournament_id = ?
      ORDER BY stage, round, id;`,
@@ -107,6 +111,15 @@ export async function generateBracketForTournament(
     bracket = generateSingleEliminationBracket(participants);
   }
 
+  // Ensure phases exist and match the tournament type. If a tournament was
+  // created before the phase model landed, listPhases would be empty here —
+  // resetPhasesForType is idempotent and guarantees the right shape.
+  let phases = await listPhases(tournamentId);
+  if (phases.length === 0) {
+    phases = await resetPhasesForType(tournamentId, tournament.type);
+  }
+  const stageToPhaseId = buildStageToPhaseIdMap(tournament.type, phases);
+
   const db = await getDatabase();
   await db.withTransactionAsync(async () => {
     await db.runAsync('DELETE FROM matches WHERE tournament_id = ?;', [
@@ -138,8 +151,8 @@ export async function generateBracketForTournament(
           const result = await db.runAsync(
             `INSERT INTO matches
               (tournament_id, round, participant_a_id, participant_b_id,
-               winner_id, next_match_id, group_label, stage)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+               winner_id, next_match_id, group_label, stage, phase_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
             [
               tournamentId,
               m.round,
@@ -149,6 +162,7 @@ export async function generateBracketForTournament(
               nextMatchId,
               m.groupLabel ?? null,
               stage,
+              stageToPhaseId.get(stage) ?? null,
             ]
           );
           insertedIdByKey.set(
@@ -359,6 +373,31 @@ export async function recomputeTournamentStatus(
 
 export function tournamentTypeAllowsDraws(type: TournamentType): boolean {
   return type !== 'single_elimination';
+}
+
+/**
+ * Map a match's `stage` to the id of the phase it belongs to, given the
+ * tournament's type and its phases (ordered by ordinal).
+ *
+ *   single_elimination / round_robin → all stages map to the only phase
+ *   groups_knockout                  → 'group' → phase[0], 'knockout' → phase[1]
+ */
+function buildStageToPhaseIdMap(
+  type: TournamentType,
+  phases: Phase[]
+): Map<MatchStage, number> {
+  const byOrdinal = new Map(phases.map((p) => [p.ordinal, p.id]));
+  const map = new Map<MatchStage, number>();
+  if (type === 'groups_knockout') {
+    const group = byOrdinal.get(0);
+    const knockout = byOrdinal.get(1);
+    if (group != null) map.set('group', group);
+    if (knockout != null) map.set('knockout', knockout);
+  } else {
+    const main = byOrdinal.get(0);
+    if (main != null) map.set('main', main);
+  }
+  return map;
 }
 
 /**

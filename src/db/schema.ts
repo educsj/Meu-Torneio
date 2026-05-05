@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * Base v1 schema — idempotent (CREATE TABLE IF NOT EXISTS).
@@ -35,6 +35,20 @@ export const BASE_TABLES: string[] = [
   );`,
   `CREATE INDEX IF NOT EXISTS idx_matches_tournament
     ON matches(tournament_id);`,
+  /* v3: phases table — see migrate(). Idempotent. */
+  `CREATE TABLE IF NOT EXISTS phases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tournament_id INTEGER NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    ordinal INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    format TEXT NOT NULL,
+    legs INTEGER NOT NULL DEFAULT 1,
+    group_count INTEGER NOT NULL DEFAULT 1,
+    qualifiers INTEGER,
+    status TEXT NOT NULL DEFAULT 'pending'
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_phases_tournament
+    ON phases(tournament_id);`,
 ];
 
 /**
@@ -49,4 +63,7 @@ export const BASE_TABLES: string[] = [
 export const MATCHES_EXTRA_COLUMNS: Record<string, string> = {
   group_label: `ALTER TABLE matches ADD COLUMN group_label TEXT;`,
   stage: `ALTER TABLE matches ADD COLUMN stage TEXT DEFAULT 'main';`,
+  /* v3: link each match to its phase. ON DELETE SET NULL keeps history when
+     a phase is deleted; matches.phase_id is filled by backfill in migrate(). */
+  phase_id: `ALTER TABLE matches ADD COLUMN phase_id INTEGER REFERENCES phases(id) ON DELETE SET NULL;`,
 };

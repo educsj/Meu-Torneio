@@ -36,6 +36,7 @@ function m(
     location: null,
     groupLabel: null,
     stage: 'main',
+    phaseId: null,
   };
 }
 

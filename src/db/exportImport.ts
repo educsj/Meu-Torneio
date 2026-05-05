@@ -8,6 +8,7 @@ import {
 import { getDatabase } from './index';
 import { listMatches } from './matches';
 import { listParticipants } from './participants';
+import { createDefaultPhasesForType } from './phases';
 import { getTournamentById } from './tournaments';
 
 /**
@@ -61,6 +62,23 @@ export async function importTournamentJson(json: string): Promise<number> {
     );
     newTournamentId = tInsert.lastInsertRowId;
 
+    // 1b) phases — create defaults for the imported tournament's type and
+    // build a stage→phase_id map to attach to imported matches.
+    const phases = await createDefaultPhasesForType(
+      newTournamentId,
+      backup.tournament.type
+    );
+    const stageToPhaseId = new Map<string, number>();
+    if (backup.tournament.type === 'groups_knockout') {
+      const group = phases.find((p) => p.ordinal === 0)?.id;
+      const knockout = phases.find((p) => p.ordinal === 1)?.id;
+      if (group != null) stageToPhaseId.set('group', group);
+      if (knockout != null) stageToPhaseId.set('knockout', knockout);
+    } else {
+      const main = phases.find((p) => p.ordinal === 0)?.id;
+      if (main != null) stageToPhaseId.set('main', main);
+    }
+
     // 2) participants — keep mapping localId → newId
     const participantIdMap = new Map<number, number>();
     for (const p of backup.participants) {
@@ -80,12 +98,13 @@ export async function importTournamentJson(json: string): Promise<number> {
       localId == null ? null : (participantIdMap.get(localId) ?? null);
 
     for (const m of backup.matches) {
+      const stage = m.stage ?? 'main';
       const r = await db.runAsync(
         `INSERT INTO matches
           (tournament_id, round, participant_a_id, participant_b_id,
            score_a, score_b, winner_id, next_match_id, scheduled_at, location,
-           group_label, stage)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?);`,
+           group_label, stage, phase_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?);`,
         [
           newTournamentId,
           m.round,
@@ -97,7 +116,8 @@ export async function importTournamentJson(json: string): Promise<number> {
           m.scheduledAt,
           m.location,
           m.groupLabel,
-          m.stage ?? 'main',
+          stage,
+          stageToPhaseId.get(stage) ?? null,
         ]
       );
       matchIdMap.set(m.localId, r.lastInsertRowId);

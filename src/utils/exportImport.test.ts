@@ -39,6 +39,7 @@ const ms: Match[] = [
     location: 'Quadra Central',
     groupLabel: null,
     stage: 'main',
+    phaseId: null,
   },
   {
     id: 22,
@@ -54,6 +55,7 @@ const ms: Match[] = [
     location: null,
     groupLabel: null,
     stage: 'main',
+    phaseId: null,
   },
 ];
 

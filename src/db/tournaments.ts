@@ -1,6 +1,7 @@
 import type { Tournament, TournamentType } from '@/types/tournament';
 
 import { getDatabase } from './index';
+import { createDefaultPhasesForType } from './phases';
 
 interface TournamentRow {
   id: number;
@@ -42,6 +43,9 @@ export async function createTournament(input: {
     [result.lastInsertRowId]
   );
   if (!row) throw new Error('Failed to load created tournament');
+  // Phases are first-class even when the user is still picking from the 3
+  // legacy presets — keeps every tournament structurally uniform.
+  await createDefaultPhasesForType(row.id, row.type);
   return rowToTournament(row);
 }
 
