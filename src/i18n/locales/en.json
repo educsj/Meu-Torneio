@@ -88,7 +88,15 @@
     "noMatchesYet": "No matches generated yet.",
     "noMatchesYetDescription": "Go back to the tournament and tap \"Generate bracket\".",
     "onlySingleEliminationSupported": "We only generate brackets for Single Elimination for now.",
-    "vs": "vs"
+    "vs": "vs",
+    "scoreEntry": "Enter score",
+    "scoreFor": "Score for {{name}}",
+    "save": "Save score",
+    "clearResult": "Clear result",
+    "drawNotAllowed": "Draws are not allowed in single elimination.",
+    "scoreInvalid": "Enter a valid score for both sides.",
+    "noOpponent": "This match doesn't have two opponents yet.",
+    "tournamentFinished": "🏆 Tournament finished! Champion: {{name}}"
   },
   "participants": {
     "title": "Participants",

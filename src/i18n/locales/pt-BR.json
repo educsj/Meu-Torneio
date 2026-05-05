@@ -88,7 +88,15 @@
     "noMatchesYet": "Nenhuma partida gerada ainda.",
     "noMatchesYetDescription": "Volte para a tela do torneio e toque em \"Gerar chaveamento\".",
     "onlySingleEliminationSupported": "Por enquanto só geramos chaveamento para Mata-mata.",
-    "vs": "vs"
+    "vs": "vs",
+    "scoreEntry": "Lançar placar",
+    "scoreFor": "Placar de {{name}}",
+    "save": "Salvar placar",
+    "clearResult": "Limpar resultado",
+    "drawNotAllowed": "Empate não é permitido no mata-mata.",
+    "scoreInvalid": "Informe placares válidos para os dois lados.",
+    "noOpponent": "Esta partida ainda não tem dois oponentes definidos.",
+    "tournamentFinished": "🏆 Torneio finalizado! Campeão: {{name}}"
   },
   "participants": {
     "title": "Participantes",

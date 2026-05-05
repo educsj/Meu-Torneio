@@ -159,3 +159,130 @@ export async function loadParticipantsAsMap(
   const list = await listParticipants(tournamentId);
   return new Map(list.map((p) => [p.id, p]));
 }
+
+/**
+ * Update the score of a match. Computes the winner (no draws allowed in
+ * single elimination), persists scores + winner_id, and propagates the
+ * winner into the slot of the next match if there is one.
+ *
+ * Throws if scores are equal (no ties in single elimination) or if either
+ * side is missing a participant.
+ */
+export async function setMatchScore(
+  matchId: number,
+  scoreA: number,
+  scoreB: number
+): Promise<void> {
+  if (scoreA === scoreB) {
+    throw new Error('Empates não são permitidos no mata-mata.');
+  }
+  const db = await getDatabase();
+  const match = await db.getFirstAsync<MatchRow>(
+    `SELECT id, tournament_id, round, participant_a_id, participant_b_id,
+            score_a, score_b, winner_id, next_match_id, scheduled_at, location
+     FROM matches WHERE id = ?;`,
+    [matchId]
+  );
+  if (!match) throw new Error('Partida não encontrada.');
+  if (match.participant_a_id == null || match.participant_b_id == null) {
+    throw new Error(
+      'Esta partida ainda não tem dois participantes definidos.'
+    );
+  }
+
+  const winnerId =
+    scoreA > scoreB ? match.participant_a_id : match.participant_b_id;
+
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      'UPDATE matches SET score_a = ?, score_b = ?, winner_id = ? WHERE id = ?;',
+      [scoreA, scoreB, winnerId, matchId]
+    );
+    await propagateWinnerToNextMatch(match, winnerId);
+  });
+}
+
+/**
+ * Clear a match's score and winner. Also clears the slot in the next match
+ * that this match feeds into (since the previous winner no longer applies).
+ */
+export async function clearMatchScore(matchId: number): Promise<void> {
+  const db = await getDatabase();
+  const match = await db.getFirstAsync<MatchRow>(
+    `SELECT id, tournament_id, round, participant_a_id, participant_b_id,
+            score_a, score_b, winner_id, next_match_id, scheduled_at, location
+     FROM matches WHERE id = ?;`,
+    [matchId]
+  );
+  if (!match) return;
+
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      'UPDATE matches SET score_a = NULL, score_b = NULL, winner_id = NULL WHERE id = ?;',
+      [matchId]
+    );
+    await propagateWinnerToNextMatch(match, null);
+  });
+}
+
+/**
+ * Place (or clear) a winner into the appropriate slot of `match.next_match_id`.
+ * Slot is determined by which child this match is of the parent: among the
+ * matches in the SAME round that share the same `next_match_id`, the one
+ * with the smaller `id` goes to slot A, the other to slot B.
+ *
+ * Also clears any score on the next match whenever the slot changes — its
+ * previous outcome no longer reflects who's actually playing.
+ */
+async function propagateWinnerToNextMatch(
+  match: MatchRow,
+  newWinnerId: number | null
+): Promise<void> {
+  if (match.next_match_id == null) return;
+  const db = await getDatabase();
+  const siblings = await db.getAllAsync<{ id: number }>(
+    'SELECT id FROM matches WHERE next_match_id = ? AND round = ? ORDER BY id ASC;',
+    [match.next_match_id, match.round]
+  );
+  const slotIsA = siblings.length > 0 && siblings[0].id === match.id;
+  const slotCol = slotIsA ? 'participant_a_id' : 'participant_b_id';
+
+  await db.runAsync(
+    `UPDATE matches
+     SET ${slotCol} = ?, score_a = NULL, score_b = NULL, winner_id = NULL
+     WHERE id = ?;`,
+    [newWinnerId, match.next_match_id]
+  );
+}
+
+/**
+ * Compute and persist the tournament status based on its matches.
+ * - any played match → ongoing (or finished if final played)
+ * - no played matches → draft (only if was draft already)
+ *
+ * Returns the new status (or null if no transition).
+ */
+export async function recomputeTournamentStatus(
+  tournamentId: number
+): Promise<'draft' | 'ongoing' | 'finished' | null> {
+  const db = await getDatabase();
+  const all = await db.getAllAsync<MatchRow>(
+    'SELECT id, round, winner_id, next_match_id FROM matches WHERE tournament_id = ?;',
+    [tournamentId]
+  );
+  if (all.length === 0) return null;
+
+  const final = all.find((m) => m.next_match_id == null);
+  const anyPlayed = all.some((m) => m.winner_id != null);
+
+  let next: 'draft' | 'ongoing' | 'finished';
+  if (final && final.winner_id != null) next = 'finished';
+  else if (anyPlayed) next = 'ongoing';
+  else next = 'draft';
+
+  await db.runAsync('UPDATE tournaments SET status = ? WHERE id = ?;', [
+    next,
+    tournamentId,
+  ]);
+  return next;
+}

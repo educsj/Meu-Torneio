@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, Trophy } from 'lucide-react-native';
 
+import { ScoreEntryModal } from '@/components/ScoreEntryModal';
 import { Screen } from '@/components/ui/Screen';
 import { listParticipants } from '@/db/participants';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -21,10 +22,13 @@ export default function MatchesScreen() {
     (s) => s.byTournament[tournamentId] ?? EMPTY_MATCHES
   ) as Match[];
   const load = useMatchesStore((s) => s.load);
+  const setScore = useMatchesStore((s) => s.setScore);
+  const clearScore = useMatchesStore((s) => s.clearScore);
 
   const [participantsById, setParticipantsById] = useState<
     Map<number, Participant>
   >(() => new Map());
+  const [editingMatchId, setEditingMatchId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!Number.isFinite(tournamentId)) return;
@@ -53,6 +57,30 @@ export default function MatchesScreen() {
   }, [matches]);
 
   const totalRounds = matchesByRound.size;
+
+  const editingMatch = useMemo(
+    () => matches.find((m) => m.id === editingMatchId) ?? null,
+    [matches, editingMatchId]
+  );
+  const editingA = editingMatch?.participantAId
+    ? (participantsById.get(editingMatch.participantAId) ?? null)
+    : null;
+  const editingB = editingMatch?.participantBId
+    ? (participantsById.get(editingMatch.participantBId) ?? null)
+    : null;
+
+  const handleSaveScore = useCallback(
+    async (a: number, b: number) => {
+      if (!editingMatch) return;
+      await setScore(tournamentId, editingMatch.id, a, b);
+    },
+    [editingMatch, setScore, tournamentId]
+  );
+
+  const handleClearScore = useCallback(async () => {
+    if (!editingMatch) return;
+    await clearScore(tournamentId, editingMatch.id);
+  }, [editingMatch, clearScore, tournamentId]);
 
   return (
     <Screen scroll>
@@ -96,6 +124,7 @@ export default function MatchesScreen() {
                       match={m}
                       index={idx}
                       participantsById={participantsById}
+                      onPress={() => setEditingMatchId(m.id)}
                     />
                   ))}
                 </View>
@@ -103,6 +132,16 @@ export default function MatchesScreen() {
             ))}
         </View>
       )}
+
+      <ScoreEntryModal
+        visible={editingMatchId != null}
+        match={editingMatch}
+        participantA={editingA}
+        participantB={editingB}
+        onClose={() => setEditingMatchId(null)}
+        onSave={handleSaveScore}
+        onClear={handleClearScore}
+      />
     </Screen>
   );
 }
@@ -125,10 +164,12 @@ function MatchCard({
   match,
   index,
   participantsById,
+  onPress,
 }: {
   match: Match;
   index: number;
   participantsById: Map<number, Participant>;
+  onPress: () => void;
 }) {
   const { t } = useTranslation();
   const a = match.participantAId
@@ -141,12 +182,19 @@ function MatchCard({
   const aIsBye = !a && match.participantBId !== null;
   const bIsBye = !b && match.participantAId !== null;
   const bothEmpty = !match.participantAId && !match.participantBId;
+  const isPlayable = !!a && !!b;
 
   const aIsWinner = match.winnerId !== null && match.winnerId === a?.id;
   const bIsWinner = match.winnerId !== null && match.winnerId === b?.id;
 
   return (
-    <View className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+    <Pressable
+      onPress={isPlayable ? onPress : undefined}
+      disabled={!isPlayable}
+      className={`rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 ${
+        isPlayable ? 'active:bg-slate-50 dark:active:bg-slate-800' : ''
+      }`}
+    >
       <Text className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
         #{index + 1}
       </Text>
@@ -168,7 +216,7 @@ function MatchCard({
           {t('matches.tbd')}
         </Text>
       ) : null}
-    </View>
+    </Pressable>
   );
 }
 

@@ -77,6 +77,8 @@ npm run web
 - [x] Tela de listagem de torneios + criação
 - [x] Tela de detalhe do torneio + cadastro de participantes
 - [x] Geração de chaveamento (Mata-mata) com BYE automático
+- [x] Lançamento de placares e avanço automático do vencedor
+- [x] Status do torneio (rascunho → em andamento → finalizado)
 - [ ] Tabela de classificação (Pontos corridos)
 - [ ] Fase de grupos + mata-mata
 - [ ] Lançamento de placares com feedback visual
@@ -157,6 +159,8 @@ npm run web
 - [x] Tournaments list + creation screen
 - [x] Tournament detail + participant management
 - [x] Bracket generation (Single Elimination) with auto BYE
+- [x] Score entry with auto-advance to next round
+- [x] Tournament status (draft → ongoing → finished)
 - [ ] Standings table (Round Robin)
 - [ ] Group stage + knockout
 - [ ] Score entry with visual feedback
