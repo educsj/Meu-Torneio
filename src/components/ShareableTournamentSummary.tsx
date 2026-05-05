@@ -1,6 +1,7 @@
 import { forwardRef, useMemo } from 'react';
 import { Text, View } from 'react-native';
 
+import { BracketTree } from '@/components/BracketTree';
 import { useTranslation } from '@/i18n/useTranslation';
 import type {
   Match,
@@ -123,14 +124,21 @@ export const ShareableTournamentSummary = forwardRef<View, Props>(
 
         {mainMatches.length > 0 ? (
           <Section title={t('image.matches')}>
-            <MatchesByRound
-              matches={mainMatches}
-              participantsById={participantsById}
-              roundLabelFor={(round, total) =>
-                singleElimRoundLabel(round, total, t)
-              }
-              t={t}
-            />
+            {tournament.type === 'single_elimination' ? (
+              <BracketTree
+                matches={mainMatches}
+                participantsById={participantsById}
+              />
+            ) : (
+              <MatchesByRound
+                matches={mainMatches}
+                participantsById={participantsById}
+                roundLabelFor={(round, total) =>
+                  singleElimRoundLabel(round, total, t)
+                }
+                t={t}
+              />
+            )}
           </Section>
         ) : null}
 
@@ -160,13 +168,9 @@ export const ShareableTournamentSummary = forwardRef<View, Props>(
                 t={t}
               />
             ) : (
-              <MatchesByRound
+              <BracketTree
                 matches={knockoutMatches}
                 participantsById={participantsById}
-                roundLabelFor={(round, total) =>
-                  singleElimRoundLabel(round, total, t)
-                }
-                t={t}
               />
             )}
           </Section>
