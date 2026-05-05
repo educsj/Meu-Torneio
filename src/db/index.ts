@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
-import { SCHEMA_STATEMENTS, SCHEMA_VERSION } from './schema';
+import { MIGRATIONS, SCHEMA_VERSION } from './schema';
 
 const DB_NAME = 'meu-torneio.db';
 
@@ -25,8 +25,12 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   const current = row?.user_version ?? 0;
   if (current >= SCHEMA_VERSION) return;
 
-  for (const stmt of SCHEMA_STATEMENTS) {
-    await db.execAsync(stmt);
+  for (let v = current; v < SCHEMA_VERSION; v++) {
+    const statements = MIGRATIONS[v];
+    if (!statements) continue;
+    for (const stmt of statements) {
+      await db.execAsync(stmt);
+    }
   }
   await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION};`);
 }

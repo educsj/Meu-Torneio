@@ -60,3 +60,14 @@ export async function deleteTournament(id: number): Promise<void> {
   const db = await getDatabase();
   await db.runAsync('DELETE FROM tournaments WHERE id = ?;', [id]);
 }
+
+export async function renameTournament(
+  id: number,
+  name: string
+): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync('UPDATE tournaments SET name = ? WHERE id = ?;', [
+    name,
+    id,
+  ]);
+}

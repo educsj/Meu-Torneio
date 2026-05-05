@@ -67,7 +67,14 @@
     "deleteTitle": "Excluir torneio?",
     "deleteMessage": "Esta ação não pode ser desfeita. Todos os participantes e partidas também serão removidos.",
     "notFound": "Torneio não encontrado.",
-    "comingSoon": "Em breve."
+    "comingSoon": "Em breve.",
+    "editTitle": "Renomear torneio"
+  },
+  "groups": {
+    "title": "Grupos",
+    "groupTitle": "Grupo {{label}}",
+    "empty": "Nenhum grupo formado ainda.",
+    "emptyDescription": "Toque em \"Gerar partidas\" na tela do torneio para sortear os grupos."
   },
   "standings": {
     "title": "Classificação",
@@ -98,6 +105,8 @@
     "regenerateConfirmTitle": "Recriar chaveamento?",
     "regenerateConfirmMessage": "Todas as partidas e resultados atuais serão apagados.",
     "needMoreParticipants": "Adicione pelo menos 2 participantes para gerar o chaveamento.",
+    "needMoreParticipantsGroups": "Adicione pelo menos 4 participantes para Grupos + Mata-mata.",
+    "groupStage": "Fase de grupos",
     "noMatchesYet": "Nenhuma partida gerada ainda.",
     "noMatchesYetDescription": "Volte para a tela do torneio e toque em \"Gerar chaveamento\".",
     "onlySingleEliminationSupported": "Por enquanto só geramos chaveamento para Mata-mata.",

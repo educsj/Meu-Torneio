@@ -1,13 +1,17 @@
 import type {
   Match,
+  MatchStage,
   Participant,
   TournamentType,
 } from '@/types/tournament';
 import {
+  generateGroupStageMatches,
+  generateGroupsKnockoutPlaceholders,
   generateRoundRobinMatches,
   generateSingleEliminationBracket,
   type BracketMatch,
 } from '@/utils/bracket';
+import { computeStandings } from '@/utils/standings';
 
 import { getDatabase } from './index';
 import { listParticipants } from './participants';
@@ -25,6 +29,8 @@ interface MatchRow {
   next_match_id: number | null;
   scheduled_at: string | null;
   location: string | null;
+  group_label: string | null;
+  stage: MatchStage;
 }
 
 function rowToMatch(row: MatchRow): Match {
@@ -40,6 +46,8 @@ function rowToMatch(row: MatchRow): Match {
     nextMatchId: row.next_match_id,
     scheduledAt: row.scheduled_at,
     location: row.location,
+    groupLabel: row.group_label,
+    stage: row.stage,
   };
 }
 
@@ -47,10 +55,11 @@ export async function listMatches(tournamentId: number): Promise<Match[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<MatchRow>(
     `SELECT id, tournament_id, round, participant_a_id, participant_b_id,
-            score_a, score_b, winner_id, next_match_id, scheduled_at, location
+            score_a, score_b, winner_id, next_match_id, scheduled_at, location,
+            group_label, stage
      FROM matches
      WHERE tournament_id = ?
-     ORDER BY round, id;`,
+     ORDER BY stage, round, id;`,
     [tournamentId]
   );
   return rows.map(rowToMatch);
@@ -79,21 +88,24 @@ export async function generateBracketForTournament(
 ): Promise<Match[]> {
   const tournament = await getTournamentById(tournamentId);
   if (!tournament) throw new Error('Torneio não encontrado.');
-  if (tournament.type === 'groups_knockout') {
-    throw new Error(
-      'Geração de Grupos + Mata-mata ainda não está disponível.'
-    );
-  }
 
   const participants = await listParticipants(tournamentId);
-  if (participants.length < 2) {
-    throw new Error('Adicione pelo menos 2 participantes.');
+  const min = tournament.type === 'groups_knockout' ? 4 : 2;
+  if (participants.length < min) {
+    throw new Error(`Adicione pelo menos ${min} participantes.`);
   }
 
-  const bracket: BracketMatch[] =
-    tournament.type === 'round_robin'
-      ? generateRoundRobinMatches(participants)
-      : generateSingleEliminationBracket(participants);
+  let bracket: BracketMatch[];
+  if (tournament.type === 'round_robin') {
+    bracket = generateRoundRobinMatches(participants);
+  } else if (tournament.type === 'groups_knockout') {
+    bracket = [
+      ...generateGroupStageMatches(participants, 2),
+      ...generateGroupsKnockoutPlaceholders(),
+    ];
+  } else {
+    bracket = generateSingleEliminationBracket(participants);
+  }
 
   const db = await getDatabase();
   await db.withTransactionAsync(async () => {
@@ -101,60 +113,71 @@ export async function generateBracketForTournament(
       tournamentId,
     ]);
 
-    // Insert from highest round to lowest so earlier rounds know the next
-    // round's match id to point to.
-    const totalRounds = Math.max(...bracket.map((m) => m.round));
-    const insertedIdByRoundIndex = new Map<string, number>();
+    // Group/knockout-aware insertion: insert highest round per stage first
+    // so earlier rounds within the same stage know the next match id.
+    const stages: MatchStage[] = ['main', 'group', 'knockout'];
+    const insertedIdByKey = new Map<string, number>(); // `${stage}-${round}-${idx}`
 
-    for (let r = totalRounds; r >= 1; r--) {
-      const matchesInRound = bracket
-        .filter((m) => m.round === r)
-        .sort((a, b) => a.indexInRound - b.indexInRound);
-
-      for (const m of matchesInRound) {
-        const nextMatchId =
-          m.nextRoundIndex !== null
-            ? (insertedIdByRoundIndex.get(
-                `${m.round + 1}-${m.nextRoundIndex}`
-              ) ?? null)
-            : null;
-        const result = await db.runAsync(
-          `INSERT INTO matches
-            (tournament_id, round, participant_a_id, participant_b_id,
-             winner_id, next_match_id)
-           VALUES (?, ?, ?, ?, ?, ?);`,
-          [
-            tournamentId,
-            m.round,
-            m.participantAId,
-            m.participantBId,
-            m.winnerId,
-            nextMatchId,
-          ]
-        );
-        insertedIdByRoundIndex.set(
-          `${m.round}-${m.indexInRound}`,
-          result.lastInsertRowId
-        );
+    for (const stage of stages) {
+      const stageMatches = bracket.filter(
+        (m) => (m.stage ?? 'main') === stage
+      );
+      if (stageMatches.length === 0) continue;
+      const totalRounds = Math.max(...stageMatches.map((m) => m.round));
+      for (let r = totalRounds; r >= 1; r--) {
+        const inRound = stageMatches
+          .filter((m) => m.round === r)
+          .sort((a, b) => a.indexInRound - b.indexInRound);
+        for (const m of inRound) {
+          const nextMatchId =
+            m.nextRoundIndex !== null
+              ? (insertedIdByKey.get(
+                  `${stage}-${m.round + 1}-${m.nextRoundIndex}`
+                ) ?? null)
+              : null;
+          const result = await db.runAsync(
+            `INSERT INTO matches
+              (tournament_id, round, participant_a_id, participant_b_id,
+               winner_id, next_match_id, group_label, stage)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+            [
+              tournamentId,
+              m.round,
+              m.participantAId,
+              m.participantBId,
+              m.winnerId,
+              nextMatchId,
+              m.groupLabel ?? null,
+              stage,
+            ]
+          );
+          insertedIdByKey.set(
+            `${stage}-${m.round}-${m.indexInRound}`,
+            result.lastInsertRowId
+          );
+        }
       }
     }
 
-    // Propagate BYE winners forward: if a round-1 match has winner from BYE,
-    // place that winner into the appropriate slot of its next match.
-    const firstRound = bracket
-      .filter((m) => m.round === 1 && m.winnerId !== null)
+    // Propagate BYE winners forward (only for single-elim main stage).
+    const seByes = bracket
+      .filter(
+        (m) =>
+          (m.stage ?? 'main') === 'main' &&
+          m.round === 1 &&
+          m.winnerId !== null
+      )
       .sort((a, b) => a.indexInRound - b.indexInRound);
-    for (const m of firstRound) {
+    for (const m of seByes) {
       if (m.nextRoundIndex === null) continue;
-      const nextId = insertedIdByRoundIndex.get(
-        `2-${m.nextRoundIndex}`
-      );
+      const nextId = insertedIdByKey.get(`main-2-${m.nextRoundIndex}`);
       if (!nextId) continue;
-      const slot = m.indexInRound % 2 === 0 ? 'participant_a_id' : 'participant_b_id';
-      await db.runAsync(
-        `UPDATE matches SET ${slot} = ? WHERE id = ?;`,
-        [m.winnerId, nextId]
-      );
+      const slot =
+        m.indexInRound % 2 === 0 ? 'participant_a_id' : 'participant_b_id';
+      await db.runAsync(`UPDATE matches SET ${slot} = ? WHERE id = ?;`, [
+        m.winnerId,
+        nextId,
+      ]);
     }
   });
 
@@ -314,6 +337,12 @@ export async function recomputeTournamentStatus(
     if (final && final.winner_id != null) next = 'finished';
     else if (anyPlayed) next = 'ongoing';
     else next = 'draft';
+  } else if (tournament.type === 'groups_knockout') {
+    const knockout = all.filter((m) => m.stage === 'knockout');
+    const final = knockout.find((m) => m.next_match_id == null);
+    if (final && final.winner_id != null) next = 'finished';
+    else if (anyPlayed) next = 'ongoing';
+    else next = 'draft';
   } else {
     const allPlayed = all.every(isPlayed);
     if (allPlayed) next = 'finished';
@@ -330,4 +359,103 @@ export async function recomputeTournamentStatus(
 
 export function tournamentTypeAllowsDraws(type: TournamentType): boolean {
   return type !== 'single_elimination';
+}
+
+/**
+ * Returns true if all group-stage matches of a groups+knockout tournament
+ * have been played. Used to know when to seed the knockout bracket.
+ */
+export async function isGroupStageComplete(
+  tournamentId: number
+): Promise<boolean> {
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<{ score_a: number | null; score_b: number | null }>(
+    `SELECT score_a, score_b FROM matches
+     WHERE tournament_id = ? AND stage = 'group';`,
+    [tournamentId]
+  );
+  if (rows.length === 0) return false;
+  return rows.every((r) => r.score_a != null && r.score_b != null);
+}
+
+/**
+ * After the group stage of a groups+knockout tournament finishes, fill in
+ * the semifinal slots: 1A vs 2B and 1B vs 2A. Idempotent — safe to call
+ * multiple times; will just rewrite the slots.
+ */
+export async function seedKnockoutFromGroups(
+  tournamentId: number
+): Promise<void> {
+  const db = await getDatabase();
+  const tournament = await getTournamentById(tournamentId);
+  if (!tournament || tournament.type !== 'groups_knockout') return;
+
+  const allMatches = await listMatches(tournamentId);
+  const groupMatches = allMatches.filter((m) => m.stage === 'group');
+  const participants = await listParticipants(tournamentId);
+
+  // Compute standings PER group
+  const groupLabels = Array.from(
+    new Set(groupMatches.map((m) => m.groupLabel).filter((g): g is string => g != null))
+  ).sort();
+
+  const topByGroup = new Map<string, { firstId: number; secondId: number }>();
+  for (const label of groupLabels) {
+    const matches = groupMatches.filter((m) => m.groupLabel === label);
+    // restrict participants to those in this group
+    const ids = new Set<number>();
+    for (const m of matches) {
+      if (m.participantAId) ids.add(m.participantAId);
+      if (m.participantBId) ids.add(m.participantBId);
+    }
+    const groupParticipants = participants.filter((p) => ids.has(p.id));
+    const standings = computeStandings(matches, groupParticipants);
+    if (standings.length < 2) continue;
+    topByGroup.set(label, {
+      firstId: standings[0].participantId,
+      secondId: standings[1].participantId,
+    });
+  }
+
+  // Need at least 2 groups
+  if (topByGroup.size < 2) return;
+  const [labelA, labelB] = groupLabels.slice(0, 2);
+  const a = topByGroup.get(labelA);
+  const b = topByGroup.get(labelB);
+  if (!a || !b) return;
+
+  const knockout = allMatches
+    .filter((m) => m.stage === 'knockout' && m.round === 1)
+    .sort((m1, m2) => m1.id - m2.id);
+  if (knockout.length < 2) return;
+
+  // Semi 1: 1A vs 2B
+  await db.runAsync(
+    `UPDATE matches
+     SET participant_a_id = ?, participant_b_id = ?,
+         score_a = NULL, score_b = NULL, winner_id = NULL
+     WHERE id = ?;`,
+    [a.firstId, b.secondId, knockout[0].id]
+  );
+  // Semi 2: 1B vs 2A
+  await db.runAsync(
+    `UPDATE matches
+     SET participant_a_id = ?, participant_b_id = ?,
+         score_a = NULL, score_b = NULL, winner_id = NULL
+     WHERE id = ?;`,
+    [b.firstId, a.secondId, knockout[1].id]
+  );
+  // Final: clear slots in case they had stale values
+  const final = allMatches.find(
+    (m) => m.stage === 'knockout' && m.round === 2
+  );
+  if (final) {
+    await db.runAsync(
+      `UPDATE matches
+       SET participant_a_id = NULL, participant_b_id = NULL,
+           score_a = NULL, score_b = NULL, winner_id = NULL
+       WHERE id = ?;`,
+      [final.id]
+    );
+  }
 }

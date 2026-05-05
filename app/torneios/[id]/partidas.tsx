@@ -28,9 +28,17 @@ export default function MatchesScreen() {
   const tournament = useTournamentsStore((s) =>
     s.tournaments.find((tt) => tt.id === tournamentId)
   );
-  const allowDraws =
-    tournament != null && tournament.type !== 'single_elimination';
+  const isSingleElim = tournament?.type === 'single_elimination';
   const isRoundRobin = tournament?.type === 'round_robin';
+  const isGroupsKnockout = tournament?.type === 'groups_knockout';
+  // For knockout final, draws are not allowed; for group stage and round
+  // robin, draws are allowed. Use match.stage to decide per match.
+  const allowDrawsFor = (m: Match | null) => {
+    if (!tournament) return false;
+    if (tournament.type === 'single_elimination') return false;
+    if (tournament.type === 'groups_knockout') return m?.stage === 'group';
+    return true;
+  };
 
   const [participantsById, setParticipantsById] = useState<
     Map<number, Participant>
@@ -52,7 +60,12 @@ export default function MatchesScreen() {
 
   const matchesByRound = useMemo(() => {
     const map = new Map<number, Match[]>();
-    for (const m of matches) {
+    // For SE, group all matches by round.
+    // For groups+knockout, group only the knockout stage by round.
+    const source = isGroupsKnockout
+      ? matches.filter((m) => m.stage === 'knockout')
+      : matches;
+    for (const m of source) {
       const arr = map.get(m.round) ?? [];
       arr.push(m);
       map.set(m.round, arr);
@@ -61,9 +74,13 @@ export default function MatchesScreen() {
       arr.sort((a, b) => a.id - b.id);
     }
     return map;
-  }, [matches]);
+  }, [matches, isGroupsKnockout]);
 
   const totalRounds = matchesByRound.size;
+  const groupStageMatches = useMemo(
+    () => matches.filter((m) => m.stage === 'group'),
+    [matches]
+  );
 
   const editingMatch = useMemo(
     () => matches.find((m) => m.id === editingMatchId) ?? null,
@@ -129,6 +146,27 @@ export default function MatchesScreen() {
         </View>
       ) : (
         <View className="mt-4">
+          {/* Group stage section (only for groups+knockout) */}
+          {isGroupsKnockout && groupStageMatches.length > 0 ? (
+            <View className="mb-6">
+              <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('matches.groupStage')}
+              </Text>
+              <View className="gap-2">
+                {groupStageMatches.map((m, idx) => (
+                  <MatchCard
+                    key={m.id}
+                    match={m}
+                    index={idx}
+                    participantsById={participantsById}
+                    onPress={() => setEditingMatchId(m.id)}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {/* Bracket / knockout rounds */}
           {Array.from(matchesByRound.entries())
             .sort((a, b) => a[0] - b[0])
             .map(([round, roundMatches]) => (
@@ -157,7 +195,7 @@ export default function MatchesScreen() {
         match={editingMatch}
         participantA={editingA}
         participantB={editingB}
-        allowDraws={allowDraws}
+        allowDraws={allowDrawsFor(editingMatch)}
         onClose={() => setEditingMatchId(null)}
         onSave={handleSaveScore}
         onClear={handleClearScore}

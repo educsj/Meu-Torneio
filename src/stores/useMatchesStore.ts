@@ -4,8 +4,10 @@ import {
   clearMatchScore,
   deleteMatchesForTournament,
   generateBracketForTournament,
+  isGroupStageComplete,
   listMatches,
   recomputeTournamentStatus,
+  seedKnockoutFromGroups,
   setMatchScore,
 } from '@/db/matches';
 import type { Match } from '@/types/tournament';
@@ -65,6 +67,11 @@ export const useMatchesStore = create<MatchesState>((set, get) => ({
       ? tournament.type !== 'single_elimination'
       : false;
     await setMatchScore(matchId, scoreA, scoreB, { allowDraws });
+    if (tournament?.type === 'groups_knockout') {
+      if (await isGroupStageComplete(tournamentId)) {
+        await seedKnockoutFromGroups(tournamentId);
+      }
+    }
     await recomputeTournamentStatus(tournamentId);
     const list = await listMatches(tournamentId);
     set({
@@ -74,6 +81,12 @@ export const useMatchesStore = create<MatchesState>((set, get) => ({
   },
   clearScore: async (tournamentId, matchId) => {
     await clearMatchScore(matchId);
+    const tournament = useTournamentsStore.getState().getById(tournamentId);
+    if (tournament?.type === 'groups_knockout') {
+      if (await isGroupStageComplete(tournamentId)) {
+        await seedKnockoutFromGroups(tournamentId);
+      }
+    }
     await recomputeTournamentStatus(tournamentId);
     const list = await listMatches(tournamentId);
     set({

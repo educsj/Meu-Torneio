@@ -49,6 +49,14 @@ npm start
 npm run android
 npm run ios
 npm run web
+
+# Rodar testes unitários
+npm test                 # uma vez
+npm run test:watch       # modo watch
+npm run test:coverage    # com relatório de cobertura
+
+# Verificar tipos
+npm run typecheck
 ```
 
 ### Estrutura do projeto
@@ -80,7 +88,9 @@ npm run web
 - [x] Lançamento de placares e avanço automático do vencedor
 - [x] Status do torneio (rascunho → em andamento → finalizado)
 - [x] Pontos corridos (todos contra todos) com tabela de classificação
-- [ ] Grupos + Mata-mata
+- [x] Grupos + Mata-mata (2 grupos, top 2 classificam para semis)
+- [x] Editar nome do torneio
+- [x] Testes unitários (Vitest) para a lógica pura
 - [ ] Tabela de classificação (Pontos corridos)
 - [ ] Fase de grupos + mata-mata
 - [ ] Lançamento de placares com feedback visual
@@ -133,6 +143,14 @@ npm start
 npm run android
 npm run ios
 npm run web
+
+# Run unit tests
+npm test                 # once
+npm run test:watch       # watch mode
+npm run test:coverage    # with coverage report
+
+# Type-check
+npm run typecheck
 ```
 
 ### Project structure
@@ -164,7 +182,9 @@ npm run web
 - [x] Score entry with auto-advance to next round
 - [x] Tournament status (draft → ongoing → finished)
 - [x] Round robin (everyone plays everyone) with standings table
-- [ ] Groups + Knockout
+- [x] Groups + Knockout (2 groups, top 2 advance to semis)
+- [x] Edit tournament name
+- [x] Unit tests (Vitest) for pure logic
 - [ ] Standings table (Round Robin)
 - [ ] Group stage + knockout
 - [ ] Score entry with visual feedback

@@ -9,6 +9,10 @@ export interface BracketMatch {
   winnerId: number | null;
   /** Index of the next-round match this feeds into. */
   nextRoundIndex: number | null;
+  /** Stage label: 'main' (single elim or RR), 'group' (group stage), 'knockout'. */
+  stage?: 'main' | 'group' | 'knockout';
+  /** Group label like 'A', 'B' (only set for stage='group'). */
+  groupLabel?: string | null;
 }
 
 /** Smallest power of two greater than or equal to n. */
@@ -110,6 +114,122 @@ export function generateSingleEliminationBracket(
   }
 
   return matches;
+}
+
+/**
+ * Split participants into N balanced groups using snake-order seeding,
+ * so seeds are spread evenly (top seeds aren't all in one group).
+ */
+export function splitIntoGroups<T extends { id: number; seed?: number | null }>(
+  participants: T[],
+  groupCount: number
+): T[][] {
+  if (groupCount < 1) throw new Error('Need at least 1 group');
+  const sorted = [...participants].sort((a, b) => {
+    const sa = a.seed ?? Number.MAX_SAFE_INTEGER;
+    const sb = b.seed ?? Number.MAX_SAFE_INTEGER;
+    if (sa !== sb) return sa - sb;
+    return a.id - b.id;
+  });
+  const groups: T[][] = Array.from({ length: groupCount }, () => []);
+  let direction: 1 | -1 = 1;
+  let idx = 0;
+  for (const p of sorted) {
+    groups[idx].push(p);
+    idx += direction;
+    if (idx === groupCount) {
+      direction = -1;
+      idx = groupCount - 1;
+    } else if (idx === -1) {
+      direction = 1;
+      idx = 0;
+    }
+  }
+  return groups;
+}
+
+/**
+ * Generate the GROUP STAGE matches for a "groups + knockout" tournament.
+ *
+ * Strategy: split into 2 balanced groups (snake seeding). Each group plays a
+ * round-robin internally. Knockout bracket is left empty here — caller
+ * generates it later (when group stage finishes) using `generateKnockoutFromGroupStandings`.
+ *
+ * Returns just the group-stage matches. Knockout matches are pre-created as
+ * empty placeholders separately by `generateGroupsKnockoutSkeleton`.
+ */
+export function generateGroupStageMatches(
+  participants: Participant[],
+  groupCount = 2
+): BracketMatch[] {
+  if (participants.length < groupCount * 2) {
+    throw new Error(
+      `Mínimo de ${groupCount * 2} participantes para ${groupCount} grupos.`
+    );
+  }
+  const groups = splitIntoGroups(participants, groupCount);
+  const matches: BracketMatch[] = [];
+  let idx = 0;
+  for (let g = 0; g < groups.length; g++) {
+    const label = String.fromCharCode(65 + g); // 'A', 'B', ...
+    const group = groups[g];
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        matches.push({
+          round: 1,
+          indexInRound: idx++,
+          participantAId: group[i].id,
+          participantBId: group[j].id,
+          winnerId: null,
+          nextRoundIndex: null,
+          stage: 'group',
+          groupLabel: label,
+        });
+      }
+    }
+  }
+  return matches;
+}
+
+/**
+ * Generate empty knockout placeholders (semifinal + final) for the
+ * groups+knockout format. Always 2 groups → top 2 of each → 2 semis + 1 final.
+ */
+export function generateGroupsKnockoutPlaceholders(): BracketMatch[] {
+  return [
+    // Semis
+    {
+      round: 1,
+      indexInRound: 0,
+      participantAId: null,
+      participantBId: null,
+      winnerId: null,
+      nextRoundIndex: 0,
+      stage: 'knockout',
+      groupLabel: null,
+    },
+    {
+      round: 1,
+      indexInRound: 1,
+      participantAId: null,
+      participantBId: null,
+      winnerId: null,
+      nextRoundIndex: 0,
+      stage: 'knockout',
+      groupLabel: null,
+    },
+    // Final
+    {
+      round: 2,
+      indexInRound: 0,
+      participantAId: null,
+      participantBId: null,
+      winnerId: null,
+      nextRoundIndex: null,
+      stage: 'knockout',
+      groupLabel: null,
+    },
+  ];
 }
 
 /**

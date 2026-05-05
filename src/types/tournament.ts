@@ -20,6 +20,8 @@ export interface Participant {
   seed: number | null;
 }
 
+export type MatchStage = 'main' | 'group' | 'knockout';
+
 export interface Match {
   id: number;
   tournamentId: number;
@@ -32,4 +34,6 @@ export interface Match {
   nextMatchId: number | null;
   scheduledAt: string | null;
   location: string | null;
+  groupLabel: string | null;
+  stage: MatchStage;
 }

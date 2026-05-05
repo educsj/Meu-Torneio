@@ -5,6 +5,7 @@ import {
   deleteTournament,
   getTournamentById,
   listTournaments,
+  renameTournament,
 } from '@/db/tournaments';
 import type { Tournament, TournamentType } from '@/types/tournament';
 
@@ -15,6 +16,7 @@ interface TournamentsState {
   refresh: () => Promise<void>;
   add: (input: { name: string; type: TournamentType }) => Promise<Tournament>;
   remove: (id: number) => Promise<void>;
+  rename: (id: number, name: string) => Promise<void>;
   getById: (id: number) => Tournament | undefined;
   fetchById: (id: number) => Promise<Tournament | null>;
 }
@@ -40,6 +42,14 @@ export const useTournamentsStore = create<TournamentsState>((set, get) => ({
   remove: async (id) => {
     await deleteTournament(id);
     set({ tournaments: get().tournaments.filter((t) => t.id !== id) });
+  },
+  rename: async (id, name) => {
+    await renameTournament(id, name);
+    set({
+      tournaments: get().tournaments.map((t) =>
+        t.id === id ? { ...t, name } : t
+      ),
+    });
   },
   getById: (id) => get().tournaments.find((t) => t.id === id),
   fetchById: async (id) => {

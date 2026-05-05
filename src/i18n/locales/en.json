@@ -67,7 +67,14 @@
     "deleteTitle": "Delete tournament?",
     "deleteMessage": "This action cannot be undone. All participants and matches will be removed too.",
     "notFound": "Tournament not found.",
-    "comingSoon": "Coming soon."
+    "comingSoon": "Coming soon.",
+    "editTitle": "Rename tournament"
+  },
+  "groups": {
+    "title": "Groups",
+    "groupTitle": "Group {{label}}",
+    "empty": "No groups formed yet.",
+    "emptyDescription": "Tap \"Generate matches\" on the tournament screen to draw the groups."
   },
   "standings": {
     "title": "Standings",
@@ -98,6 +105,8 @@
     "regenerateConfirmTitle": "Regenerate bracket?",
     "regenerateConfirmMessage": "All current matches and results will be erased.",
     "needMoreParticipants": "Add at least 2 participants to generate the bracket.",
+    "needMoreParticipantsGroups": "Add at least 4 participants for Groups + Knockout.",
+    "groupStage": "Group stage",
     "noMatchesYet": "No matches generated yet.",
     "noMatchesYetDescription": "Go back to the tournament and tap \"Generate bracket\".",
     "onlySingleEliminationSupported": "We only generate brackets for Single Elimination for now.",
