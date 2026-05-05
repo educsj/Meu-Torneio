@@ -9,6 +9,7 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ### Fixed · Corrigido
 
+- Crash em runtime `java.lang.String cannot be cast to java.lang.Boolean` e diversos avisos de incompatibilidade — todas as deps nativas tinham sido instaladas em versões mais novas do que o Expo SDK 54 suporta. Rodado `npx expo install --fix` para fixar nas versões compatíveis (expo-router 6.0.x, reanimated 4.1.x, worklets 0.5.x, babel-preset-expo 54.0.x, etc). / Runtime crash `java.lang.String cannot be cast to java.lang.Boolean` plus several compatibility warnings — all native deps had been installed at versions newer than Expo SDK 54 supports. Ran `npx expo install --fix` to pin to compatible versions.
 - Bundler quebrava com `Cannot find module 'babel-preset-expo'` — adicionada como devDependency explícita (com `legacy-peer-deps` o npm não estava instalando como transitiva). / Bundler crashed with `Cannot find module 'babel-preset-expo'` — added as explicit devDependency (with `legacy-peer-deps` npm wasn't installing it transitively).
 - Bundler quebrava com `Cannot find module 'react-native-worklets/plugin'` ao iniciar o app — adicionado `react-native-worklets` (necessário pelo Reanimated v4) e ajustado `babel.config.js` para usar `react-native-worklets/plugin` diretamente. / Bundler crashed with `Cannot find module 'react-native-worklets/plugin'` on startup — added `react-native-worklets` (required by Reanimated v4) and switched `babel.config.js` to `react-native-worklets/plugin`.
 
