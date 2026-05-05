@@ -160,16 +160,24 @@ export default function TournamentDetailScreen() {
 
   const isSingleElim = tournament.type === 'single_elimination';
   const isRoundRobin = tournament.type === 'round_robin';
-  const isGroups = tournament.type === 'groups_knockout';
   const isLeaguePlayoff = tournament.type === 'league_playoff';
   const isCustom = tournament.type === 'custom';
-  // For custom tournaments we can't tell from the type alone whether to
-  // surface standings/groups; for now we surface standings (most custom
-  // configs use a league phase) and skip the groups view (multi-group is
-  // an advanced case). Polish lands when the wizard exposes more shapes.
-  const showStandings = isRoundRobin || isLeaguePlayoff || isCustom;
+  // Detect multi-group from the matches themselves rather than the type
+  // — works uniformly for groups_knockout AND custom configs whose first
+  // phase has groupCount ≥ 2. When there are no matches yet, we fall
+  // back to the legacy gate so the right button appears before generation.
+  const hasMultiGroupPhase =
+    matches.some((m) => m.stage === 'group' && m.groupLabel != null) ||
+    (matches.length === 0 && tournament.type === 'groups_knockout');
+  const showGroups = hasMultiGroupPhase;
+  // Standings only makes sense for single-group leagues. Multi-group
+  // tournaments expose per-group standings inside the Groups view.
+  const showStandings =
+    (isRoundRobin || isLeaguePlayoff || isCustom) && !hasMultiGroupPhase;
   const minParticipants =
-    isGroups || isLeaguePlayoff || isCustom ? 4 : 2;
+    tournament.type === 'groups_knockout' || isLeaguePlayoff || isCustom
+      ? 4
+      : 2;
   const enoughParticipants = participants.length >= minParticipants;
   const canGenerate = enoughParticipants;
   const hasMatches = matches.length > 0;
@@ -218,7 +226,7 @@ export default function TournamentDetailScreen() {
             }
           />
         ) : null}
-        {isGroups ? (
+        {showGroups ? (
           <NavButton
             label={t('groups.title')}
             icon={<Users size={18} color="#475569" />}
@@ -256,7 +264,7 @@ export default function TournamentDetailScreen() {
         />
         {!enoughParticipants ? (
           <Text className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            {isGroups || isLeaguePlayoff || isCustom
+            {minParticipants > 2
               ? t('matches.needMoreParticipantsGroups')
               : t('matches.needMoreParticipants')}
           </Text>
