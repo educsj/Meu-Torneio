@@ -1,0 +1,85 @@
+{
+  "app": {
+    "name": "Meu Torneio",
+    "tagline": "Torneios amadores na palma da sua mão"
+  },
+  "common": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "create": "Criar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "loading": "Carregando...",
+    "empty": "Nada por aqui ainda",
+    "confirm": "Confirmar",
+    "yes": "Sim",
+    "no": "Não",
+    "search": "Buscar",
+    "settings": "Configurações",
+    "language": "Idioma",
+    "theme": "Tema",
+    "themeLight": "Claro",
+    "themeDark": "Escuro",
+    "themeSystem": "Sistema"
+  },
+  "tabs": {
+    "tournaments": "Torneios",
+    "settings": "Configurações",
+    "about": "Sobre"
+  },
+  "home": {
+    "title": "Meus Torneios",
+    "subtitle": "Crie e gerencie seus torneios offline",
+    "newTournament": "Novo torneio",
+    "emptyTitle": "Nenhum torneio criado",
+    "emptyDescription": "Toque em \"Novo torneio\" para começar."
+  },
+  "newTournament": {
+    "title": "Novo Torneio",
+    "name": "Nome do torneio",
+    "namePlaceholder": "Ex: Copa de Verão",
+    "type": "Formato",
+    "types": {
+      "singleElimination": "Mata-mata",
+      "roundRobin": "Pontos corridos",
+      "groupsKnockout": "Grupos + Mata-mata"
+    },
+    "typesDescription": {
+      "singleElimination": "Eliminação direta. Quem perde, sai.",
+      "roundRobin": "Todos contra todos. Vence quem somar mais pontos.",
+      "groupsKnockout": "Fase de grupos seguida de mata-mata."
+    },
+    "create": "Criar torneio",
+    "validationName": "Informe um nome para o torneio."
+  },
+  "tournament": {
+    "participants": "Participantes",
+    "matches": "Partidas",
+    "standings": "Classificação",
+    "bracket": "Chaveamento",
+    "status": {
+      "draft": "Rascunho",
+      "ongoing": "Em andamento",
+      "finished": "Finalizado"
+    }
+  },
+  "about": {
+    "title": "Sobre",
+    "version": "Versão",
+    "description": "Tournament Master é um aplicativo offline-first para criação e gestão de torneios amadores — esportivos ou não. Suporta mata-mata, pontos corridos e grupos + mata-mata.",
+    "openSource": "Projeto de código aberto",
+    "repository": "Repositório",
+    "developer": "Desenvolvedor",
+    "license": "Licença"
+  },
+  "settings": {
+    "title": "Configurações",
+    "general": "Geral",
+    "appearance": "Aparência",
+    "data": "Dados",
+    "languageDescription": "Escolha o idioma do aplicativo.",
+    "themeDescription": "Aparência clara, escura ou seguir o sistema."
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "app": {
+    "name": "Tournament Master",
+    "tagline": "Amateur tournaments in your pocket"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading...",
+    "empty": "Nothing here yet",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "search": "Search",
+    "settings": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System"
+  },
+  "tabs": {
+    "tournaments": "Tournaments",
+    "settings": "Settings",
+    "about": "About"
+  },
+  "home": {
+    "title": "My Tournaments",
+    "subtitle": "Create and manage tournaments offline",
+    "newTournament": "New tournament",
+    "emptyTitle": "No tournaments yet",
+    "emptyDescription": "Tap \"New tournament\" to get started."
+  },
+  "newTournament": {
+    "title": "New Tournament",
+    "name": "Tournament name",
+    "namePlaceholder": "e.g. Summer Cup",
+    "type": "Format",
+    "types": {
+      "singleElimination": "Single Elimination",
+      "roundRobin": "Round Robin",
+      "groupsKnockout": "Groups + Knockout"
+    },
+    "typesDescription": {
+      "singleElimination": "Lose once, you're out.",
+      "roundRobin": "Everyone plays everyone. Most points wins.",
+      "groupsKnockout": "Group stage followed by knockout."
+    },
+    "create": "Create tournament",
+    "validationName": "Please provide a tournament name."
+  },
+  "tournament": {
+    "participants": "Participants",
+    "matches": "Matches",
+    "standings": "Standings",
+    "bracket": "Bracket",
+    "status": {
+      "draft": "Draft",
+      "ongoing": "Ongoing",
+      "finished": "Finished"
+    }
+  },
+  "about": {
+    "title": "About",
+    "version": "Version",
+    "description": "Tournament Master is an offline-first app for managing amateur tournaments — sports or otherwise. It supports single elimination, round robin and groups + knockout formats.",
+    "openSource": "Open source project",
+    "repository": "Repository",
+    "developer": "Developer",
+    "license": "License"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "appearance": "Appearance",
+    "data": "Data",
+    "languageDescription": "Choose the app language.",
+    "themeDescription": "Light, dark, or follow system."
+  }
+}
