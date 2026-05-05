@@ -6,16 +6,19 @@ import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useParticipantsStore } from '@/stores/useParticipantsStore';
+import type { Participant } from '@/types/tournament';
 
 interface Props {
   tournamentId: number;
 }
 
+const EMPTY_PARTICIPANTS: readonly Participant[] = Object.freeze([]);
+
 export function ParticipantList({ tournamentId }: Props) {
   const { t } = useTranslation();
   const participants = useParticipantsStore(
-    (s) => s.byTournament[tournamentId] ?? []
-  );
+    (s) => s.byTournament[tournamentId] ?? EMPTY_PARTICIPANTS
+  ) as Participant[];
   const load = useParticipantsStore((s) => s.load);
   const add = useParticipantsStore((s) => s.add);
   const remove = useParticipantsStore((s) => s.remove);
