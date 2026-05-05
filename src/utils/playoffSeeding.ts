@@ -78,13 +78,17 @@ export function computeSingleLeagueBracketSeeding(
 }
 
 /**
- * Compute cross-pairings for groups+knockout (2 groups → 2 semis):
- *   index 0 → 1A vs 2B
- *   index 1 → 1B vs 2A
+ * Compute cross-pairings for a multi-group → single-elim bracket.
+ * Top-2 of each group qualify; groups are paired adjacently (sorted by
+ * label) and each pair contributes two R1 matches:
  *
- * Picks the first two group labels (sorted alphabetically). Returns null
- * if either group has fewer than 2 ranked participants — same caller
- * contract as computeLeaguePlayoffSeeding.
+ *   pair (A, B) → 1A vs 2B and 1B vs 2A
+ *   pair (C, D) → 1C vs 2D and 1D vs 2C
+ *   ...
+ *
+ * For N groups this produces 2N R1 matches feeding a 2N-team bracket.
+ * Returns null when fewer than 2 groups have ≥2 ranked participants OR
+ * when the group count is odd (no clean way to pair the last group).
  */
 export function computeGroupsKnockoutSeeding(
   groupMatches: Match[],
@@ -119,14 +123,19 @@ export function computeGroupsKnockoutSeeding(
     });
   }
 
-  if (topByGroup.size < 2) return null;
-  const [labelA, labelB] = groupLabels.slice(0, 2);
-  const a = topByGroup.get(labelA);
-  const b = topByGroup.get(labelB);
-  if (!a || !b) return null;
+  // Need an even number of groups so we can pair them adjacently.
+  const usableLabels = groupLabels.filter((l) => topByGroup.has(l));
+  if (usableLabels.length < 2 || usableLabels.length % 2 !== 0) {
+    return null;
+  }
 
-  return [
-    { participantAId: a.firstId, participantBId: b.secondId },
-    { participantAId: b.firstId, participantBId: a.secondId },
-  ];
+  const pairs: SlotPair[] = [];
+  for (let i = 0; i < usableLabels.length; i += 2) {
+    const x = topByGroup.get(usableLabels[i])!;
+    const y = topByGroup.get(usableLabels[i + 1])!;
+    // Cross-pair: 1X-2Y, 1Y-2X (so winners can only meet later in the bracket).
+    pairs.push({ participantAId: x.firstId, participantBId: y.secondId });
+    pairs.push({ participantAId: y.firstId, participantBId: x.secondId });
+  }
+  return pairs;
 }

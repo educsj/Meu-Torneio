@@ -252,10 +252,9 @@ describe('computeGroupsKnockoutSeeding', () => {
     }
   });
 
-  it('uses first two groups (alphabetical) when there are 3+ groups', () => {
+  it('rejects an odd number of groups (no clean adjacent pairing)', () => {
     const G = p(7, 'G');
     const H = p(8, 'H');
-    // Add a 3rd group "C" with two participants. Should be ignored.
     const matches: Match[] = [
       // Group A
       m(1, A.id, B.id, 3, 1, { groupLabel: 'A' }),
@@ -265,17 +264,50 @@ describe('computeGroupsKnockoutSeeding', () => {
       m(4, D.id, E.id, 3, 1, { groupLabel: 'B' }),
       m(5, D.id, F.id, 3, 1, { groupLabel: 'B' }),
       m(6, E.id, F.id, 3, 1, { groupLabel: 'B' }),
-      // Group C — exists but should NOT be used for seeding
+      // Group C with only 2 teams (still ranked) — count becomes 3, odd
       m(7, G.id, H.id, 3, 1, { groupLabel: 'C' }),
     ];
-    const seeding = computeGroupsKnockoutSeeding(matches, [
-      ...allParticipants,
-      G,
-      H,
-    ])!;
-    const ids = seeding.flatMap((s) => [s.participantAId, s.participantBId]);
-    expect(ids).not.toContain(G.id);
-    expect(ids).not.toContain(H.id);
+    expect(
+      computeGroupsKnockoutSeeding(matches, [...allParticipants, G, H])
+    ).toBeNull();
+  });
+
+  it('4 groups → 8 R1 pairs with adjacent cross-pairing', () => {
+    // Groups A, B, C, D. Top of each: A1=A, B1=D, C1=G, D1=J.
+    // Second of each: A2=B, B2=E, C2=H, D2=K.
+    // Expected pairs: (A,B)→1A-2B, 1B-2A; (C,D)→1C-2D, 1D-2C
+    const G = p(7, 'G');
+    const H = p(8, 'H');
+    const I = p(9, 'I');
+    const J = p(10, 'J');
+    const K = p(11, 'K');
+    const L = p(12, 'L');
+    const matches: Match[] = [
+      // Group A: A > B > C
+      m(1, A.id, B.id, 3, 1, { groupLabel: 'A' }),
+      m(2, A.id, C.id, 3, 1, { groupLabel: 'A' }),
+      m(3, B.id, C.id, 3, 1, { groupLabel: 'A' }),
+      // Group B: D > E > F
+      m(4, D.id, E.id, 3, 1, { groupLabel: 'B' }),
+      m(5, D.id, F.id, 3, 1, { groupLabel: 'B' }),
+      m(6, E.id, F.id, 3, 1, { groupLabel: 'B' }),
+      // Group C: G > H > I
+      m(7, G.id, H.id, 3, 1, { groupLabel: 'C' }),
+      m(8, G.id, I.id, 3, 1, { groupLabel: 'C' }),
+      m(9, H.id, I.id, 3, 1, { groupLabel: 'C' }),
+      // Group D: J > K > L
+      m(10, J.id, K.id, 3, 1, { groupLabel: 'D' }),
+      m(11, J.id, L.id, 3, 1, { groupLabel: 'D' }),
+      m(12, K.id, L.id, 3, 1, { groupLabel: 'D' }),
+    ];
+    const all = [...allParticipants, G, H, I, J, K, L];
+    const seeding = computeGroupsKnockoutSeeding(matches, all)!;
+    expect(seeding).toEqual([
+      { participantAId: A.id, participantBId: E.id }, // 1A vs 2B
+      { participantAId: D.id, participantBId: B.id }, // 1B vs 2A
+      { participantAId: G.id, participantBId: K.id }, // 1C vs 2D
+      { participantAId: J.id, participantBId: H.id }, // 1D vs 2C
+    ]);
   });
 
   it("ignores participants who didn't play in their group", () => {

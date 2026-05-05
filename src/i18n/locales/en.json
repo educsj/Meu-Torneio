@@ -233,7 +233,7 @@
       "firstPhaseNoQualifiers": "Set how many teams advance from the first phase.",
       "qualifiersMustBeEven": "Playoffs need an even number of qualifiers ({{got}} is odd).",
       "singleElimQualifiersUnsupported": "Knockout accepts 2, 4, 8 or 16 qualifiers (you set {{got}}).",
-      "singleElimMultiGroupUnsupported": "Multi-group → knockout only supports 4 qualifiers (top-2 from each group) for now.",
+      "singleElimMultiGroupUnsupported": "Multi-group → knockout requires an even group count and qualifiers = 2× groups (top-2 from each).",
       "secondPhaseMustNotBeRoundRobin": "The second phase must be Knockout or Playoffs."
     }
   }

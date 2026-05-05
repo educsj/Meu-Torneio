@@ -133,10 +133,51 @@ describe('validateCustomPhases', () => {
     });
   });
 
-  it('rejects multi-group → single_elim with qualifiers ≠ 4 (no cross-pairing yet)', () => {
+  it('accepts multi-group → single_elim when qualifiers = 2× groups (top-2 each)', () => {
+    // 4 groups → top-2 each → 8-team bracket
+    expect(
+      validateCustomPhases([
+        rr({ groupCount: 4, qualifiers: 8 }),
+        se(),
+      ])
+    ).toEqual([]);
+    // 8 groups → top-2 each → 16-team bracket
+    expect(
+      validateCustomPhases([
+        rr({ groupCount: 8, qualifiers: 16 }),
+        se(),
+      ])
+    ).toEqual([]);
+  });
+
+  it('rejects multi-group → single_elim when qualifiers ≠ 2× groups', () => {
+    // 2 groups asking for 8 qualifiers (would mean top-4 of each, no seeder yet)
     expect(
       validateCustomPhases([
         rr({ groupCount: 2, qualifiers: 8 }),
+        se(),
+      ])
+    ).toContainEqual({
+      code: 'single_elim_multi_group_unsupported',
+      index: 0,
+    });
+  });
+
+  it('rejects multi-group → single_elim with odd group count (no clean pairing)', () => {
+    // 3 groups → 6 qualifiers (top-2 each). qualifiers=6 isn't power of 2,
+    // so the first check (qualifiers shape) catches it; the multi-group
+    // constraint would also flag it. Either error is acceptable.
+    const errors = validateCustomPhases([
+      rr({ groupCount: 3, qualifiers: 6 }),
+      se(),
+    ]);
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('rejects 3 groups asking for 4 qualifiers (groupCount must be even)', () => {
+    expect(
+      validateCustomPhases([
+        rr({ groupCount: 3, qualifiers: 4 }),
         se(),
       ])
     ).toContainEqual({

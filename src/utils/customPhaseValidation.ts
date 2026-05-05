@@ -75,16 +75,17 @@ export function validateCustomPhases(
           got: q,
         });
       }
-      // Multi-group → bracket cross-pairing only ships for groupCount=2,
-      // qualifiers=4 (the original groups+knockout shape). Other multi-
-      // group combos need a more elaborate seeder; reject for now so
-      // users get a clear message instead of silently broken seeding.
+      // Multi-group → bracket: cross-pairing seeds top-2 of each group.
+      // Constraints: groupCount must be even (so groups pair cleanly) AND
+      // qualifiers must equal 2*groupCount (top-2 from each group).
       const sourceGroupCount = first.groupCount;
-      if (sourceGroupCount > 1 && q !== 4) {
-        errors.push({
-          code: 'single_elim_multi_group_unsupported',
-          index: 0,
-        });
+      if (sourceGroupCount > 1) {
+        if (sourceGroupCount % 2 !== 0 || q !== sourceGroupCount * 2) {
+          errors.push({
+            code: 'single_elim_multi_group_unsupported',
+            index: 0,
+          });
+        }
       }
     }
   }
