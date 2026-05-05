@@ -180,6 +180,23 @@
     "languageDescription": "Escolha o idioma do aplicativo.",
     "themeDescription": "Aparência clara, escura ou seguir o sistema."
   },
+  "image": {
+    "nav": "Compartilhar como imagem",
+    "title": "Imagem do torneio",
+    "previewHint": "Pré-visualização. Será salva como {{filename}}.",
+    "share": "Compartilhar imagem",
+    "shareDialogTitle": "Compartilhar torneio",
+    "shareUnavailable": "Compartilhamento não está disponível neste dispositivo.",
+    "standings": "Classificação",
+    "matches": "Partidas",
+    "knockout": "Mata-mata",
+    "noMatchesYet": "Nenhuma partida gerada ainda.",
+    "footer": "Gerado por Meu Torneio · {{date}}",
+    "participantsCount": {
+      "one": "{{count}} participante",
+      "other": "{{count}} participantes"
+    }
+  },
   "phaseBuilder": {
     "title": "Fases do torneio",
     "phaseN": "Fase {{n}}",

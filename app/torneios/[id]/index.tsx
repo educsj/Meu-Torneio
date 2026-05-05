@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   GitBranch,
+  Image as ImageIcon,
   ListOrdered,
   Pencil,
   Shuffle,
@@ -229,6 +230,16 @@ export default function TournamentDetailScreen() {
             }
           />
         ) : null}
+        <NavButton
+          label={t('image.nav')}
+          icon={<ImageIcon size={18} color="#475569" />}
+          onPress={() =>
+            router.push({
+              pathname: '/torneios/[id]/imagem',
+              params: { id: String(tournamentId) },
+            })
+          }
+        />
       </View>
 
       <View className="mb-4">
