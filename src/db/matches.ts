@@ -37,6 +37,7 @@ interface MatchRow {
   group_label: string | null;
   stage: MatchStage;
   phase_id: number | null;
+  walkover: number;
 }
 
 function rowToMatch(row: MatchRow): Match {
@@ -55,6 +56,7 @@ function rowToMatch(row: MatchRow): Match {
     groupLabel: row.group_label,
     stage: row.stage,
     phaseId: row.phase_id,
+    walkover: row.walkover === 1,
   };
 }
 
@@ -63,7 +65,7 @@ export async function listMatches(tournamentId: number): Promise<Match[]> {
   const rows = await db.getAllAsync<MatchRow>(
     `SELECT id, tournament_id, round, participant_a_id, participant_b_id,
             score_a, score_b, winner_id, next_match_id, scheduled_at, location,
-            group_label, stage, phase_id
+            group_label, stage, phase_id, walkover
      FROM matches
      WHERE tournament_id = ?
      ORDER BY stage, round, id;`,
@@ -225,11 +227,15 @@ export async function setMatchScore(
   matchId: number,
   scoreA: number,
   scoreB: number,
-  options?: { allowDraws?: boolean }
+  options?: { allowDraws?: boolean; walkover?: boolean }
 ): Promise<void> {
   const allowDraws = options?.allowDraws ?? false;
-  if (!allowDraws && scoreA === scoreB) {
+  const walkover = options?.walkover ?? false;
+  if (!walkover && !allowDraws && scoreA === scoreB) {
     throw new Error('Empates não são permitidos nesse formato.');
+  }
+  if (walkover && scoreA === scoreB) {
+    throw new Error('Walkover precisa de um vencedor (placares diferentes).');
   }
   const db = await getDatabase();
   const match = await db.getFirstAsync<MatchRow>(
@@ -254,8 +260,8 @@ export async function setMatchScore(
 
   await db.withTransactionAsync(async () => {
     await db.runAsync(
-      'UPDATE matches SET score_a = ?, score_b = ?, winner_id = ? WHERE id = ?;',
-      [scoreA, scoreB, winnerId, matchId]
+      'UPDATE matches SET score_a = ?, score_b = ?, winner_id = ?, walkover = ? WHERE id = ?;',
+      [scoreA, scoreB, winnerId, walkover ? 1 : 0, matchId]
     );
     await propagateWinnerToNextMatch(match, winnerId);
   });
@@ -294,7 +300,7 @@ export async function clearMatchScore(matchId: number): Promise<void> {
 
   await db.withTransactionAsync(async () => {
     await db.runAsync(
-      'UPDATE matches SET score_a = NULL, score_b = NULL, winner_id = NULL WHERE id = ?;',
+      'UPDATE matches SET score_a = NULL, score_b = NULL, winner_id = NULL, walkover = 0 WHERE id = ?;',
       [matchId]
     );
     await propagateWinnerToNextMatch(match, null);

@@ -43,6 +43,12 @@ export interface Match {
    * phase model; the migration backfills it from `stage`+tournament type.
    */
   phaseId: number | null;
+  /**
+   * True when the result was decided by walkover (W.O. — one side didn't
+   * show up). The scoreA/scoreB and winnerId still reflect the official
+   * forfeit margin; this flag is purely informational for the UI badge.
+   */
+  walkover: boolean;
 }
 
 /**

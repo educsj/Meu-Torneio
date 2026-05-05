@@ -67,6 +67,8 @@ export interface TournamentBackup {
     phaseLocalId?: number | null;
     scheduledAt: string | null;
     location: string | null;
+    /** v6+. Absent backups default to false. */
+    walkover?: boolean;
   }>;
 }
 
@@ -137,6 +139,7 @@ export function serializeTournament(
       phaseLocalId: m.phaseId,
       scheduledAt: m.scheduledAt,
       location: m.location,
+      walkover: m.walkover,
     })),
   };
 }

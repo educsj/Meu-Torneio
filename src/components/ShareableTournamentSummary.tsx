@@ -487,10 +487,21 @@ function MatchRow({
           {b?.name ?? (bIsBye ? t('matches.bye') : t('matches.tbd'))}
         </Text>
       </View>
-      {groupBadge ? (
-        <Text className="mt-1 text-[10px] uppercase text-slate-400">
-          {groupBadge.replace(/ · $/, '')}
-        </Text>
+      {groupBadge || match.walkover ? (
+        <View className="mt-1 flex-row items-center gap-2">
+          {groupBadge ? (
+            <Text className="text-[10px] uppercase text-slate-400">
+              {groupBadge.replace(/ · $/, '')}
+            </Text>
+          ) : null}
+          {match.walkover ? (
+            <View className="rounded bg-amber-100 px-1.5 py-0.5 dark:bg-amber-900">
+              <Text className="text-[9px] font-bold text-amber-800 dark:text-amber-200">
+                W.O.
+              </Text>
+            </View>
+          ) : null}
+        </View>
       ) : null}
     </View>
   );

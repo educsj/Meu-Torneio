@@ -122,7 +122,7 @@ export default function MatchesScreen() {
     : null;
 
   const handleSaveScore = useCallback(
-    async (a: number, b: number) => {
+    async (a: number, b: number, options?: { walkover?: boolean }) => {
       if (!editingMatch) return;
       // Re-seed safety: editing a group/league score re-runs the seed
       // function and silently zeroes any playoff matches that were already
@@ -159,7 +159,7 @@ export default function MatchesScreen() {
           if (!confirmed) return;
         }
       }
-      await setScore(tournamentId, editingMatch.id, a, b);
+      await setScore(tournamentId, editingMatch.id, a, b, options);
     },
     [editingMatch, matches, setScore, tournamentId, t]
   );
@@ -380,9 +380,18 @@ function MatchCard({
         isPlayable ? 'active:bg-slate-50 dark:active:bg-slate-800' : ''
       }`}
     >
-      <Text className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-        #{index + 1}
-      </Text>
+      <View className="mb-1.5 flex-row items-center justify-between">
+        <Text className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          #{index + 1}
+        </Text>
+        {match.walkover ? (
+          <View className="rounded-full bg-amber-100 px-1.5 py-0.5 dark:bg-amber-900">
+            <Text className="text-[9px] font-bold uppercase text-amber-800 dark:text-amber-200">
+              {t('matches.walkoverBadge')}
+            </Text>
+          </View>
+        ) : null}
+      </View>
       <Side
         name={a?.name ?? (aIsBye ? t('matches.bye') : t('matches.tbd'))}
         score={match.scoreA}

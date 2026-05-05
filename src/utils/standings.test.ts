@@ -37,6 +37,7 @@ function m(
     groupLabel: null,
     stage: 'main',
     phaseId: null,
+    walkover: false,
   };
 }
 
@@ -138,6 +139,7 @@ describe('computeStandings with volleyball scoring', () => {
         groupLabel: null,
         stage: 'main',
         phaseId: null,
+        walkover: false,
       },
       {
         id: 2,
@@ -154,6 +156,7 @@ describe('computeStandings with volleyball scoring', () => {
         groupLabel: null,
         stage: 'main',
         phaseId: null,
+        walkover: false,
       },
     ];
     const rows = computeStandings(matches, [A, B], { scoring: 'volleyball' });

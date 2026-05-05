@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 /**
  * Base schema — idempotent (CREATE TABLE IF NOT EXISTS).
@@ -70,4 +70,7 @@ export const MATCHES_EXTRA_COLUMNS: Record<string, string> = {
   /* v3: link each match to its phase. ON DELETE SET NULL keeps history when
      a phase is deleted; matches.phase_id is filled by backfill in migrate(). */
   phase_id: `ALTER TABLE matches ADD COLUMN phase_id INTEGER REFERENCES phases(id) ON DELETE SET NULL;`,
+  /* v6: walkover flag. 0/1 boolean — true when the match was decided by
+     forfeit; false otherwise. Existing matches default to 0. */
+  walkover: `ALTER TABLE matches ADD COLUMN walkover INTEGER NOT NULL DEFAULT 0;`,
 };

@@ -26,7 +26,8 @@ interface MatchesState {
     tournamentId: number,
     matchId: number,
     scoreA: number,
-    scoreB: number
+    scoreB: number,
+    options?: { walkover?: boolean }
   ) => Promise<void>;
   clearScore: (tournamentId: number, matchId: number) => Promise<void>;
   saveSchedule: (
@@ -68,12 +69,15 @@ export const useMatchesStore = create<MatchesState>((set, get) => ({
     });
     await useTournamentsStore.getState().refresh();
   },
-  setScore: async (tournamentId, matchId, scoreA, scoreB) => {
+  setScore: async (tournamentId, matchId, scoreA, scoreB, options) => {
     const tournament = useTournamentsStore.getState().getById(tournamentId);
     const allowDraws = tournament
       ? tournament.type !== 'single_elimination'
       : false;
-    await setMatchScore(matchId, scoreA, scoreB, { allowDraws });
+    await setMatchScore(matchId, scoreA, scoreB, {
+      allowDraws,
+      walkover: options?.walkover,
+    });
     if (await isGroupStageComplete(tournamentId)) {
       await seedNextPhase(tournamentId);
     }

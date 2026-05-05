@@ -42,6 +42,7 @@ function m(
     groupLabel: options?.groupLabel ?? null,
     stage: options?.stage ?? 'group',
     phaseId: null,
+    walkover: false,
   };
 }
 

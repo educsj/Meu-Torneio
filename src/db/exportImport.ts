@@ -136,8 +136,8 @@ export async function importTournamentJson(json: string): Promise<number> {
         `INSERT INTO matches
           (tournament_id, round, participant_a_id, participant_b_id,
            score_a, score_b, winner_id, next_match_id, scheduled_at, location,
-           group_label, stage, phase_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?);`,
+           group_label, stage, phase_id, walkover)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?);`,
         [
           newTournamentId,
           m.round,
@@ -151,6 +151,7 @@ export async function importTournamentJson(json: string): Promise<number> {
           m.groupLabel,
           stage,
           phaseId,
+          m.walkover ? 1 : 0,
         ]
       );
       matchIdMap.set(m.localId, r.lastInsertRowId);

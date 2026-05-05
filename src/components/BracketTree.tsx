@@ -153,6 +153,11 @@ function BracketMatchBox({
         won={bWon}
         placeholder={!b}
       />
+      {match.walkover ? (
+        <View className="absolute right-1 top-1 rounded bg-amber-500 px-1">
+          <Text className="text-[8px] font-bold text-white">W.O.</Text>
+        </View>
+      ) : null}
     </View>
   );
 }

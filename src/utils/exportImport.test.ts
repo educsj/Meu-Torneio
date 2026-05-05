@@ -45,6 +45,7 @@ const ms: Match[] = [
     groupLabel: null,
     stage: 'main',
     phaseId: null,
+    walkover: false,
   },
   {
     id: 22,
@@ -61,6 +62,7 @@ const ms: Match[] = [
     groupLabel: null,
     stage: 'main',
     phaseId: null,
+    walkover: false,
   },
 ];
 

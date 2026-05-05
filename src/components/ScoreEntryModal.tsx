@@ -23,13 +23,22 @@ interface Props {
   participantB: Participant | null;
   allowDraws?: boolean;
   onClose: () => void;
-  onSave: (scoreA: number, scoreB: number) => Promise<void> | void;
+  onSave: (
+    scoreA: number,
+    scoreB: number,
+    options?: { walkover?: boolean }
+  ) => Promise<void> | void;
   onClear: () => Promise<void> | void;
   onSaveSchedule: (
     scheduledAt: string | null,
     location: string | null
   ) => Promise<void> | void;
 }
+
+/** Conventional forfeit score across formats — 3-0 is the standard
+ *  walkover result in both football and volleyball. */
+const WALKOVER_WIN = 3;
+const WALKOVER_LOSS = 0;
 
 export function ScoreEntryModal({
   visible,
@@ -45,6 +54,7 @@ export function ScoreEntryModal({
   const { t } = useTranslation();
   const [scoreAStr, setScoreAStr] = useState('');
   const [scoreBStr, setScoreBStr] = useState('');
+  const [walkover, setWalkover] = useState(false);
   const [dateStr, setDateStr] = useState('');
   const [timeStr, setTimeStr] = useState('');
   const [locationStr, setLocationStr] = useState('');
@@ -54,6 +64,7 @@ export function ScoreEntryModal({
     if (!match) return;
     setScoreAStr(match.scoreA == null ? '' : String(match.scoreA));
     setScoreBStr(match.scoreB == null ? '' : String(match.scoreB));
+    setWalkover(match.walkover);
     const parsed = match.scheduledAt
       ? splitIsoForInputs(match.scheduledAt)
       : { dateStr: '', timeStr: '' };
@@ -61,6 +72,24 @@ export function ScoreEntryModal({
     setTimeStr(parsed.timeStr);
     setLocationStr(match.location ?? '');
   }, [match]);
+
+  const markWalkover = (sideAWins: boolean) => {
+    setScoreAStr(String(sideAWins ? WALKOVER_WIN : WALKOVER_LOSS));
+    setScoreBStr(String(sideAWins ? WALKOVER_LOSS : WALKOVER_WIN));
+    setWalkover(true);
+  };
+
+  // If the user manually edits the score after marking W.O., it stops
+  // being a walkover. Track whether the current score still represents
+  // the original W.O. action.
+  const onScoreAChange = (v: string) => {
+    if (walkover) setWalkover(false);
+    setScoreAStr(v.replace(/[^0-9]/g, ''));
+  };
+  const onScoreBChange = (v: string) => {
+    if (walkover) setWalkover(false);
+    setScoreBStr(v.replace(/[^0-9]/g, ''));
+  };
 
   const scoreFilled = scoreAStr.trim() !== '' && scoreBStr.trim() !== '';
   const scoreValid =
@@ -82,8 +111,11 @@ export function ScoreEntryModal({
 
   const initialScoreA = match?.scoreA == null ? '' : String(match.scoreA);
   const initialScoreB = match?.scoreB == null ? '' : String(match.scoreB);
+  const initialWalkover = match?.walkover ?? false;
   const scoreChanged =
-    scoreAStr !== initialScoreA || scoreBStr !== initialScoreB;
+    scoreAStr !== initialScoreA ||
+    scoreBStr !== initialScoreB ||
+    walkover !== initialWalkover;
 
   const canSave =
     !!participantA &&
@@ -101,11 +133,11 @@ export function ScoreEntryModal({
       if (scoreChanged && scoreValid) {
         const a = Number(scoreAStr);
         const b = Number(scoreBStr);
-        if (!allowDraws && a === b) {
+        if (!walkover && !allowDraws && a === b) {
           Alert.alert(t('matches.drawNotAllowed'));
           return;
         }
-        await onSave(a, b);
+        await onSave(a, b, { walkover });
       } else if (scoreChanged && !scoreValid && scoreFilled) {
         Alert.alert(t('matches.scoreInvalid'));
         return;
@@ -178,13 +210,44 @@ export function ScoreEntryModal({
                 <ScoreField
                   label={participantA.name}
                   value={scoreAStr}
-                  onChangeText={setScoreAStr}
+                  onChangeText={onScoreAChange}
                 />
                 <ScoreField
                   label={participantB.name}
                   value={scoreBStr}
-                  onChangeText={setScoreBStr}
+                  onChangeText={onScoreBChange}
                 />
+                {walkover ? (
+                  <View className="rounded-xl bg-amber-50 px-3 py-2 dark:bg-amber-950">
+                    <Text className="text-xs font-semibold text-amber-800 dark:text-amber-200">
+                      {t('matches.walkoverActive')}
+                    </Text>
+                  </View>
+                ) : null}
+                <View className="flex-row gap-2">
+                  <Pressable
+                    onPress={() => markWalkover(true)}
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-2 py-2 active:bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
+                  >
+                    <Text
+                      className="text-center text-xs font-medium text-slate-700 dark:text-slate-300"
+                      numberOfLines={1}
+                    >
+                      {t('matches.walkoverFor', { name: participantA.name })}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => markWalkover(false)}
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-2 py-2 active:bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
+                  >
+                    <Text
+                      className="text-center text-xs font-medium text-slate-700 dark:text-slate-300"
+                      numberOfLines={1}
+                    >
+                      {t('matches.walkoverFor', { name: participantB.name })}
+                    </Text>
+                  </Pressable>
+                </View>
               </View>
             )}
 
