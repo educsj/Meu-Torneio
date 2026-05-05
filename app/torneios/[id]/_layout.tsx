@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import {
-  Slot,
+  Stack,
   useLocalSearchParams,
   usePathname,
   useRouter,
@@ -126,7 +126,13 @@ export default function TournamentDetailLayout() {
         />
       </View>
       <View className="flex-1">
-        <Slot />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'none',
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
       </View>
     </Screen>
   );
