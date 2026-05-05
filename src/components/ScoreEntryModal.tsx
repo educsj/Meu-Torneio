@@ -20,6 +20,7 @@ interface Props {
   match: Match | null;
   participantA: Participant | null;
   participantB: Participant | null;
+  allowDraws?: boolean;
   onClose: () => void;
   onSave: (scoreA: number, scoreB: number) => Promise<void> | void;
   onClear: () => Promise<void> | void;
@@ -30,6 +31,7 @@ export function ScoreEntryModal({
   match,
   participantA,
   participantB,
+  allowDraws = false,
   onClose,
   onSave,
   onClear,
@@ -60,7 +62,7 @@ export function ScoreEntryModal({
       Alert.alert(t('matches.scoreInvalid'));
       return;
     }
-    if (a === b) {
+    if (!allowDraws && a === b) {
       Alert.alert(t('matches.drawNotAllowed'));
       return;
     }

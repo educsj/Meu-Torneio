@@ -69,6 +69,19 @@
     "notFound": "Tournament not found.",
     "comingSoon": "Coming soon."
   },
+  "standings": {
+    "title": "Standings",
+    "team": "Team",
+    "played": "P",
+    "wins": "W",
+    "draws": "D",
+    "losses": "L",
+    "goalDiff": "GD",
+    "points": "Pts",
+    "empty": "No participants yet.",
+    "emptyDescription": "Add participants to see the standings.",
+    "legend": "P = Played · W = Wins · D = Draws · L = Losses · GD = Goal Diff · Pts = Points (3 / 1 / 0)"
+  },
   "matches": {
     "title": "Matches",
     "round": "Round {{n}}",
@@ -88,6 +101,7 @@
     "noMatchesYet": "No matches generated yet.",
     "noMatchesYetDescription": "Go back to the tournament and tap \"Generate bracket\".",
     "onlySingleEliminationSupported": "We only generate brackets for Single Elimination for now.",
+    "onlyGroupsKnockoutPending": "Groups + Knockout generation isn't available yet. Coming soon.",
     "vs": "vs",
     "scoreEntry": "Enter score",
     "scoreFor": "Score for {{name}}",

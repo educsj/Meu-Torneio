@@ -69,6 +69,19 @@
     "notFound": "Torneio não encontrado.",
     "comingSoon": "Em breve."
   },
+  "standings": {
+    "title": "Classificação",
+    "team": "Equipe",
+    "played": "J",
+    "wins": "V",
+    "draws": "E",
+    "losses": "D",
+    "goalDiff": "SG",
+    "points": "P",
+    "empty": "Nenhum participante cadastrado.",
+    "emptyDescription": "Adicione participantes para ver a classificação.",
+    "legend": "J = Jogos · V = Vitórias · E = Empates · D = Derrotas · SG = Saldo de Gols · P = Pontos (3 / 1 / 0)"
+  },
   "matches": {
     "title": "Partidas",
     "round": "Rodada {{n}}",
@@ -88,6 +101,7 @@
     "noMatchesYet": "Nenhuma partida gerada ainda.",
     "noMatchesYetDescription": "Volte para a tela do torneio e toque em \"Gerar chaveamento\".",
     "onlySingleEliminationSupported": "Por enquanto só geramos chaveamento para Mata-mata.",
+    "onlyGroupsKnockoutPending": "Geração de Grupos + Mata-mata ainda não está disponível. Em breve.",
     "vs": "vs",
     "scoreEntry": "Lançar placar",
     "scoreFor": "Placar de {{name}}",

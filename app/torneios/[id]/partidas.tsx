@@ -8,6 +8,7 @@ import { Screen } from '@/components/ui/Screen';
 import { listParticipants } from '@/db/participants';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useMatchesStore } from '@/stores/useMatchesStore';
+import { useTournamentsStore } from '@/stores/useTournamentsStore';
 import type { Match, Participant } from '@/types/tournament';
 
 const EMPTY_MATCHES: readonly Match[] = Object.freeze([]);
@@ -24,6 +25,12 @@ export default function MatchesScreen() {
   const load = useMatchesStore((s) => s.load);
   const setScore = useMatchesStore((s) => s.setScore);
   const clearScore = useMatchesStore((s) => s.clearScore);
+  const tournament = useTournamentsStore((s) =>
+    s.tournaments.find((tt) => tt.id === tournamentId)
+  );
+  const allowDraws =
+    tournament != null && tournament.type !== 'single_elimination';
+  const isRoundRobin = tournament?.type === 'round_robin';
 
   const [participantsById, setParticipantsById] = useState<
     Map<number, Participant>
@@ -108,6 +115,18 @@ export default function MatchesScreen() {
             {t('matches.noMatchesYetDescription')}
           </Text>
         </View>
+      ) : isRoundRobin ? (
+        <View className="mt-4 gap-2">
+          {matches.map((m, idx) => (
+            <MatchCard
+              key={m.id}
+              match={m}
+              index={idx}
+              participantsById={participantsById}
+              onPress={() => setEditingMatchId(m.id)}
+            />
+          ))}
+        </View>
       ) : (
         <View className="mt-4">
           {Array.from(matchesByRound.entries())
@@ -138,6 +157,7 @@ export default function MatchesScreen() {
         match={editingMatch}
         participantA={editingA}
         participantB={editingB}
+        allowDraws={allowDraws}
         onClose={() => setEditingMatchId(null)}
         onSave={handleSaveScore}
         onClear={handleClearScore}

@@ -60,7 +60,11 @@ export const useMatchesStore = create<MatchesState>((set, get) => ({
     await useTournamentsStore.getState().refresh();
   },
   setScore: async (tournamentId, matchId, scoreA, scoreB) => {
-    await setMatchScore(matchId, scoreA, scoreB);
+    const tournament = useTournamentsStore.getState().getById(tournamentId);
+    const allowDraws = tournament
+      ? tournament.type !== 'single_elimination'
+      : false;
+    await setMatchScore(matchId, scoreA, scoreB, { allowDraws });
     await recomputeTournamentStatus(tournamentId);
     const list = await listMatches(tournamentId);
     set({

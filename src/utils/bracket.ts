@@ -111,3 +111,38 @@ export function generateSingleEliminationBracket(
 
   return matches;
 }
+
+/**
+ * Generate round-robin pairings: every participant plays every other once.
+ * All matches are returned with `round=1` (no scheduling for now); the caller
+ * can re-bucket into actual rounds later if desired.
+ */
+export function generateRoundRobinMatches(
+  participants: Participant[]
+): BracketMatch[] {
+  if (participants.length < 2) {
+    throw new Error('Need at least 2 participants to generate matches');
+  }
+  const sorted = [...participants].sort((a, b) => {
+    const sa = a.seed ?? Number.MAX_SAFE_INTEGER;
+    const sb = b.seed ?? Number.MAX_SAFE_INTEGER;
+    if (sa !== sb) return sa - sb;
+    return a.id - b.id;
+  });
+
+  const matches: BracketMatch[] = [];
+  let idx = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      matches.push({
+        round: 1,
+        indexInRound: idx++,
+        participantAId: sorted[i].id,
+        participantBId: sorted[j].id,
+        winnerId: null,
+        nextRoundIndex: null,
+      });
+    }
+  }
+  return matches;
+}

@@ -1,8 +1,17 @@
-import type { Match, Participant } from '@/types/tournament';
-import { generateSingleEliminationBracket } from '@/utils/bracket';
+import type {
+  Match,
+  Participant,
+  TournamentType,
+} from '@/types/tournament';
+import {
+  generateRoundRobinMatches,
+  generateSingleEliminationBracket,
+  type BracketMatch,
+} from '@/utils/bracket';
 
 import { getDatabase } from './index';
 import { listParticipants } from './participants';
+import { getTournamentById } from './tournaments';
 
 interface MatchRow {
   id: number;
@@ -57,21 +66,34 @@ export async function deleteMatchesForTournament(
 }
 
 /**
- * Generate the bracket for a tournament's current participant list and
- * persist the matches. Returns the inserted matches in flat order.
+ * Generate matches for a tournament according to its type and persist them.
+ * Returns the inserted matches in flat order. Existing matches for this
+ * tournament are deleted first, so calling this acts as a "reset" too.
  *
- * Existing matches for this tournament are deleted first, so calling
- * this acts as a "reset bracket" too.
+ * Currently supports:
+ *  - single_elimination: standard bracket with auto BYEs
+ *  - round_robin: every participant plays every other once
  */
 export async function generateBracketForTournament(
   tournamentId: number
 ): Promise<Match[]> {
-  const participants = await listParticipants(tournamentId);
-  if (participants.length < 2) {
-    throw new Error('Need at least 2 participants to generate a bracket');
+  const tournament = await getTournamentById(tournamentId);
+  if (!tournament) throw new Error('Torneio não encontrado.');
+  if (tournament.type === 'groups_knockout') {
+    throw new Error(
+      'Geração de Grupos + Mata-mata ainda não está disponível.'
+    );
   }
 
-  const bracket = generateSingleEliminationBracket(participants);
+  const participants = await listParticipants(tournamentId);
+  if (participants.length < 2) {
+    throw new Error('Adicione pelo menos 2 participantes.');
+  }
+
+  const bracket: BracketMatch[] =
+    tournament.type === 'round_robin'
+      ? generateRoundRobinMatches(participants)
+      : generateSingleEliminationBracket(participants);
 
   const db = await getDatabase();
   await db.withTransactionAsync(async () => {
@@ -161,20 +183,22 @@ export async function loadParticipantsAsMap(
 }
 
 /**
- * Update the score of a match. Computes the winner (no draws allowed in
- * single elimination), persists scores + winner_id, and propagates the
- * winner into the slot of the next match if there is one.
+ * Update the score of a match. Computes the winner (or null on a draw),
+ * persists scores + winner_id, and propagates the winner into the slot of
+ * the next match if there is one.
  *
- * Throws if scores are equal (no ties in single elimination) or if either
- * side is missing a participant.
+ * Pass `allowDraws=false` for single elimination (default). For round-robin
+ * pass `allowDraws=true`.
  */
 export async function setMatchScore(
   matchId: number,
   scoreA: number,
-  scoreB: number
+  scoreB: number,
+  options?: { allowDraws?: boolean }
 ): Promise<void> {
-  if (scoreA === scoreB) {
-    throw new Error('Empates não são permitidos no mata-mata.');
+  const allowDraws = options?.allowDraws ?? false;
+  if (!allowDraws && scoreA === scoreB) {
+    throw new Error('Empates não são permitidos nesse formato.');
   }
   const db = await getDatabase();
   const match = await db.getFirstAsync<MatchRow>(
@@ -191,7 +215,11 @@ export async function setMatchScore(
   }
 
   const winnerId =
-    scoreA > scoreB ? match.participant_a_id : match.participant_b_id;
+    scoreA === scoreB
+      ? null
+      : scoreA > scoreB
+        ? match.participant_a_id
+        : match.participant_b_id;
 
   await db.withTransactionAsync(async () => {
     await db.runAsync(
@@ -257,32 +285,49 @@ async function propagateWinnerToNextMatch(
 
 /**
  * Compute and persist the tournament status based on its matches.
- * - any played match → ongoing (or finished if final played)
- * - no played matches → draft (only if was draft already)
  *
- * Returns the new status (or null if no transition).
+ * - Single elimination: finished when the final has a winner; ongoing if
+ *   any match has been played; otherwise draft.
+ * - Round robin: finished when every match has a score recorded (draws
+ *   count as played); ongoing if any match has a score; otherwise draft.
  */
 export async function recomputeTournamentStatus(
   tournamentId: number
 ): Promise<'draft' | 'ongoing' | 'finished' | null> {
   const db = await getDatabase();
+  const tournament = await getTournamentById(tournamentId);
+  if (!tournament) return null;
+
   const all = await db.getAllAsync<MatchRow>(
-    'SELECT id, round, winner_id, next_match_id FROM matches WHERE tournament_id = ?;',
+    `SELECT id, round, score_a, score_b, winner_id, next_match_id
+     FROM matches WHERE tournament_id = ?;`,
     [tournamentId]
   );
   if (all.length === 0) return null;
 
-  const final = all.find((m) => m.next_match_id == null);
-  const anyPlayed = all.some((m) => m.winner_id != null);
+  const isPlayed = (m: MatchRow) => m.score_a != null && m.score_b != null;
+  const anyPlayed = all.some(isPlayed);
 
   let next: 'draft' | 'ongoing' | 'finished';
-  if (final && final.winner_id != null) next = 'finished';
-  else if (anyPlayed) next = 'ongoing';
-  else next = 'draft';
+  if (tournament.type === 'single_elimination') {
+    const final = all.find((m) => m.next_match_id == null);
+    if (final && final.winner_id != null) next = 'finished';
+    else if (anyPlayed) next = 'ongoing';
+    else next = 'draft';
+  } else {
+    const allPlayed = all.every(isPlayed);
+    if (allPlayed) next = 'finished';
+    else if (anyPlayed) next = 'ongoing';
+    else next = 'draft';
+  }
 
   await db.runAsync('UPDATE tournaments SET status = ? WHERE id = ?;', [
     next,
     tournamentId,
   ]);
   return next;
+}
+
+export function tournamentTypeAllowsDraws(type: TournamentType): boolean {
+  return type !== 'single_elimination';
 }

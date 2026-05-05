@@ -9,6 +9,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ### Added · Adicionado
 
+- **Round Robin (Pontos corridos)** end-to-end: gera N*(N-1)/2 partidas (todos contra todos), permite empate, calcula classificação. / End-to-end Round Robin support: generates N*(N-1)/2 all-vs-all matches, allows draws, computes standings.
+- Tela de **Classificação** (`/torneios/[id]/classificacao`): tabela tipo FIFA com J / V / E / D / SG / P. Critérios de desempate: pontos → saldo de gols → gols pró → nome. 1º lugar destacado em azul. / **Standings** screen with FIFA-style table: Played / Wins / Draws / Losses / Goal Diff / Points. Tiebreakers: points → goal diff → goals for → name. Top spot highlighted.
+- Status do torneio para Round Robin: `finished` quando TODAS as partidas têm placar (incluindo empates). / Tournament status for Round Robin: `finished` only when ALL matches have a score (draws count as played).
+- Tela de detalhe agora mostra navegação **type-aware**: mata-mata vê "Chaveamento", round-robin vê "Classificação", grupos+mata-mata mostra banner "Em breve". / Detail screen now shows **type-aware** navigation: single elim sees "Bracket", round robin sees "Standings", groups+knockout shows a "coming soon" banner.
+
 - Lançamento de placar por partida via modal: toque em qualquer partida com dois oponentes definidos, digite o placar de cada lado, e o vencedor avança automaticamente para o slot correto da próxima partida. Limpar resultado também propaga (zera o slot do próximo). / Per-match score entry via modal: tap any match with two opponents defined, type each side's score, and the winner is auto-promoted to the correct slot of the next match. Clearing a result also propagates (resets the next match's slot).
 - Status do torneio agora transiciona automaticamente: `draft` → `ongoing` ao primeiro placar lançado, `ongoing` → `finished` quando a final é decidida. / Tournament status now auto-transitions: `draft` → `ongoing` on first score entry, `ongoing` → `finished` when the final is decided.
 - Validação: empate não é permitido no mata-mata. / Validation: draws are not allowed in single elimination.

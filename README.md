@@ -79,6 +79,8 @@ npm run web
 - [x] Geração de chaveamento (Mata-mata) com BYE automático
 - [x] Lançamento de placares e avanço automático do vencedor
 - [x] Status do torneio (rascunho → em andamento → finalizado)
+- [x] Pontos corridos (todos contra todos) com tabela de classificação
+- [ ] Grupos + Mata-mata
 - [ ] Tabela de classificação (Pontos corridos)
 - [ ] Fase de grupos + mata-mata
 - [ ] Lançamento de placares com feedback visual
@@ -161,6 +163,8 @@ npm run web
 - [x] Bracket generation (Single Elimination) with auto BYE
 - [x] Score entry with auto-advance to next round
 - [x] Tournament status (draft → ongoing → finished)
+- [x] Round robin (everyone plays everyone) with standings table
+- [ ] Groups + Knockout
 - [ ] Standings table (Round Robin)
 - [ ] Group stage + knockout
 - [ ] Score entry with visual feedback

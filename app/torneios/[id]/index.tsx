@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   GitBranch,
+  ListOrdered,
   Shuffle,
   Swords,
   Trash2,
@@ -149,8 +150,10 @@ export default function TournamentDetailScreen() {
   }
 
   const isSingleElim = tournament.type === 'single_elimination';
+  const isRoundRobin = tournament.type === 'round_robin';
+  const isGroups = tournament.type === 'groups_knockout';
   const enoughParticipants = participants.length >= 2;
-  const canGenerate = isSingleElim && enoughParticipants;
+  const canGenerate = (isSingleElim || isRoundRobin) && enoughParticipants;
   const hasMatches = matches.length > 0;
 
   return (
@@ -172,19 +175,39 @@ export default function TournamentDetailScreen() {
             })
           }
         />
-        <NavButton
-          label={t('tournament.bracket')}
-          icon={<GitBranch size={18} color="#475569" />}
-          onPress={() =>
-            router.push({
-              pathname: '/torneios/[id]/chaveamento',
-              params: { id: String(tournamentId) },
-            })
-          }
-        />
+        {isSingleElim ? (
+          <NavButton
+            label={t('tournament.bracket')}
+            icon={<GitBranch size={18} color="#475569" />}
+            onPress={() =>
+              router.push({
+                pathname: '/torneios/[id]/chaveamento',
+                params: { id: String(tournamentId) },
+              })
+            }
+          />
+        ) : null}
+        {isRoundRobin ? (
+          <NavButton
+            label={t('standings.title')}
+            icon={<ListOrdered size={18} color="#475569" />}
+            onPress={() =>
+              router.push({
+                pathname: '/torneios/[id]/classificacao',
+                params: { id: String(tournamentId) },
+              })
+            }
+          />
+        ) : null}
       </View>
 
-      {isSingleElim ? (
+      {isGroups ? (
+        <View className="mb-4 rounded-2xl bg-amber-50 p-3 dark:bg-amber-950">
+          <Text className="text-xs text-amber-800 dark:text-amber-200">
+            {t('matches.onlyGroupsKnockoutPending')}
+          </Text>
+        </View>
+      ) : (
         <View className="mb-4">
           <Button
             label={
@@ -202,12 +225,6 @@ export default function TournamentDetailScreen() {
               {t('matches.needMoreParticipants')}
             </Text>
           ) : null}
-        </View>
-      ) : (
-        <View className="mb-4 rounded-2xl bg-amber-50 p-3 dark:bg-amber-950">
-          <Text className="text-xs text-amber-800 dark:text-amber-200">
-            {t('matches.onlySingleEliminationSupported')}
-          </Text>
         </View>
       )}
 
