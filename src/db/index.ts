@@ -71,6 +71,19 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
     "UPDATE matches SET stage = 'main' WHERE stage IS NULL;"
   );
 
+  // v5: phases gain a `scoring` column. Existing rows default to 'fifa'
+  // (FIFA-style W3/D1/L0) — preserves the behavior of every tournament
+  // created before per-phase scoring shipped.
+  const phaseCols = await db.getAllAsync<{ name: string }>(
+    'PRAGMA table_info(phases);'
+  );
+  const phaseHas = new Set(phaseCols.map((c) => c.name));
+  if (!phaseHas.has('scoring')) {
+    await db.execAsync(
+      `ALTER TABLE phases ADD COLUMN scoring TEXT NOT NULL DEFAULT 'fifa';`
+    );
+  }
+
   // Step 3b (v3): backfill phases for tournaments that don't have any yet,
   // then link existing matches.phase_id by mapping stage → phase ordinal.
   await backfillPhases(db);
@@ -154,8 +167,8 @@ async function backfillPhases(db: SQLite.SQLiteDatabase): Promise<void> {
     for (const p of phases) {
       const r = await db.runAsync(
         `INSERT INTO phases
-          (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+          (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status, scoring)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         [
           t.id,
           p.ordinal,
@@ -165,6 +178,7 @@ async function backfillPhases(db: SQLite.SQLiteDatabase): Promise<void> {
           p.groupCount,
           p.qualifiers,
           'pending',
+          p.scoring,
         ]
       );
       ordinalToPhaseId.set(p.ordinal, r.lastInsertRowId);
@@ -198,6 +212,7 @@ interface DefaultPhase {
   legs: 1 | 2;
   groupCount: number;
   qualifiers: number | null;
+  scoring: 'fifa' | 'volleyball';
 }
 
 /**
@@ -215,6 +230,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           legs: 1,
           groupCount: 1,
           qualifiers: null,
+          scoring: 'fifa',
         },
       ];
     case 'groups_knockout':
@@ -226,6 +242,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           legs: 1,
           groupCount: 2,
           qualifiers: 4,
+          scoring: 'fifa',
         },
         {
           ordinal: 1,
@@ -234,6 +251,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           legs: 1,
           groupCount: 1,
           qualifiers: null,
+          scoring: 'fifa',
         },
       ];
     case 'league_playoff':
@@ -245,6 +263,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           legs: 2,
           groupCount: 1,
           qualifiers: 4,
+          scoring: 'fifa',
         },
         {
           ordinal: 1,
@@ -253,6 +272,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           legs: 1,
           groupCount: 1,
           qualifiers: null,
+          scoring: 'fifa',
         },
       ];
     case 'single_elimination':
@@ -265,6 +285,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           legs: 1,
           groupCount: 1,
           qualifiers: null,
+          scoring: 'fifa',
         },
       ];
   }

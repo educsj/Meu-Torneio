@@ -102,7 +102,9 @@
     "points": "P",
     "empty": "Nenhum participante cadastrado.",
     "emptyDescription": "Adicione participantes para ver a classificação.",
-    "legend": "J = Jogos · V = Vitórias · E = Empates · D = Derrotas · SG = Saldo de Gols · P = Pontos (3 / 1 / 0)"
+    "legend": "J = Jogos · V = Vitórias · E = Empates · D = Derrotas · SG = Saldo · P = Pontos",
+    "scoringFifa": "Pontuação: V → 3 · E → 1 · D → 0",
+    "scoringVolleyball": "Pontuação: 3-0/3-1 → 3 · 3-2 → 2-1 · 0/1-3 → 0"
   },
   "matches": {
     "title": "Partidas",
@@ -211,6 +213,9 @@
     "legsDouble": "2 (ida e volta)",
     "groupCount": "Número de grupos",
     "qualifiers": "Times que avançam à próxima fase",
+    "scoringLabel": "Pontuação",
+    "scoringFifa": "Futebol (V3 / E1 / D0)",
+    "scoringVolleyball": "Vôlei (3 / 2 / 1 / 0)",
     "addPhase": "Adicionar fase",
     "errors": {
       "noPhases": "Adicione pelo menos uma fase.",

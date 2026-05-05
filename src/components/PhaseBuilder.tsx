@@ -2,7 +2,11 @@ import { Plus, Trash2 } from 'lucide-react-native';
 import { Pressable, Text, View } from 'react-native';
 
 import { useTranslation } from '@/i18n/useTranslation';
-import type { CustomPhaseInput, PhaseFormat } from '@/types/tournament';
+import type {
+  CustomPhaseInput,
+  PhaseFormat,
+  ScoringRule,
+} from '@/types/tournament';
 
 interface Props {
   value: CustomPhaseInput[];
@@ -15,6 +19,7 @@ const DEFAULT_PHASE: CustomPhaseInput = {
   legs: 1,
   groupCount: 1,
   qualifiers: null,
+  scoring: 'fifa',
 };
 
 const FORMAT_KEYS: { value: PhaseFormat; key: string }[] = [
@@ -51,6 +56,7 @@ export function PhaseBuilder({ value, onChange }: Props) {
         legs: 1,
         groupCount: 1,
         qualifiers: null,
+        scoring: 'fifa',
       },
     ]);
   };
@@ -112,6 +118,23 @@ export function PhaseBuilder({ value, onChange }: Props) {
                   min={1}
                   max={4}
                   onChange={(groupCount) => update(index, { groupCount })}
+                />
+                <ToggleRow
+                  label={t('phaseBuilder.scoringLabel')}
+                  options={[
+                    {
+                      value: 'fifa',
+                      label: t('phaseBuilder.scoringFifa'),
+                    },
+                    {
+                      value: 'volleyball',
+                      label: t('phaseBuilder.scoringVolleyball'),
+                    },
+                  ]}
+                  selected={phase.scoring}
+                  onChange={(scoring) =>
+                    update(index, { scoring: scoring as ScoringRule })
+                  }
                 />
               </>
             ) : null}

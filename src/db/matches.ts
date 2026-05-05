@@ -447,7 +447,14 @@ export async function seedPlayoffFromLeague(
   const allMatches = await listMatches(tournamentId);
   const leagueMatches = allMatches.filter((m) => m.stage === 'group');
   const participants = await listParticipants(tournamentId);
-  const seeding = computeLeaguePlayoffSeeding(leagueMatches, participants);
+  // The league phase (ordinal 0) carries the scoring rule that applies to
+  // its standings — pass it through so playoff seeding uses the right
+  // points (e.g. vôlei 3-2-1-0 vs FIFA 3-1-0).
+  const phases = await listPhases(tournamentId);
+  const sourcePhase = phases.find((p) => p.ordinal === 0);
+  const seeding = computeLeaguePlayoffSeeding(leagueMatches, participants, {
+    scoring: sourcePhase?.scoring,
+  });
   if (!seeding) return;
 
   const playoff = allMatches
@@ -479,7 +486,11 @@ export async function seedKnockoutFromGroups(
   const allMatches = await listMatches(tournamentId);
   const groupMatches = allMatches.filter((m) => m.stage === 'group');
   const participants = await listParticipants(tournamentId);
-  const seeding = computeGroupsKnockoutSeeding(groupMatches, participants);
+  const phases = await listPhases(tournamentId);
+  const sourcePhase = phases.find((p) => p.ordinal === 0);
+  const seeding = computeGroupsKnockoutSeeding(groupMatches, participants, {
+    scoring: sourcePhase?.scoring,
+  });
   if (!seeding) return;
 
   const knockout = allMatches

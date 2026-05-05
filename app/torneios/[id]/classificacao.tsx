@@ -5,9 +5,14 @@ import { ChevronLeft, ListOrdered } from 'lucide-react-native';
 
 import { Screen } from '@/components/ui/Screen';
 import { listParticipants } from '@/db/participants';
+import { listPhases } from '@/db/phases';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useMatchesStore } from '@/stores/useMatchesStore';
-import type { Match, Participant } from '@/types/tournament';
+import type {
+  Match,
+  Participant,
+  ScoringRule,
+} from '@/types/tournament';
 import { computeStandings, type StandingRow } from '@/utils/standings';
 
 const EMPTY_MATCHES: readonly Match[] = Object.freeze([]);
@@ -24,6 +29,7 @@ export default function StandingsScreen() {
   const load = useMatchesStore((s) => s.load);
 
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [scoring, setScoring] = useState<ScoringRule>('fifa');
 
   useEffect(() => {
     if (!Number.isFinite(tournamentId)) return;
@@ -32,6 +38,13 @@ export default function StandingsScreen() {
     listParticipants(tournamentId).then((list) => {
       if (cancelled) return;
       setParticipants(list);
+    });
+    // Load the standings-producing phase to know which scoring rule to apply.
+    // For all currently-supported configurations this is phase ordinal 0.
+    listPhases(tournamentId).then((phases) => {
+      if (cancelled) return;
+      const source = phases.find((p) => p.ordinal === 0);
+      if (source) setScoring(source.scoring);
     });
     return () => {
       cancelled = true;
@@ -46,8 +59,8 @@ export default function StandingsScreen() {
   );
 
   const rows: StandingRow[] = useMemo(
-    () => computeStandings(leagueMatches, participants),
-    [leagueMatches, participants]
+    () => computeStandings(leagueMatches, participants, { scoring }),
+    [leagueMatches, participants, scoring]
   );
 
   return (
@@ -86,7 +99,7 @@ export default function StandingsScreen() {
       )}
 
       <View className="mt-4">
-        <Legend t={t} />
+        <Legend t={t} scoring={scoring} />
       </View>
     </Screen>
   );
@@ -177,12 +190,23 @@ function Cell({
 
 function Legend({
   t,
+  scoring,
 }: {
   t: (key: string, options?: Record<string, unknown>) => string;
+  scoring: ScoringRule;
 }) {
+  const scoringKey =
+    scoring === 'volleyball'
+      ? 'standings.scoringVolleyball'
+      : 'standings.scoringFifa';
   return (
-    <Text className="text-[11px] text-slate-500 dark:text-slate-400">
-      {t('standings.legend')}
-    </Text>
+    <View>
+      <Text className="text-[11px] text-slate-500 dark:text-slate-400">
+        {t('standings.legend')}
+      </Text>
+      <Text className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+        {t(scoringKey)}
+      </Text>
+    </View>
   );
 }

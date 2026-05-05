@@ -26,6 +26,7 @@ function phase(overrides: Partial<Phase> & Pick<Phase, 'format'>): Phase {
     groupCount: 1,
     qualifiers: null,
     status: 'pending',
+    scoring: 'fifa',
     ...overrides,
   };
 }

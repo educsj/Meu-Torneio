@@ -6,6 +6,7 @@ import { useTranslation } from '@/i18n/useTranslation';
 import type {
   Match,
   Participant,
+  Phase,
   Tournament,
   TournamentType,
 } from '@/types/tournament';
@@ -15,6 +16,7 @@ interface Props {
   tournament: Tournament;
   participants: Participant[];
   matches: Match[];
+  phases?: Phase[];
 }
 
 const TYPE_LABEL_KEY: Record<TournamentType, string> = {
@@ -38,10 +40,12 @@ const TYPE_LABEL_KEY: Record<TournamentType, string> = {
  */
 export const ShareableTournamentSummary = forwardRef<View, Props>(
   function ShareableTournamentSummary(
-    { tournament, participants, matches },
+    { tournament, participants, matches, phases = [] },
     ref
   ) {
     const { t } = useTranslation();
+    const sourcePhaseScoring =
+      phases.find((p) => p.ordinal === 0)?.scoring ?? 'fifa';
 
     const participantsById = useMemo(
       () => new Map(participants.map((p) => [p.id, p])),
@@ -67,9 +71,11 @@ export const ShareableTournamentSummary = forwardRef<View, Props>(
     const standings = useMemo(
       () =>
         showStandings
-          ? computeStandings(standingsMatches, participants)
+          ? computeStandings(standingsMatches, participants, {
+              scoring: sourcePhaseScoring,
+            })
           : [],
-      [showStandings, standingsMatches, participants]
+      [showStandings, standingsMatches, participants, sourcePhaseScoring]
     );
 
     // Section grouping for the matches block:

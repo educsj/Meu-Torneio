@@ -4,6 +4,7 @@ import type {
   Phase,
   PhaseFormat,
   PhaseStatus,
+  ScoringRule,
   Tournament,
   TournamentType,
 } from '@/types/tournament';
@@ -45,6 +46,9 @@ export interface TournamentBackup {
     groupCount: number;
     qualifiers: number | null;
     status: PhaseStatus;
+    /** v2 backups created before per-phase scoring may omit this; treat
+     * absent as 'fifa' on import. */
+    scoring?: ScoringRule;
   }>;
   matches: Array<{
     localId: number;
@@ -73,6 +77,7 @@ const VALID_PHASE_FORMATS: PhaseFormat[] = [
   'placement_playoff',
 ];
 const VALID_PHASE_STATUS: PhaseStatus[] = ['pending', 'ongoing', 'finished'];
+const VALID_SCORING: ScoringRule[] = ['fifa', 'volleyball'];
 const VALID_TYPES: TournamentType[] = [
   'single_elimination',
   'round_robin',
@@ -116,6 +121,7 @@ export function serializeTournament(
       groupCount: p.groupCount,
       qualifiers: p.qualifiers,
       status: p.status,
+      scoring: p.scoring,
     })),
     matches: matches.map((m) => ({
       localId: m.id,
@@ -243,6 +249,17 @@ export function parseBackup(json: string): TournamentBackup {
       ) {
         throw new BackupParseError(
           `Fase #${i + 1} mal formada (esperado { localId, ordinal, name, format, legs, groupCount, qualifiers, status }).`
+        );
+      }
+      // scoring is optional for backwards compat with v2 backups created
+      // before per-phase scoring shipped — they get 'fifa' on import.
+      if (
+        pp.scoring != null &&
+        (typeof pp.scoring !== 'string' ||
+          !VALID_SCORING.includes(pp.scoring as ScoringRule))
+      ) {
+        throw new BackupParseError(
+          `Fase #${i + 1}: pontuação inválida (${String(pp.scoring)}).`
         );
       }
     }

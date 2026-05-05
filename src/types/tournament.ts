@@ -62,6 +62,16 @@ export type PhaseFormat =
 
 export type PhaseStatus = 'pending' | 'ongoing' | 'finished';
 
+/**
+ * How a match's score translates to standings points.
+ *
+ *   'fifa'       → win 3, draw 1, loss 0 (football-style; default)
+ *   'volleyball' → win 3-0/3-1: 3-0; win 3-2: 2-1 (FIVB sets)
+ *
+ * Only meaningful for phases that produce standings (round_robin).
+ */
+export type ScoringRule = 'fifa' | 'volleyball';
+
 export interface Phase {
   id: number;
   tournamentId: number;
@@ -76,6 +86,8 @@ export interface Phase {
   /** Number of participants advancing to next phase (null on the last). */
   qualifiers: number | null;
   status: PhaseStatus;
+  /** Scoring system for standings. Only used for round_robin phases. */
+  scoring: ScoringRule;
 }
 
 /** Phase configuration provided by the user when creating a custom tournament. */
@@ -85,4 +97,5 @@ export interface CustomPhaseInput {
   legs: 1 | 2;
   groupCount: number;
   qualifiers: number | null;
+  scoring: ScoringRule;
 }

@@ -1,4 +1,4 @@
-import type { Match, Participant } from '@/types/tournament';
+import type { Match, Participant, ScoringRule } from '@/types/tournament';
 
 import { computeStandings } from './standings';
 
@@ -21,9 +21,10 @@ export interface SlotPair {
  */
 export function computeLeaguePlayoffSeeding(
   leagueMatches: Match[],
-  participants: Participant[]
+  participants: Participant[],
+  options: { scoring?: ScoringRule } = {}
 ): SlotPair[] | null {
-  const standings = computeStandings(leagueMatches, participants);
+  const standings = computeStandings(leagueMatches, participants, options);
   if (standings.length < 4) return null;
   return [
     {
@@ -48,7 +49,8 @@ export function computeLeaguePlayoffSeeding(
  */
 export function computeGroupsKnockoutSeeding(
   groupMatches: Match[],
-  participants: Participant[]
+  participants: Participant[],
+  options: { scoring?: ScoringRule } = {}
 ): SlotPair[] | null {
   const groupLabels = Array.from(
     new Set(
@@ -70,7 +72,7 @@ export function computeGroupsKnockoutSeeding(
       if (m.participantBId) ids.add(m.participantBId);
     }
     const groupParticipants = participants.filter((p) => ids.has(p.id));
-    const standings = computeStandings(matches, groupParticipants);
+    const standings = computeStandings(matches, groupParticipants, options);
     if (standings.length < 2) continue;
     topByGroup.set(label, {
       firstId: standings[0].participantId,

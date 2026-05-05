@@ -5,9 +5,14 @@ import { ChevronLeft, Users } from 'lucide-react-native';
 
 import { Screen } from '@/components/ui/Screen';
 import { listParticipants } from '@/db/participants';
+import { listPhases } from '@/db/phases';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useMatchesStore } from '@/stores/useMatchesStore';
-import type { Match, Participant } from '@/types/tournament';
+import type {
+  Match,
+  Participant,
+  ScoringRule,
+} from '@/types/tournament';
 import { computeStandings, type StandingRow } from '@/utils/standings';
 
 const EMPTY_MATCHES: readonly Match[] = Object.freeze([]);
@@ -24,6 +29,7 @@ export default function GroupsScreen() {
   const load = useMatchesStore((s) => s.load);
 
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [scoring, setScoring] = useState<ScoringRule>('fifa');
 
   useEffect(() => {
     if (!Number.isFinite(tournamentId)) return;
@@ -32,6 +38,11 @@ export default function GroupsScreen() {
     listParticipants(tournamentId).then((list) => {
       if (cancelled) return;
       setParticipants(list);
+    });
+    listPhases(tournamentId).then((phases) => {
+      if (cancelled) return;
+      const groupPhase = phases.find((p) => p.ordinal === 0);
+      if (groupPhase) setScoring(groupPhase.scoring);
     });
     return () => {
       cancelled = true;
@@ -61,11 +72,11 @@ export default function GroupsScreen() {
       return {
         label,
         matches: ms,
-        standings: computeStandings(ms, ps),
+        standings: computeStandings(ms, ps, { scoring }),
         participantsById: byId,
       };
     });
-  }, [matches, participants]);
+  }, [matches, participants, scoring]);
 
   return (
     <Screen scroll>

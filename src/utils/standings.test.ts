@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { Match, Participant } from '@/types/tournament';
 
-import { computeStandings } from './standings';
+import { computeStandings, pointsForMatch } from './standings';
 
 function p(id: number, name: string): Participant {
   return { id, tournamentId: 1, name, seed: null };
@@ -39,6 +39,132 @@ function m(
     phaseId: null,
   };
 }
+
+describe('pointsForMatch', () => {
+  describe('fifa', () => {
+    it('win → 3-0 points', () => {
+      expect(pointsForMatch(2, 1, 'fifa')).toMatchObject({
+        a: 3,
+        b: 0,
+        aWin: true,
+      });
+      expect(pointsForMatch(0, 5, 'fifa')).toMatchObject({
+        a: 0,
+        b: 3,
+        bWin: true,
+      });
+    });
+
+    it('draw → 1-1 points', () => {
+      expect(pointsForMatch(2, 2, 'fifa')).toMatchObject({
+        a: 1,
+        b: 1,
+        draw: true,
+      });
+    });
+  });
+
+  describe('volleyball', () => {
+    it('3-0 / 3-1 wins → 3-0 points (margin ≥ 2 sets)', () => {
+      expect(pointsForMatch(3, 0, 'volleyball')).toMatchObject({
+        a: 3,
+        b: 0,
+        aWin: true,
+      });
+      expect(pointsForMatch(3, 1, 'volleyball')).toMatchObject({
+        a: 3,
+        b: 0,
+        aWin: true,
+      });
+    });
+
+    it('3-2 win → 2-1 points (margin = 1 set)', () => {
+      expect(pointsForMatch(3, 2, 'volleyball')).toMatchObject({
+        a: 2,
+        b: 1,
+        aWin: true,
+      });
+      expect(pointsForMatch(2, 3, 'volleyball')).toMatchObject({
+        a: 1,
+        b: 2,
+        bWin: true,
+      });
+    });
+
+    it('0-3 / 1-3 losses → 0-3 points (mirror of dominant win)', () => {
+      expect(pointsForMatch(0, 3, 'volleyball')).toMatchObject({
+        a: 0,
+        b: 3,
+        bWin: true,
+      });
+      expect(pointsForMatch(1, 3, 'volleyball')).toMatchObject({
+        a: 0,
+        b: 3,
+        bWin: true,
+      });
+    });
+
+    it('defensive: equal scores produce 0-0 (vôlei has no draws)', () => {
+      expect(pointsForMatch(2, 2, 'volleyball')).toMatchObject({
+        a: 0,
+        b: 0,
+        draw: true,
+      });
+    });
+  });
+});
+
+describe('computeStandings with volleyball scoring', () => {
+  const A = { id: 1, tournamentId: 1, name: 'A', seed: null };
+  const B = { id: 2, tournamentId: 1, name: 'B', seed: null };
+
+  it('awards 3-0 / 2-1 / 0-3 per match according to set margin', () => {
+    // Two matches between A and B: A wins 3-0, then B wins 3-2.
+    // FIFA would give A=3, B=3 (3 each from one win). Volleyball gives
+    // A=3+1=4 (3-0 win plus 3-2 loss = 1 pt), B=0+2=2.
+    const matches: Match[] = [
+      {
+        id: 1,
+        tournamentId: 1,
+        round: 1,
+        participantAId: A.id,
+        participantBId: B.id,
+        scoreA: 3,
+        scoreB: 0,
+        winnerId: A.id,
+        nextMatchId: null,
+        scheduledAt: null,
+        location: null,
+        groupLabel: null,
+        stage: 'main',
+        phaseId: null,
+      },
+      {
+        id: 2,
+        tournamentId: 1,
+        round: 2,
+        participantAId: A.id,
+        participantBId: B.id,
+        scoreA: 2,
+        scoreB: 3,
+        winnerId: B.id,
+        nextMatchId: null,
+        scheduledAt: null,
+        location: null,
+        groupLabel: null,
+        stage: 'main',
+        phaseId: null,
+      },
+    ];
+    const rows = computeStandings(matches, [A, B], { scoring: 'volleyball' });
+    const a = rows.find((r) => r.participantId === A.id)!;
+    const b = rows.find((r) => r.participantId === B.id)!;
+    expect(a.points).toBe(4); // 3 (3-0 win) + 1 (lost 2-3)
+    expect(b.points).toBe(2); // 0 (0-3 loss) + 2 (3-2 win)
+    expect(a.wins).toBe(1);
+    expect(b.wins).toBe(1);
+  });
+});
 
 describe('computeStandings', () => {
   const A = p(1, 'A');

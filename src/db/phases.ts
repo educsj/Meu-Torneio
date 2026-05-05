@@ -3,6 +3,7 @@ import type {
   Phase,
   PhaseFormat,
   PhaseStatus,
+  ScoringRule,
 } from '@/types/tournament';
 
 import { defaultPhasesForType, getDatabase } from './index';
@@ -17,6 +18,7 @@ interface PhaseRow {
   group_count: number;
   qualifiers: number | null;
   status: PhaseStatus;
+  scoring: string | null;
 }
 
 function rowToPhase(row: PhaseRow): Phase {
@@ -30,6 +32,8 @@ function rowToPhase(row: PhaseRow): Phase {
     groupCount: row.group_count,
     qualifiers: row.qualifiers,
     status: row.status,
+    // Defensive default for very old rows that somehow predate the v5 column.
+    scoring: (row.scoring as ScoringRule) ?? 'fifa',
   };
 }
 
@@ -37,7 +41,7 @@ export async function listPhases(tournamentId: number): Promise<Phase[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<PhaseRow>(
     `SELECT id, tournament_id, ordinal, name, format, legs, group_count,
-            qualifiers, status
+            qualifiers, status, scoring
      FROM phases
      WHERE tournament_id = ?
      ORDER BY ordinal ASC;`,
@@ -60,8 +64,8 @@ export async function createDefaultPhasesForType(
   for (const p of phases) {
     await db.runAsync(
       `INSERT INTO phases
-        (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+        (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status, scoring)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       [
         tournamentId,
         p.ordinal,
@@ -71,6 +75,7 @@ export async function createDefaultPhasesForType(
         p.groupCount,
         p.qualifiers,
         'pending',
+        p.scoring,
       ]
     );
   }
@@ -93,8 +98,8 @@ export async function createCustomPhases(
     const p = customPhases[i];
     await db.runAsync(
       `INSERT INTO phases
-        (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+        (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status, scoring)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       [
         tournamentId,
         i,
@@ -104,6 +109,7 @@ export async function createCustomPhases(
         p.groupCount,
         p.qualifiers,
         'pending',
+        p.scoring,
       ]
     );
   }

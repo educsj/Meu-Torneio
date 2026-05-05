@@ -73,8 +73,8 @@ export async function importTournamentJson(json: string): Promise<number> {
       for (const p of backup.phases) {
         const r = await db.runAsync(
           `INSERT INTO phases
-            (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+            (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status, scoring)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
           [
             newTournamentId,
             p.ordinal,
@@ -84,6 +84,8 @@ export async function importTournamentJson(json: string): Promise<number> {
             p.groupCount,
             p.qualifiers,
             p.status,
+            // pre-v5 v2 backups omit scoring — fall back to 'fifa'.
+            p.scoring ?? 'fifa',
           ]
         );
         phaseIdMap.set(p.localId, r.lastInsertRowId);

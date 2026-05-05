@@ -9,10 +9,11 @@ import { captureRef } from 'react-native-view-shot';
 import { ShareableTournamentSummary } from '@/components/ShareableTournamentSummary';
 import { Button } from '@/components/ui/Button';
 import { listParticipants } from '@/db/participants';
+import { listPhases } from '@/db/phases';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useMatchesStore } from '@/stores/useMatchesStore';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
-import type { Match, Participant } from '@/types/tournament';
+import type { Match, Participant, Phase } from '@/types/tournament';
 import { suggestedBackupFilename } from '@/utils/exportImport';
 
 const EMPTY_MATCHES: readonly Match[] = Object.freeze([]);
@@ -33,6 +34,7 @@ export default function TournamentImageScreen() {
   const loadMatches = useMatchesStore((s) => s.load);
 
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [phases, setPhases] = useState<Phase[]>([]);
   const [sharing, setSharing] = useState(false);
   const captureTargetRef = useRef<View>(null);
 
@@ -44,6 +46,10 @@ export default function TournamentImageScreen() {
     listParticipants(tournamentId).then((list) => {
       if (cancelled) return;
       setParticipants(list);
+    });
+    listPhases(tournamentId).then((list) => {
+      if (cancelled) return;
+      setPhases(list);
     });
     return () => {
       cancelled = true;
@@ -134,6 +140,7 @@ export default function TournamentImageScreen() {
             tournament={tournament}
             participants={participants}
             matches={matches}
+            phases={phases}
           />
         </View>
       </ScrollView>

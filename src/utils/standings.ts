@@ -1,4 +1,4 @@
-import type { Match, Participant } from '@/types/tournament';
+import type { Match, Participant, ScoringRule } from '@/types/tournament';
 
 export interface StandingRow {
   participantId: number;
@@ -13,21 +13,82 @@ export interface StandingRow {
   points: number;
 }
 
+interface MatchPoints {
+  /** Points awarded to A. */
+  a: number;
+  /** Points awarded to B. */
+  b: number;
+  /** Whether A is the match winner (false on draw or B-win). */
+  aWin: boolean;
+  /** Whether B is the match winner. */
+  bWin: boolean;
+  /** True only when scores are equal. */
+  draw: boolean;
+}
+
+/**
+ * Map a single match score to standings points under the given rule.
+ *
+ *   'fifa'       → win 3 / draw 1 / loss 0 (football-style; default)
+ *   'volleyball' → 3-0 or 3-1: 3-0 / 3-2: 2-1 / 1-3 or 0-3: 0-3
+ *                  (FIVB; "scoreA"/"scoreB" represent sets won)
+ *
+ * Wins/losses/draws are decided by score comparison regardless of rule;
+ * only the points distribution differs.
+ */
+export function pointsForMatch(
+  scoreA: number,
+  scoreB: number,
+  rule: ScoringRule
+): MatchPoints {
+  if (rule === 'volleyball') {
+    if (scoreA > scoreB) {
+      // 3-0/3-1 (margin ≥ 2) → 3-0; 3-2 (margin 1) → 2-1
+      const dominant = scoreA - scoreB >= 2;
+      return {
+        a: dominant ? 3 : 2,
+        b: dominant ? 0 : 1,
+        aWin: true,
+        bWin: false,
+        draw: false,
+      };
+    }
+    if (scoreB > scoreA) {
+      const dominant = scoreB - scoreA >= 2;
+      return {
+        a: dominant ? 0 : 1,
+        b: dominant ? 3 : 2,
+        aWin: false,
+        bWin: true,
+        draw: false,
+      };
+    }
+    // Volleyball doesn't allow draws but be defensive: 0-0 if entered.
+    return { a: 0, b: 0, aWin: false, bWin: false, draw: true };
+  }
+
+  // FIFA-style
+  if (scoreA > scoreB) {
+    return { a: 3, b: 0, aWin: true, bWin: false, draw: false };
+  }
+  if (scoreB > scoreA) {
+    return { a: 0, b: 3, aWin: false, bWin: true, draw: false };
+  }
+  return { a: 1, b: 1, aWin: false, bWin: false, draw: true };
+}
+
 /**
  * Compute a standings table from a list of matches and participants.
  *
- * Scoring rule (FIFA-style):
- *  - Win  → 3 points
- *  - Draw → 1 point each
- *  - Loss → 0 points
- *
  * Tiebreakers (in order): points desc, goal diff desc, goals for desc,
- * head-to-head wins (best vs the tied opponent), then name asc.
+ * then name asc. Head-to-head is not yet applied.
  */
 export function computeStandings(
   matches: Match[],
-  participants: Participant[]
+  participants: Participant[],
+  options: { scoring?: ScoringRule } = {}
 ): StandingRow[] {
+  const scoring = options.scoring ?? 'fifa';
   const rows = new Map<number, StandingRow>();
   for (const p of participants) {
     rows.set(p.id, {
@@ -64,19 +125,18 @@ export function computeStandings(
     rowB.goalsFor += m.scoreB;
     rowB.goalsAgainst += m.scoreA;
 
-    if (m.scoreA > m.scoreB) {
+    const pts = pointsForMatch(m.scoreA, m.scoreB, scoring);
+    rowA.points += pts.a;
+    rowB.points += pts.b;
+    if (pts.aWin) {
       rowA.wins++;
-      rowA.points += 3;
       rowB.losses++;
-    } else if (m.scoreA < m.scoreB) {
+    } else if (pts.bWin) {
       rowB.wins++;
-      rowB.points += 3;
       rowA.losses++;
     } else {
       rowA.draws++;
       rowB.draws++;
-      rowA.points++;
-      rowB.points++;
     }
   }
 
