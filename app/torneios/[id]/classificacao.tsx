@@ -207,6 +207,9 @@ function Legend({
       <Text className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
         {t(scoringKey)}
       </Text>
+      <Text className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+        {t('standings.tiebreakers')}
+      </Text>
     </View>
   );
 }
