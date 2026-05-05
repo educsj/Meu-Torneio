@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, Share2 } from 'lucide-react-native';
+import { ChevronLeft, Download, Share2 } from 'lucide-react-native';
+import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
 
@@ -36,6 +37,7 @@ export default function TournamentImageScreen() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [sharing, setSharing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const captureTargetRef = useRef<View>(null);
 
   useEffect(() => {
@@ -80,6 +82,34 @@ export default function TournamentImageScreen() {
       Alert.alert('Erro', (err as Error).message);
     } finally {
       setSharing(false);
+    }
+  };
+
+  const handleSaveToGallery = async () => {
+    if (!tournament) return;
+    setSaving(true);
+    try {
+      // saveToLibraryAsync requires WRITE permission on Android; on iOS it
+      // grants write-only access through the limited photo picker.
+      const perm = await MediaLibrary.requestPermissionsAsync();
+      if (perm.status !== 'granted') {
+        Alert.alert(
+          t('image.saveDeniedTitle'),
+          t('image.saveDeniedMessage')
+        );
+        return;
+      }
+      const uri = await captureRef(captureTargetRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
+      });
+      await MediaLibrary.saveToLibraryAsync(uri);
+      Alert.alert(t('image.savedTitle'), t('image.savedMessage'));
+    } catch (err) {
+      Alert.alert('Erro', (err as Error).message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -145,12 +175,19 @@ export default function TournamentImageScreen() {
         </View>
       </ScrollView>
 
-      <View className="border-t border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+      <View className="gap-2 border-t border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <Button
           label={t('image.share')}
           onPress={handleShare}
-          disabled={sharing}
+          disabled={sharing || saving}
           leading={<Share2 size={16} color="#fff" />}
+        />
+        <Button
+          label={t('image.saveToGallery')}
+          onPress={handleSaveToGallery}
+          disabled={sharing || saving}
+          variant="secondary"
+          leading={<Download size={16} color="#0f172a" />}
         />
       </View>
     </SafeAreaView>
