@@ -7,6 +7,10 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ## [Unreleased]
 
+### Fixed · Corrigido
+
+- `Error code: table matches has no column named group_label` ao gerar partidas em torneios pré-existentes — a migração v2 (que adicionava `group_label` e `stage`) podia falhar silenciosamente em alguns dispositivos por causa do `CHECK` constraint dentro de `ALTER TABLE ADD COLUMN` (suporte inconsistente entre versões do SQLite). Reescrita pra ser **idempotente**: usa `PRAGMA table_info` pra checar colunas existentes e adicionar só as que faltam, sem `CHECK` (validação no app), com try/catch e log de erro. Converge de qualquer estado, incluindo DBs deixados parcialmente migrados. / `Error code: table matches has no column named group_label` when generating matches on pre-existing tournaments — the v2 migration could fail silently on some devices due to `CHECK` constraints inside `ALTER TABLE ADD COLUMN` (inconsistent SQLite version support). Rewritten to be **idempotent**: uses `PRAGMA table_info` to check which columns exist and only adds the missing ones, no `CHECK` constraints (app-level validation), wrapped in try/catch with error logging. Converges from any starting state, including DBs left partially migrated.
+
 ### Added · Adicionado
 
 - **Grupos + Mata-mata** end-to-end (3º formato): sorteio em 2 grupos balanceados via *snake seeding* (top seeds não caem no mesmo grupo), fase de grupos por round-robin, e quando todos os jogos da fase de grupos terminam, **classificação automática dos top 2 de cada grupo** para as semifinais (1A x 2B, 1B x 2A) → final. Mínimo de 4 participantes. / **Groups + Knockout** end-to-end (3rd format): draws into 2 balanced groups via *snake seeding* (top seeds split across groups), group-stage round-robin, and once the group stage finishes the **top 2 of each group are auto-seeded** into the semifinals (1A vs 2B, 1B vs 2A) → final. Minimum 4 participants.
