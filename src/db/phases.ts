@@ -57,11 +57,19 @@ export async function listPhases(tournamentId: number): Promise<Phase[]> {
  */
 export async function createDefaultPhasesForType(
   tournamentId: number,
-  type: string
+  type: string,
+  options: { scoring?: ScoringRule } = {}
 ): Promise<Phase[]> {
   const db = await getDatabase();
   const phases = defaultPhasesForType(type);
   for (const p of phases) {
+    // The scoring override (when provided) only applies to round_robin
+    // phases, since the other formats don't produce standings. Keeps
+    // single_elimination and placement_playoff phases at their defaults.
+    const scoring =
+      options.scoring && p.format === 'round_robin'
+        ? options.scoring
+        : p.scoring;
     await db.runAsync(
       `INSERT INTO phases
         (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status, scoring)
@@ -75,7 +83,7 @@ export async function createDefaultPhasesForType(
         p.groupCount,
         p.qualifiers,
         'pending',
-        p.scoring,
+        scoring,
       ]
     );
   }

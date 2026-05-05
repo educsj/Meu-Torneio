@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
@@ -10,11 +10,29 @@ import { TextField } from '@/components/ui/TextField';
 import { TournamentTypePicker } from '@/components/TournamentTypePicker';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
-import type { CustomPhaseInput, TournamentType } from '@/types/tournament';
+import type {
+  CustomPhaseInput,
+  ScoringRule,
+  TournamentType,
+} from '@/types/tournament';
 import {
   validateCustomPhases,
   type ValidationError,
 } from '@/utils/customPhaseValidation';
+
+/** Presets that produce standings → need a scoring rule.
+ *  single_elimination has no league phase; custom configures per-phase. */
+const PRESETS_WITH_STANDINGS: TournamentType[] = [
+  'round_robin',
+  'groups_knockout',
+  'league_playoff',
+];
+
+function defaultScoringFor(type: TournamentType): ScoringRule {
+  // The vôlei preset starts with FIVB scoring; other presets start FIFA.
+  // User can override before creating.
+  return type === 'league_playoff' ? 'volleyball' : 'fifa';
+}
 
 export default function NewTournamentScreen() {
   const { t } = useTranslation();
@@ -23,11 +41,20 @@ export default function NewTournamentScreen() {
 
   const [name, setName] = useState('');
   const [type, setType] = useState<TournamentType>('single_elimination');
+  const [scoring, setScoring] = useState<ScoringRule>('fifa');
   const [customPhases, setCustomPhases] = useState<CustomPhaseInput[]>(
     INITIAL_CUSTOM_PHASES
   );
   const [error, setError] = useState<string | undefined>();
   const [submitting, setSubmitting] = useState(false);
+
+  // When the user changes the preset, reset scoring to that preset's
+  // sensible default. They can still override before creating.
+  useEffect(() => {
+    setScoring(defaultScoringFor(type));
+  }, [type]);
+
+  const showScoringPicker = PRESETS_WITH_STANDINGS.includes(type);
 
   const onSubmit = async () => {
     if (!name.trim()) {
@@ -53,6 +80,7 @@ export default function NewTournamentScreen() {
         name: name.trim(),
         type,
         customPhases: type === 'custom' ? customPhases : undefined,
+        scoring: showScoringPicker ? scoring : undefined,
       });
       router.back();
     } catch (err) {
@@ -93,6 +121,26 @@ export default function NewTournamentScreen() {
           <TournamentTypePicker value={type} onChange={setType} />
         </View>
 
+        {showScoringPicker ? (
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              {t('newTournament.scoring')}
+            </Text>
+            <View className="flex-row gap-2">
+              <ScoringOption
+                label={t('phaseBuilder.scoringFifa')}
+                selected={scoring === 'fifa'}
+                onPress={() => setScoring('fifa')}
+              />
+              <ScoringOption
+                label={t('phaseBuilder.scoringVolleyball')}
+                selected={scoring === 'volleyball'}
+                onPress={() => setScoring('volleyball')}
+              />
+            </View>
+          </View>
+        ) : null}
+
         {type === 'custom' ? (
           <View className="gap-2">
             <Text className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -112,6 +160,37 @@ export default function NewTournamentScreen() {
         />
       </View>
     </Screen>
+  );
+}
+
+function ScoringOption({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`flex-1 rounded-xl border px-3 py-3 ${
+        selected
+          ? 'border-brand-500 bg-brand-50 dark:border-brand-400 dark:bg-brand-950'
+          : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800'
+      }`}
+    >
+      <Text
+        className={`text-center text-sm ${
+          selected
+            ? 'font-semibold text-brand-700 dark:text-brand-200'
+            : 'text-slate-700 dark:text-slate-300'
+        }`}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 

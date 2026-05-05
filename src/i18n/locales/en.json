@@ -50,7 +50,8 @@
     },
     "invalidPhasesTitle": "Invalid phase configuration",
     "create": "Create tournament",
-    "validationName": "Please provide a tournament name."
+    "validationName": "Please provide a tournament name.",
+    "scoring": "Scoring"
   },
   "tournament": {
     "participants": "Participants",

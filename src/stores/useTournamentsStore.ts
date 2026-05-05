@@ -9,6 +9,7 @@ import {
 } from '@/db/tournaments';
 import type {
   CustomPhaseInput,
+  ScoringRule,
   Tournament,
   TournamentType,
 } from '@/types/tournament';
@@ -22,6 +23,7 @@ interface TournamentsState {
     name: string;
     type: TournamentType;
     customPhases?: CustomPhaseInput[];
+    scoring?: ScoringRule;
   }) => Promise<Tournament>;
   remove: (id: number) => Promise<void>;
   rename: (id: number, name: string) => Promise<void>;

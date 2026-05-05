@@ -1,5 +1,6 @@
 import type {
   CustomPhaseInput,
+  ScoringRule,
   Tournament,
   TournamentType,
 } from '@/types/tournament';
@@ -37,6 +38,9 @@ export async function createTournament(input: {
   name: string;
   type: TournamentType;
   customPhases?: CustomPhaseInput[];
+  /** Optional override for round_robin phases of preset tournaments.
+   *  Ignored for 'custom' (the wizard picks per phase). */
+  scoring?: ScoringRule;
 }): Promise<Tournament> {
   if (input.type === 'custom' && (!input.customPhases || input.customPhases.length === 0)) {
     throw new Error('Custom tournament requires at least one phase.');
@@ -56,7 +60,9 @@ export async function createTournament(input: {
   if (input.type === 'custom') {
     await createCustomPhases(row.id, input.customPhases!);
   } else {
-    await createDefaultPhasesForType(row.id, row.type);
+    await createDefaultPhasesForType(row.id, row.type, {
+      scoring: input.scoring,
+    });
   }
   return rowToTournament(row);
 }

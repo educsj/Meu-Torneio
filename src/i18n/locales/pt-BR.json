@@ -50,7 +50,8 @@
     },
     "invalidPhasesTitle": "Configuração de fases inválida",
     "create": "Criar torneio",
-    "validationName": "Informe um nome para o torneio."
+    "validationName": "Informe um nome para o torneio.",
+    "scoring": "Pontuação"
   },
   "tournament": {
     "participants": "Participantes",
