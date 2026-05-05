@@ -1,12 +1,13 @@
 import { Pressable, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 
 import { Screen } from '@/components/ui/Screen';
+import { useTranslation } from '@/i18n/useTranslation';
 
-export default function MinimalDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export default function BracketScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <Screen>
@@ -17,15 +18,14 @@ export default function MinimalDetailScreen() {
         >
           <ChevronLeft size={22} color="#475569" />
         </Pressable>
-        <Text className="text-xl font-bold text-slate-900 dark:text-white">
-          MINIMAL DETAIL — id={String(id)}
+        <Text className="text-2xl font-bold text-slate-900 dark:text-white">
+          {t('tournament.bracket')}
         </Text>
       </View>
 
-      <View className="mt-8 items-center">
-        <Text className="text-base text-slate-700 dark:text-slate-300">
-          If you can see this without crashing, the bug is in the previous
-          detail screen layout — not in routing itself.
+      <View className="flex-1 items-center justify-center">
+        <Text className="text-base text-slate-500 dark:text-slate-400">
+          {t('tournament.comingSoon')}
         </Text>
       </View>
     </Screen>
