@@ -69,6 +69,27 @@
     "notFound": "Torneio não encontrado.",
     "comingSoon": "Em breve."
   },
+  "matches": {
+    "title": "Partidas",
+    "round": "Rodada {{n}}",
+    "final": "Final",
+    "semifinal": "Semifinal",
+    "quarterfinal": "Quartas de final",
+    "round16": "Oitavas de final",
+    "round32": "16-avos de final",
+    "bye": "BYE (passe livre)",
+    "tbd": "A definir",
+    "winner": "Vencedor: {{name}}",
+    "generate": "Gerar chaveamento",
+    "regenerate": "Recriar chaveamento",
+    "regenerateConfirmTitle": "Recriar chaveamento?",
+    "regenerateConfirmMessage": "Todas as partidas e resultados atuais serão apagados.",
+    "needMoreParticipants": "Adicione pelo menos 2 participantes para gerar o chaveamento.",
+    "noMatchesYet": "Nenhuma partida gerada ainda.",
+    "noMatchesYetDescription": "Volte para a tela do torneio e toque em \"Gerar chaveamento\".",
+    "onlySingleEliminationSupported": "Por enquanto só geramos chaveamento para Mata-mata.",
+    "vs": "vs"
+  },
   "participants": {
     "title": "Participantes",
     "add": "Adicionar participante",

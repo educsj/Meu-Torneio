@@ -76,7 +76,7 @@ npm run web
 - [x] Estrutura inicial: Expo Router, NativeWind, SQLite, i18n
 - [x] Tela de listagem de torneios + criação
 - [x] Tela de detalhe do torneio + cadastro de participantes
-- [ ] Geração de chaveamento (Mata-mata)
+- [x] Geração de chaveamento (Mata-mata) com BYE automático
 - [ ] Tabela de classificação (Pontos corridos)
 - [ ] Fase de grupos + mata-mata
 - [ ] Lançamento de placares com feedback visual
@@ -156,7 +156,7 @@ npm run web
 - [x] Initial scaffold: Expo Router, NativeWind, SQLite, i18n
 - [x] Tournaments list + creation screen
 - [x] Tournament detail + participant management
-- [ ] Bracket generation (Single Elimination)
+- [x] Bracket generation (Single Elimination) with auto BYE
 - [ ] Standings table (Round Robin)
 - [ ] Group stage + knockout
 - [ ] Score entry with visual feedback

@@ -9,6 +9,12 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ### Added · Adicionado
 
+- Geração automática de chaveamento mata-mata: dado o conjunto de participantes, monta um bracket de tamanho potência de 2 com BYEs distribuídos nas posições corretas (top seeds avançam direto). As partidas vazias dos rounds seguintes são pré-criadas como placeholders e ligadas via `next_match_id`. / Automatic single-elimination bracket generation: from the participant list, builds a power-of-two bracket with BYEs at the correct seed positions (top seeds advance directly). Empty matches in subsequent rounds are pre-created as placeholders linked via `next_match_id`.
+- Botão "Gerar chaveamento" / "Recriar chaveamento" na tela de detalhe (com confirmação ao recriar). / "Generate bracket" / "Regenerate bracket" button on the detail screen (with confirmation on regenerate).
+- Tela "Partidas" exibe as partidas geradas agrupadas por rodada (Final / Semifinal / Quartas / etc.), destaca o vencedor e marca BYE / TBD apropriadamente. / The "Matches" screen shows generated matches grouped by round (Final / Semifinal / Quarterfinals / etc.), highlights the winner and labels BYE / TBD slots correctly.
+
+### Adicionado (anterior) · Previously added
+
 - Tela de detalhe do torneio com abas (Participantes, Partidas, Chaveamento) acessível tocando no card da home / Tournament detail screen with tabs (Participants, Matches, Bracket), reachable by tapping a home card
 - Cadastro de participantes (criar, listar, remover com confirmação) com persistência SQLite / Participant management (create, list, delete with confirmation) persisted in SQLite
 - Exclusão do torneio (cascata em participantes/partidas) via botão na tela de detalhe / Tournament deletion (cascading to participants/matches) from the detail screen

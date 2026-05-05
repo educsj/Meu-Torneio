@@ -69,6 +69,27 @@
     "notFound": "Tournament not found.",
     "comingSoon": "Coming soon."
   },
+  "matches": {
+    "title": "Matches",
+    "round": "Round {{n}}",
+    "final": "Final",
+    "semifinal": "Semifinal",
+    "quarterfinal": "Quarterfinals",
+    "round16": "Round of 16",
+    "round32": "Round of 32",
+    "bye": "BYE",
+    "tbd": "TBD",
+    "winner": "Winner: {{name}}",
+    "generate": "Generate bracket",
+    "regenerate": "Regenerate bracket",
+    "regenerateConfirmTitle": "Regenerate bracket?",
+    "regenerateConfirmMessage": "All current matches and results will be erased.",
+    "needMoreParticipants": "Add at least 2 participants to generate the bracket.",
+    "noMatchesYet": "No matches generated yet.",
+    "noMatchesYetDescription": "Go back to the tournament and tap \"Generate bracket\".",
+    "onlySingleEliminationSupported": "We only generate brackets for Single Elimination for now.",
+    "vs": "vs"
+  },
   "participants": {
     "title": "Participants",
     "add": "Add participant",

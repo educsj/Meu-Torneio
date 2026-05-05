@@ -5,22 +5,33 @@ import {
   ChevronLeft,
   ChevronRight,
   GitBranch,
+  Shuffle,
   Swords,
   Trash2,
 } from 'lucide-react-native';
 
 import { ParticipantList } from '@/components/ParticipantList';
+import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { useTranslation } from '@/i18n/useTranslation';
+import { useMatchesStore } from '@/stores/useMatchesStore';
 import { useParticipantsStore } from '@/stores/useParticipantsStore';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
-import type { Tournament, TournamentType } from '@/types/tournament';
+import type {
+  Match,
+  Participant,
+  Tournament,
+  TournamentType,
+} from '@/types/tournament';
 
 const TYPE_LABEL_KEY: Record<TournamentType, string> = {
   single_elimination: 'singleElimination',
   round_robin: 'roundRobin',
   groups_knockout: 'groupsKnockout',
 };
+
+const EMPTY_PARTICIPANTS: readonly Participant[] = Object.freeze([]);
+const EMPTY_MATCHES: readonly Match[] = Object.freeze([]);
 
 export default function TournamentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -29,15 +40,26 @@ export default function TournamentDetailScreen() {
   const router = useRouter();
 
   const fetchById = useTournamentsStore((s) => s.fetchById);
-  const remove = useTournamentsStore((s) => s.remove);
+  const removeTournament = useTournamentsStore((s) => s.remove);
   const tournament = useTournamentsStore((s) =>
     s.tournaments.find((tt) => tt.id === tournamentId)
   );
   const clearParticipants = useParticipantsStore(
     (s) => s.clearForTournament
   );
+  const participants = useParticipantsStore(
+    (s) => s.byTournament[tournamentId] ?? EMPTY_PARTICIPANTS
+  ) as Participant[];
+
+  const matches = useMatchesStore(
+    (s) => s.byTournament[tournamentId] ?? EMPTY_MATCHES
+  ) as Match[];
+  const loadMatches = useMatchesStore((s) => s.load);
+  const generateBracket = useMatchesStore((s) => s.generate);
+  const clearMatches = useMatchesStore((s) => s.clearForTournament);
 
   const [loadAttempted, setLoadAttempted] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     if (!Number.isFinite(tournamentId)) {
@@ -53,6 +75,12 @@ export default function TournamentDetailScreen() {
     };
   }, [tournamentId, fetchById]);
 
+  useEffect(() => {
+    if (Number.isFinite(tournamentId)) {
+      loadMatches(tournamentId);
+    }
+  }, [tournamentId, loadMatches]);
+
   const handleBack = useCallback(() => router.back(), [router]);
 
   const handleDelete = useCallback(() => {
@@ -62,13 +90,51 @@ export default function TournamentDetailScreen() {
         text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
-          await remove(tournamentId);
+          await removeTournament(tournamentId);
           clearParticipants(tournamentId);
+          clearMatches(tournamentId);
           router.back();
         },
       },
     ]);
-  }, [t, remove, clearParticipants, tournamentId, router]);
+  }, [
+    t,
+    removeTournament,
+    clearParticipants,
+    clearMatches,
+    tournamentId,
+    router,
+  ]);
+
+  const runGenerate = useCallback(async () => {
+    setGenerating(true);
+    try {
+      await generateBracket(tournamentId);
+    } catch (err) {
+      Alert.alert('Erro', (err as Error).message);
+    } finally {
+      setGenerating(false);
+    }
+  }, [generateBracket, tournamentId]);
+
+  const handleGenerate = useCallback(() => {
+    if (matches.length > 0) {
+      Alert.alert(
+        t('matches.regenerateConfirmTitle'),
+        t('matches.regenerateConfirmMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('common.confirm'),
+            style: 'destructive',
+            onPress: runGenerate,
+          },
+        ]
+      );
+    } else {
+      runGenerate();
+    }
+  }, [matches.length, t, runGenerate]);
 
   if (loadAttempted && !tournament) {
     return (
@@ -82,8 +148,13 @@ export default function TournamentDetailScreen() {
     return <Screen />;
   }
 
+  const isSingleElim = tournament.type === 'single_elimination';
+  const enoughParticipants = participants.length >= 2;
+  const canGenerate = isSingleElim && enoughParticipants;
+  const hasMatches = matches.length > 0;
+
   return (
-    <Screen>
+    <Screen scroll>
       <Header
         tournament={tournament}
         onBack={handleBack}
@@ -113,7 +184,34 @@ export default function TournamentDetailScreen() {
         />
       </View>
 
-      <View className="mt-2 flex-1">
+      {isSingleElim ? (
+        <View className="mb-4">
+          <Button
+            label={
+              hasMatches ? t('matches.regenerate') : t('matches.generate')
+            }
+            onPress={handleGenerate}
+            disabled={!canGenerate || generating}
+            variant={hasMatches ? 'secondary' : 'primary'}
+            leading={
+              <Shuffle size={16} color={hasMatches ? '#0f172a' : '#fff'} />
+            }
+          />
+          {!enoughParticipants ? (
+            <Text className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              {t('matches.needMoreParticipants')}
+            </Text>
+          ) : null}
+        </View>
+      ) : (
+        <View className="mb-4 rounded-2xl bg-amber-50 p-3 dark:bg-amber-950">
+          <Text className="text-xs text-amber-800 dark:text-amber-200">
+            {t('matches.onlySingleEliminationSupported')}
+          </Text>
+        </View>
+      )}
+
+      <View className="mt-2">
         <Text className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           {t('tournament.participants')}
         </Text>
