@@ -8,6 +8,7 @@ import {
   listMatches,
   recomputeTournamentStatus,
   seedKnockoutFromGroups,
+  seedPlayoffFromLeague,
   setMatchScore,
 } from '@/db/matches';
 import type { Match } from '@/types/tournament';
@@ -71,6 +72,10 @@ export const useMatchesStore = create<MatchesState>((set, get) => ({
       if (await isGroupStageComplete(tournamentId)) {
         await seedKnockoutFromGroups(tournamentId);
       }
+    } else if (tournament?.type === 'league_playoff') {
+      if (await isGroupStageComplete(tournamentId)) {
+        await seedPlayoffFromLeague(tournamentId);
+      }
     }
     await recomputeTournamentStatus(tournamentId);
     const list = await listMatches(tournamentId);
@@ -85,6 +90,10 @@ export const useMatchesStore = create<MatchesState>((set, get) => ({
     if (tournament?.type === 'groups_knockout') {
       if (await isGroupStageComplete(tournamentId)) {
         await seedKnockoutFromGroups(tournamentId);
+      }
+    } else if (tournament?.type === 'league_playoff') {
+      if (await isGroupStageComplete(tournamentId)) {
+        await seedPlayoffFromLeague(tournamentId);
       }
     }
     await recomputeTournamentStatus(tournamentId);

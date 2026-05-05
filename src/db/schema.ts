@@ -1,14 +1,17 @@
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /**
- * Base v1 schema — idempotent (CREATE TABLE IF NOT EXISTS).
- * Always run on every app open; harmless if tables already exist.
+ * Base schema — idempotent (CREATE TABLE IF NOT EXISTS).
+ *
+ * Note: `tournaments.type` has no CHECK constraint. New formats are added
+ * frequently and SQLite makes it expensive to relax CHECK after the fact
+ * (requires a table rebuild). Validation lives at the TypeScript layer.
  */
 export const BASE_TABLES: string[] = [
   `CREATE TABLE IF NOT EXISTS tournaments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('single_elimination','round_robin','groups_knockout')),
+    type TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','ongoing','finished')),
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );`,

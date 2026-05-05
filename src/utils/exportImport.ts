@@ -47,6 +47,7 @@ const VALID_TYPES: TournamentType[] = [
   'single_elimination',
   'round_robin',
   'groups_knockout',
+  'league_playoff',
 ];
 const VALID_STATUS: Tournament['status'][] = ['draft', 'ongoing', 'finished'];
 

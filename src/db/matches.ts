@@ -8,6 +8,7 @@ import type {
 import {
   generateGroupStageMatches,
   generateGroupsKnockoutPlaceholders,
+  generatePlacementPlayoffPlaceholders,
   generateRoundRobinMatches,
   generateSingleEliminationBracket,
   type BracketMatch,
@@ -94,7 +95,11 @@ export async function generateBracketForTournament(
   if (!tournament) throw new Error('Torneio não encontrado.');
 
   const participants = await listParticipants(tournamentId);
-  const min = tournament.type === 'groups_knockout' ? 4 : 2;
+  const min =
+    tournament.type === 'groups_knockout' ||
+    tournament.type === 'league_playoff'
+      ? 4
+      : 2;
   if (participants.length < min) {
     throw new Error(`Adicione pelo menos ${min} participantes.`);
   }
@@ -107,6 +112,13 @@ export async function generateBracketForTournament(
       ...generateGroupStageMatches(participants, 2),
       ...generateGroupsKnockoutPlaceholders(),
     ];
+  } else if (tournament.type === 'league_playoff') {
+    // Single-group double round-robin (ida-e-volta) → 2 placement matches:
+    // 1st vs 2nd (final) and 3rd vs 4th (3rd-place). Top-4 seeds qualify.
+    const league = generateRoundRobinMatches(participants, { legs: 2 }).map(
+      (m) => ({ ...m, stage: 'group' as const, groupLabel: null })
+    );
+    bracket = [...league, ...generatePlacementPlayoffPlaceholders(4)];
   } else {
     bracket = generateSingleEliminationBracket(participants);
   }
@@ -357,6 +369,15 @@ export async function recomputeTournamentStatus(
     if (final && final.winner_id != null) next = 'finished';
     else if (anyPlayed) next = 'ongoing';
     else next = 'draft';
+  } else if (tournament.type === 'league_playoff') {
+    // Finished only when EVERY placement match has a winner — they're
+    // parallel, no bracket tree, so we can't pick a single "final".
+    const playoff = all.filter((m) => m.stage === 'knockout');
+    const allPlayoffDecided =
+      playoff.length > 0 && playoff.every((m) => m.winner_id != null);
+    if (allPlayoffDecided) next = 'finished';
+    else if (anyPlayed) next = 'ongoing';
+    else next = 'draft';
   } else {
     const allPlayed = all.every(isPlayed);
     if (allPlayed) next = 'finished';
@@ -380,7 +401,7 @@ export function tournamentTypeAllowsDraws(type: TournamentType): boolean {
  * tournament's type and its phases (ordered by ordinal).
  *
  *   single_elimination / round_robin → all stages map to the only phase
- *   groups_knockout                  → 'group' → phase[0], 'knockout' → phase[1]
+ *   groups_knockout / league_playoff → 'group' → phase[0], 'knockout' → phase[1]
  */
 function buildStageToPhaseIdMap(
   type: TournamentType,
@@ -388,7 +409,7 @@ function buildStageToPhaseIdMap(
 ): Map<MatchStage, number> {
   const byOrdinal = new Map(phases.map((p) => [p.ordinal, p.id]));
   const map = new Map<MatchStage, number>();
-  if (type === 'groups_knockout') {
+  if (type === 'groups_knockout' || type === 'league_playoff') {
     const group = byOrdinal.get(0);
     const knockout = byOrdinal.get(1);
     if (group != null) map.set('group', group);
@@ -415,6 +436,47 @@ export async function isGroupStageComplete(
   );
   if (rows.length === 0) return false;
   return rows.every((r) => r.score_a != null && r.score_b != null);
+}
+
+/**
+ * After the league phase of a league_playoff tournament finishes, fill in
+ * the placement matches: 1st vs 2nd (the final) and 3rd vs 4th (3rd-place).
+ * Idempotent — recomputes standings and overwrites slots, so re-running
+ * after a late score correction is safe.
+ */
+export async function seedPlayoffFromLeague(
+  tournamentId: number
+): Promise<void> {
+  const db = await getDatabase();
+  const tournament = await getTournamentById(tournamentId);
+  if (!tournament || tournament.type !== 'league_playoff') return;
+
+  const allMatches = await listMatches(tournamentId);
+  const leagueMatches = allMatches.filter((m) => m.stage === 'group');
+  const participants = await listParticipants(tournamentId);
+  const standings = computeStandings(leagueMatches, participants);
+  if (standings.length < 4) return;
+
+  const playoff = allMatches
+    .filter((m) => m.stage === 'knockout')
+    .sort((a, b) => a.id - b.id);
+  if (playoff.length < 2) return;
+
+  // Match with smallest id = final (1st vs 2nd); next = 3rd-place (3rd vs 4th).
+  await db.runAsync(
+    `UPDATE matches
+     SET participant_a_id = ?, participant_b_id = ?,
+         score_a = NULL, score_b = NULL, winner_id = NULL
+     WHERE id = ?;`,
+    [standings[0].participantId, standings[1].participantId, playoff[0].id]
+  );
+  await db.runAsync(
+    `UPDATE matches
+     SET participant_a_id = ?, participant_b_id = ?,
+         score_a = NULL, score_b = NULL, winner_id = NULL
+     WHERE id = ?;`,
+    [standings[2].participantId, standings[3].participantId, playoff[1].id]
+  );
 }
 
 /**

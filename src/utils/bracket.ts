@@ -233,16 +233,21 @@ export function generateGroupsKnockoutPlaceholders(): BracketMatch[] {
 }
 
 /**
- * Generate round-robin pairings: every participant plays every other once.
- * All matches are returned with `round=1` (no scheduling for now); the caller
- * can re-bucket into actual rounds later if desired.
+ * Generate round-robin pairings.
+ *
+ * - legs=1 (default): each pair plays once, round=1.
+ * - legs=2: each pair plays twice; the second leg reverses home/away.
+ *   round=1 → ida (home leg), round=2 → volta (away leg). This is the
+ *   conventional "ida-e-volta" / "home-and-away" format.
  */
 export function generateRoundRobinMatches(
-  participants: Participant[]
+  participants: Participant[],
+  options: { legs?: 1 | 2 } = {}
 ): BracketMatch[] {
   if (participants.length < 2) {
     throw new Error('Need at least 2 participants to generate matches');
   }
+  const legs = options.legs ?? 1;
   const sorted = [...participants].sort((a, b) => {
     const sa = a.seed ?? Number.MAX_SAFE_INTEGER;
     const sb = b.seed ?? Number.MAX_SAFE_INTEGER;
@@ -251,18 +256,52 @@ export function generateRoundRobinMatches(
   });
 
   const matches: BracketMatch[] = [];
-  let idx = 0;
-  for (let i = 0; i < sorted.length; i++) {
-    for (let j = i + 1; j < sorted.length; j++) {
-      matches.push({
-        round: 1,
-        indexInRound: idx++,
-        participantAId: sorted[i].id,
-        participantBId: sorted[j].id,
-        winnerId: null,
-        nextRoundIndex: null,
-      });
+  for (let leg = 1; leg <= legs; leg++) {
+    let idx = 0;
+    for (let i = 0; i < sorted.length; i++) {
+      for (let j = i + 1; j < sorted.length; j++) {
+        const a = leg === 1 ? sorted[i] : sorted[j];
+        const b = leg === 1 ? sorted[j] : sorted[i];
+        matches.push({
+          round: leg,
+          indexInRound: idx++,
+          participantAId: a.id,
+          participantBId: b.id,
+          winnerId: null,
+          nextRoundIndex: null,
+        });
+      }
     }
+  }
+  return matches;
+}
+
+/**
+ * Empty placement-playoff matches: `spots/2` parallel matches that decide
+ * placement (1st vs 2nd → final, 3rd vs 4th → 3rd-place, etc.). No bracket
+ * tree — each match's `nextRoundIndex` is null and they all share round=1.
+ *
+ * Used by the `league_playoff` preset (and any other format that wants
+ * placement matches after a league phase).
+ */
+export function generatePlacementPlayoffPlaceholders(
+  spots: number
+): BracketMatch[] {
+  if (spots < 2 || spots % 2 !== 0) {
+    throw new Error('spots must be an even number ≥ 2');
+  }
+  const matches: BracketMatch[] = [];
+  for (let i = 0; i < spots / 2; i++) {
+    matches.push({
+      round: 1,
+      indexInRound: i,
+      participantAId: null,
+      participantBId: null,
+      winnerId: null,
+      nextRoundIndex: null,
+      stage: 'knockout',
+      groupLabel: null,
+    });
   }
   return matches;
 }

@@ -39,6 +39,12 @@ export function getDatabase(): Promise<SQLite.SQLiteDatabase> {
  * migrated state by an older buggy migration.
  */
 async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
+  // Step 0 (v4): if the existing tournaments table still carries the old
+  // `CHECK (type IN ...)` constraint, rebuild it without the CHECK so new
+  // tournament types can be inserted without yet another migration. Detected
+  // by inspecting sqlite_master so this runs at most once per DB.
+  await rebuildTournamentsIfStrictCheck(db);
+
   // Step 1: base tables
   for (const stmt of BASE_TABLES) {
     await db.execAsync(stmt);
@@ -71,6 +77,51 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
 
   // Step 4: bump user_version
   await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION};`);
+}
+
+/**
+ * One-shot v3→v4 step: rebuild `tournaments` if its current SQL still
+ * contains the strict CHECK on `type`. SQLite has no ALTER ... DROP
+ * CONSTRAINT, so we recreate the table without the CHECK and copy data.
+ *
+ * Run before BASE_TABLES (which uses CREATE IF NOT EXISTS, so it would no-op).
+ * Idempotent: detection short-circuits on already-relaxed schemas.
+ */
+async function rebuildTournamentsIfStrictCheck(
+  db: SQLite.SQLiteDatabase
+): Promise<void> {
+  const row = await db.getFirstAsync<{ sql: string | null }>(
+    "SELECT sql FROM sqlite_master WHERE type='table' AND name='tournaments';"
+  );
+  const sql = row?.sql ?? '';
+  if (!sql) return; // table doesn't exist yet; BASE_TABLES will create it
+  if (!/CHECK\s*\(\s*type\s+IN/i.test(sql)) return; // already relaxed
+
+  // FK enforcement off during the swap so DROP TABLE doesn't fail on
+  // participants/matches/phases that reference tournaments(id). The data
+  // they reference doesn't change — we keep the same row ids.
+  await db.execAsync('PRAGMA foreign_keys = OFF;');
+  try {
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(
+        `CREATE TABLE tournaments_v4 (
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','ongoing','finished')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );`
+      );
+      await db.execAsync(
+        `INSERT INTO tournaments_v4 (id, name, type, status, created_at)
+         SELECT id, name, type, status, created_at FROM tournaments;`
+      );
+      await db.execAsync('DROP TABLE tournaments;');
+      await db.execAsync('ALTER TABLE tournaments_v4 RENAME TO tournaments;');
+    });
+  } finally {
+    await db.execAsync('PRAGMA foreign_keys = ON;');
+  }
 }
 
 /**
@@ -143,14 +194,14 @@ async function backfillPhases(db: SQLite.SQLiteDatabase): Promise<void> {
 interface DefaultPhase {
   ordinal: number;
   name: string;
-  format: 'single_elimination' | 'round_robin';
+  format: 'single_elimination' | 'round_robin' | 'placement_playoff';
   legs: 1 | 2;
   groupCount: number;
   qualifiers: number | null;
 }
 
 /**
- * Default phase shape for each legacy tournament type. Exported for use by
+ * Default phase shape for each tournament type. Exported for use by
  * tournament creation (so a freshly created tournament gets phases too).
  */
 export function defaultPhasesForType(type: string): DefaultPhase[] {
@@ -180,6 +231,25 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           ordinal: 1,
           name: 'Mata-mata',
           format: 'single_elimination',
+          legs: 1,
+          groupCount: 1,
+          qualifiers: null,
+        },
+      ];
+    case 'league_playoff':
+      return [
+        {
+          ordinal: 0,
+          name: 'Liga',
+          format: 'round_robin',
+          legs: 2,
+          groupCount: 1,
+          qualifiers: 4,
+        },
+        {
+          ordinal: 1,
+          name: 'Playoffs',
+          format: 'placement_playoff',
           legs: 1,
           groupCount: 1,
           qualifiers: null,

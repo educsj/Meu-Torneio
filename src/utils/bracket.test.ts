@@ -6,6 +6,7 @@ import {
   bracketSeedOrder,
   generateGroupStageMatches,
   generateGroupsKnockoutPlaceholders,
+  generatePlacementPlayoffPlaceholders,
   generateRoundRobinMatches,
   generateSingleEliminationBracket,
   nextPowerOfTwo,
@@ -269,6 +270,71 @@ describe('generateGroupStageMatches', () => {
       expect(groupOf.get(m.participantAId!)).toBe(m.groupLabel);
       expect(groupOf.get(m.participantBId!)).toBe(m.groupLabel);
     });
+  });
+});
+
+describe('generateRoundRobinMatches with legs=2 (home and away)', () => {
+  it('produces twice as many matches as legs=1', () => {
+    const ps = makeParticipants(4);
+    const single = generateRoundRobinMatches(ps);
+    const double = generateRoundRobinMatches(ps, { legs: 2 });
+    expect(single).toHaveLength(6); // C(4,2)
+    expect(double).toHaveLength(12); // C(4,2)*2
+  });
+
+  it('second leg reverses home/away of every pairing', () => {
+    const ps = makeParticipants(4);
+    const matches = generateRoundRobinMatches(ps, { legs: 2 });
+    const ida = matches.filter((m) => m.round === 1);
+    const volta = matches.filter((m) => m.round === 2);
+    expect(ida).toHaveLength(6);
+    expect(volta).toHaveLength(6);
+    // For each ida pairing (a,b), the volta pairing (b,a) must exist.
+    for (const m of ida) {
+      const reversed = volta.find(
+        (v) =>
+          v.participantAId === m.participantBId &&
+          v.participantBId === m.participantAId
+      );
+      expect(reversed).toBeDefined();
+    }
+  });
+
+  it('every participant plays 2*(N-1) matches over both legs', () => {
+    const ps = makeParticipants(5);
+    const matches = generateRoundRobinMatches(ps, { legs: 2 });
+    for (const p of ps) {
+      const count = matches.filter(
+        (m) => m.participantAId === p.id || m.participantBId === p.id
+      ).length;
+      expect(count).toBe(8); // 2*(5-1)
+    }
+  });
+});
+
+describe('generatePlacementPlayoffPlaceholders', () => {
+  it('produces spots/2 empty parallel matches with stage=knockout', () => {
+    const matches = generatePlacementPlayoffPlaceholders(4);
+    expect(matches).toHaveLength(2);
+    matches.forEach((m) => {
+      expect(m.stage).toBe('knockout');
+      expect(m.participantAId).toBeNull();
+      expect(m.participantBId).toBeNull();
+      expect(m.round).toBe(1);
+      // No bracket tree — all are leaf matches.
+      expect(m.nextRoundIndex).toBeNull();
+    });
+  });
+
+  it('rejects odd or zero/negative spots', () => {
+    expect(() => generatePlacementPlayoffPlaceholders(0)).toThrow();
+    expect(() => generatePlacementPlayoffPlaceholders(1)).toThrow();
+    expect(() => generatePlacementPlayoffPlaceholders(3)).toThrow();
+    expect(() => generatePlacementPlayoffPlaceholders(5)).toThrow();
+  });
+
+  it('scales: 8 spots → 4 placement matches', () => {
+    expect(generatePlacementPlayoffPlaceholders(8)).toHaveLength(4);
   });
 });
 

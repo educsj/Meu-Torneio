@@ -1,7 +1,8 @@
 export type TournamentType =
   | 'single_elimination'
   | 'round_robin'
-  | 'groups_knockout';
+  | 'groups_knockout'
+  | 'league_playoff';
 
 export type TournamentStatus = 'draft' | 'ongoing' | 'finished';
 
@@ -49,7 +50,14 @@ export interface Match {
  * map onto 1 or 2 phases of these formats. New formats (e.g. placement
  * playoff) plug in here without growing TournamentType.
  */
-export type PhaseFormat = 'single_elimination' | 'round_robin';
+export type PhaseFormat =
+  | 'single_elimination'
+  | 'round_robin'
+  /**
+   * Parallel placement matches: top-K seeds (K even) play head-to-head.
+   * Pos 1 vs 2 → 1st place final; 3 vs 4 → 3rd place; etc. No bracket tree.
+   */
+  | 'placement_playoff';
 
 export type PhaseStatus = 'pending' | 'ongoing' | 'finished';
 

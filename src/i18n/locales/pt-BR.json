@@ -37,12 +37,14 @@
     "types": {
       "singleElimination": "Mata-mata",
       "roundRobin": "Pontos corridos",
-      "groupsKnockout": "Grupos + Mata-mata"
+      "groupsKnockout": "Grupos + Mata-mata",
+      "leaguePlayoff": "Liga + Playoffs"
     },
     "typesDescription": {
       "singleElimination": "Eliminação direta. Quem perde, sai.",
       "roundRobin": "Todos contra todos. Vence quem somar mais pontos.",
-      "groupsKnockout": "Fase de grupos seguida de mata-mata."
+      "groupsKnockout": "Fase de grupos seguida de mata-mata.",
+      "leaguePlayoff": "Pontos corridos ida-e-volta. Top-4 disputam final e 3º lugar."
     },
     "create": "Criar torneio",
     "validationName": "Informe um nome para o torneio."
@@ -115,8 +117,10 @@
     "regenerateConfirmTitle": "Recriar chaveamento?",
     "regenerateConfirmMessage": "Todas as partidas e resultados atuais serão apagados.",
     "needMoreParticipants": "Adicione pelo menos 2 participantes para gerar o chaveamento.",
-    "needMoreParticipantsGroups": "Adicione pelo menos 4 participantes para Grupos + Mata-mata.",
+    "needMoreParticipantsGroups": "Adicione pelo menos 4 participantes para esse formato.",
     "groupStage": "Fase de grupos",
+    "leaguePhase": "Fase de liga",
+    "thirdPlace": "Disputa de 3º lugar",
     "noMatchesYet": "Nenhuma partida gerada ainda.",
     "noMatchesYetDescription": "Volte para a tela do torneio e toque em \"Gerar chaveamento\".",
     "onlySingleEliminationSupported": "Por enquanto só geramos chaveamento para Mata-mata.",

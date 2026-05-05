@@ -33,6 +33,7 @@ const TYPE_LABEL_KEY: Record<TournamentType, string> = {
   single_elimination: 'singleElimination',
   round_robin: 'roundRobin',
   groups_knockout: 'groupsKnockout',
+  league_playoff: 'leaguePlayoff',
 };
 
 const EMPTY_PARTICIPANTS: readonly Participant[] = Object.freeze([]);
@@ -158,7 +159,9 @@ export default function TournamentDetailScreen() {
   const isSingleElim = tournament.type === 'single_elimination';
   const isRoundRobin = tournament.type === 'round_robin';
   const isGroups = tournament.type === 'groups_knockout';
-  const minParticipants = isGroups ? 4 : 2;
+  const isLeaguePlayoff = tournament.type === 'league_playoff';
+  const showStandings = isRoundRobin || isLeaguePlayoff;
+  const minParticipants = isGroups || isLeaguePlayoff ? 4 : 2;
   const enoughParticipants = participants.length >= minParticipants;
   const canGenerate = enoughParticipants;
   const hasMatches = matches.length > 0;
@@ -195,7 +198,7 @@ export default function TournamentDetailScreen() {
             }
           />
         ) : null}
-        {isRoundRobin ? (
+        {showStandings ? (
           <NavButton
             label={t('standings.title')}
             icon={<ListOrdered size={18} color="#475569" />}
@@ -235,7 +238,7 @@ export default function TournamentDetailScreen() {
         />
         {!enoughParticipants ? (
           <Text className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            {isGroups
+            {isGroups || isLeaguePlayoff
               ? t('matches.needMoreParticipantsGroups')
               : t('matches.needMoreParticipants')}
           </Text>

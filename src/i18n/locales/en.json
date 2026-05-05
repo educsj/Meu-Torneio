@@ -37,12 +37,14 @@
     "types": {
       "singleElimination": "Single Elimination",
       "roundRobin": "Round Robin",
-      "groupsKnockout": "Groups + Knockout"
+      "groupsKnockout": "Groups + Knockout",
+      "leaguePlayoff": "League + Playoffs"
     },
     "typesDescription": {
       "singleElimination": "Lose once, you're out.",
       "roundRobin": "Everyone plays everyone. Most points wins.",
-      "groupsKnockout": "Group stage followed by knockout."
+      "groupsKnockout": "Group stage followed by knockout.",
+      "leaguePlayoff": "Home-and-away round-robin. Top 4 play the final and 3rd-place match."
     },
     "create": "Create tournament",
     "validationName": "Please provide a tournament name."
@@ -115,8 +117,10 @@
     "regenerateConfirmTitle": "Regenerate bracket?",
     "regenerateConfirmMessage": "All current matches and results will be erased.",
     "needMoreParticipants": "Add at least 2 participants to generate the bracket.",
-    "needMoreParticipantsGroups": "Add at least 4 participants for Groups + Knockout.",
+    "needMoreParticipantsGroups": "Add at least 4 participants for this format.",
     "groupStage": "Group stage",
+    "leaguePhase": "League phase",
+    "thirdPlace": "3rd-place match",
     "noMatchesYet": "No matches generated yet.",
     "noMatchesYetDescription": "Go back to the tournament and tap \"Generate bracket\".",
     "onlySingleEliminationSupported": "We only generate brackets for Single Elimination for now.",

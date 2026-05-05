@@ -31,12 +31,14 @@ export default function MatchesScreen() {
   const isSingleElim = tournament?.type === 'single_elimination';
   const isRoundRobin = tournament?.type === 'round_robin';
   const isGroupsKnockout = tournament?.type === 'groups_knockout';
-  // For knockout final, draws are not allowed; for group stage and round
-  // robin, draws are allowed. Use match.stage to decide per match.
+  const isLeaguePlayoff = tournament?.type === 'league_playoff';
+  // Draws allowed for league/group matches; disallowed for any single-shot
+  // knockout match (single elim, groups+ko final, or placement playoff).
   const allowDrawsFor = (m: Match | null) => {
     if (!tournament) return false;
     if (tournament.type === 'single_elimination') return false;
     if (tournament.type === 'groups_knockout') return m?.stage === 'group';
+    if (tournament.type === 'league_playoff') return m?.stage === 'group';
     return true;
   };
 
@@ -61,10 +63,11 @@ export default function MatchesScreen() {
   const matchesByRound = useMemo(() => {
     const map = new Map<number, Match[]>();
     // For SE, group all matches by round.
-    // For groups+knockout, group only the knockout stage by round.
-    const source = isGroupsKnockout
-      ? matches.filter((m) => m.stage === 'knockout')
-      : matches;
+    // For two-phase formats, group only the knockout stage by round.
+    const source =
+      isGroupsKnockout || isLeaguePlayoff
+        ? matches.filter((m) => m.stage === 'knockout')
+        : matches;
     for (const m of source) {
       const arr = map.get(m.round) ?? [];
       arr.push(m);
@@ -74,11 +77,18 @@ export default function MatchesScreen() {
       arr.sort((a, b) => a.id - b.id);
     }
     return map;
-  }, [matches, isGroupsKnockout]);
+  }, [matches, isGroupsKnockout, isLeaguePlayoff]);
 
   const totalRounds = matchesByRound.size;
   const groupStageMatches = useMemo(
     () => matches.filter((m) => m.stage === 'group'),
+    [matches]
+  );
+  const playoffMatches = useMemo(
+    () =>
+      matches
+        .filter((m) => m.stage === 'knockout')
+        .sort((a, b) => a.id - b.id),
     [matches]
   );
 
@@ -142,6 +152,43 @@ export default function MatchesScreen() {
               participantsById={participantsById}
               onPress={() => setEditingMatchId(m.id)}
             />
+          ))}
+        </View>
+      ) : isLeaguePlayoff ? (
+        <View className="mt-4">
+          {/* League phase (single-group double round-robin) */}
+          {groupStageMatches.length > 0 ? (
+            <View className="mb-6">
+              <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('matches.leaguePhase')}
+              </Text>
+              <View className="gap-2">
+                {groupStageMatches.map((m, idx) => (
+                  <MatchCard
+                    key={m.id}
+                    match={m}
+                    index={idx}
+                    participantsById={participantsById}
+                    onPress={() => setEditingMatchId(m.id)}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {/* Placement matches: each labelled individually (final, 3rd place). */}
+          {playoffMatches.map((m, idx) => (
+            <View key={m.id} className="mb-6">
+              <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {idx === 0 ? t('matches.final') : t('matches.thirdPlace')}
+              </Text>
+              <MatchCard
+                match={m}
+                index={idx}
+                participantsById={participantsById}
+                onPress={() => setEditingMatchId(m.id)}
+              />
+            </View>
           ))}
         </View>
       ) : (

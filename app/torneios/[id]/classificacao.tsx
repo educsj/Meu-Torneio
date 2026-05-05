@@ -38,9 +38,16 @@ export default function StandingsScreen() {
     };
   }, [tournamentId, load]);
 
+  // Standings reflect only the league/group phase. Playoff matches
+  // (stage='knockout') decide placement and shouldn't shift points/standings.
+  const leagueMatches = useMemo(
+    () => matches.filter((m) => m.stage !== 'knockout'),
+    [matches]
+  );
+
   const rows: StandingRow[] = useMemo(
-    () => computeStandings(matches, participants),
-    [matches, participants]
+    () => computeStandings(leagueMatches, participants),
+    [leagueMatches, participants]
   );
 
   return (
