@@ -3,6 +3,7 @@ import { FlatList, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Plus, Trophy } from 'lucide-react-native';
 
+import { APP_BUILD_TAG } from '@/buildInfo';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
@@ -73,6 +74,9 @@ export default function TournamentsScreen() {
           onPress={() => router.push('/torneios/novo')}
           leading={<Plus size={18} color="#fff" />}
         />
+        <Text className="mt-2 text-center text-[10px] text-slate-400 dark:text-slate-600">
+          {APP_BUILD_TAG}
+        </Text>
       </View>
     </Screen>
   );
