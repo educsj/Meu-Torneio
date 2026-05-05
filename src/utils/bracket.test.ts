@@ -195,10 +195,45 @@ describe('generateRoundRobinMatches', () => {
     }
   });
 
-  it('all matches are round 1 with no next-round links', () => {
+  it('schedules into N-1 parallel rounds for even N', () => {
+    const matches = generateRoundRobinMatches(makeParticipants(4));
+    const rounds = new Set(matches.map((m) => m.round));
+    expect(rounds.size).toBe(3); // 4-1
+    // Each round has N/2 = 2 simultaneous matches.
+    for (const r of rounds) {
+      const inRound = matches.filter((m) => m.round === r);
+      expect(inRound).toHaveLength(2);
+    }
+  });
+
+  it('no participant plays twice in the same round', () => {
+    const matches = generateRoundRobinMatches(makeParticipants(6));
+    const byRound = new Map<number, number[]>();
+    for (const m of matches) {
+      const arr = byRound.get(m.round) ?? [];
+      arr.push(m.participantAId!, m.participantBId!);
+      byRound.set(m.round, arr);
+    }
+    for (const ids of byRound.values()) {
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
+  it('handles odd N by giving exactly one bye per round', () => {
+    // 5 teams: 5 rounds, 2 matches per round (one team byes each round)
+    const matches = generateRoundRobinMatches(makeParticipants(5));
+    expect(matches).toHaveLength(10); // C(5,2)
+    const rounds = new Set(matches.map((m) => m.round));
+    expect(rounds.size).toBe(5);
+    for (const r of rounds) {
+      const inRound = matches.filter((m) => m.round === r);
+      expect(inRound).toHaveLength(2);
+    }
+  });
+
+  it('matches have no next-round links and no preset winner', () => {
     const matches = generateRoundRobinMatches(makeParticipants(4));
     matches.forEach((m) => {
-      expect(m.round).toBe(1);
       expect(m.nextRoundIndex).toBeNull();
       expect(m.winnerId).toBeNull();
     });
@@ -285,8 +320,9 @@ describe('generateRoundRobinMatches with legs=2 (home and away)', () => {
   it('second leg reverses home/away of every pairing', () => {
     const ps = makeParticipants(4);
     const matches = generateRoundRobinMatches(ps, { legs: 2 });
-    const ida = matches.filter((m) => m.round === 1);
-    const volta = matches.filter((m) => m.round === 2);
+    // For N=4: leg 1 → rounds 1..3 (3 rounds × 2 matches = 6); leg 2 → 4..6.
+    const ida = matches.filter((m) => m.round <= 3);
+    const volta = matches.filter((m) => m.round >= 4);
     expect(ida).toHaveLength(6);
     expect(volta).toHaveLength(6);
     // For each ida pairing (a,b), the volta pairing (b,a) must exist.

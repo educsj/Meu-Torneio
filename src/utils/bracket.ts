@@ -169,15 +169,17 @@ export function generateGroupStageMatches(
   }
   const groups = splitIntoGroups(participants, groupCount);
   const matches: BracketMatch[] = [];
-  let idx = 0;
   for (let g = 0; g < groups.length; g++) {
     const label = String.fromCharCode(65 + g); // 'A', 'B', ...
     const group = groups[g];
-    for (let i = 0; i < group.length; i++) {
-      for (let j = i + 1; j < group.length; j++) {
+    // Each group runs its own round-robin schedule. Round numbers are
+    // per-group (group A round 1 and group B round 1 are independent).
+    const schedule = scheduleRoundRobin(group.length);
+    for (let r = 0; r < schedule.length; r++) {
+      schedule[r].forEach(([i, j], idx) => {
         matches.push({
-          round: 1,
-          indexInRound: idx++,
+          round: r + 1,
+          indexInRound: idx,
           participantAId: group[i].id,
           participantBId: group[j].id,
           winnerId: null,
@@ -185,7 +187,7 @@ export function generateGroupStageMatches(
           stage: 'group',
           groupLabel: label,
         });
-      }
+      });
     }
   }
   return matches;
@@ -233,12 +235,15 @@ export function generateGroupsKnockoutPlaceholders(): BracketMatch[] {
 }
 
 /**
- * Generate round-robin pairings.
+ * Generate round-robin pairings using the circle (Berger) method.
  *
- * - legs=1 (default): each pair plays once, round=1.
- * - legs=2: each pair plays twice; the second leg reverses home/away.
- *   round=1 → ida (home leg), round=2 → volta (away leg). This is the
- *   conventional "ida-e-volta" / "home-and-away" format.
+ * Each round contains parallel matches — for N teams, N/2 matches per
+ * round and N-1 rounds total. No team plays twice in the same round.
+ * For odd N, one team has a bye each round (omitted from output).
+ *
+ * - legs=1 (default): rounds 1..N-1, each pair plays once.
+ * - legs=2: rounds 1..2(N-1); the second leg repeats the schedule with
+ *   home/away reversed (the conventional "ida-e-volta").
  */
 export function generateRoundRobinMatches(
   participants: Participant[],
@@ -255,25 +260,61 @@ export function generateRoundRobinMatches(
     return a.id - b.id;
   });
 
+  const schedule = scheduleRoundRobin(sorted.length);
   const matches: BracketMatch[] = [];
   for (let leg = 1; leg <= legs; leg++) {
-    let idx = 0;
-    for (let i = 0; i < sorted.length; i++) {
-      for (let j = i + 1; j < sorted.length; j++) {
+    for (let r = 0; r < schedule.length; r++) {
+      const round = (leg - 1) * schedule.length + r + 1;
+      schedule[r].forEach(([i, j], idx) => {
+        // Reverse home/away on the second leg so each pairing alternates mando.
         const a = leg === 1 ? sorted[i] : sorted[j];
         const b = leg === 1 ? sorted[j] : sorted[i];
         matches.push({
-          round: leg,
-          indexInRound: idx++,
+          round,
+          indexInRound: idx,
           participantAId: a.id,
           participantBId: b.id,
           winnerId: null,
           nextRoundIndex: null,
         });
-      }
+      });
     }
   }
   return matches;
+}
+
+/**
+ * Round-robin schedule generator (circle / Berger method).
+ *
+ * Returns an array of rounds; each round is an array of [i, j] pairs of
+ * 0-based indices into the participant list. For odd N, an N-th phantom
+ * index is added internally and any pair touching it is dropped — so the
+ * team paired with the phantom that round has a bye.
+ *
+ * Mechanism: arrange teams in two rows; pair vertically (0↔M-1, 1↔M-2, …);
+ * keep position 0 fixed and rotate the rest one slot clockwise per round.
+ * After M-1 rotations every pair has met exactly once.
+ */
+export function scheduleRoundRobin(n: number): Array<Array<[number, number]>> {
+  if (n < 2) return [];
+  const useGhost = n % 2 === 1;
+  const m = useGhost ? n + 1 : n;
+  let teams = Array.from({ length: m }, (_, i) => i);
+  const rounds: Array<Array<[number, number]>> = [];
+  for (let r = 0; r < m - 1; r++) {
+    const pairs: Array<[number, number]> = [];
+    for (let i = 0; i < m / 2; i++) {
+      const a = teams[i];
+      const b = teams[m - 1 - i];
+      // Index === n is the phantom — its opponent has a bye this round.
+      if (useGhost && (a === n || b === n)) continue;
+      pairs.push([a, b]);
+    }
+    rounds.push(pairs);
+    // Rotate: keep teams[0] fixed, shift the rest one slot.
+    teams = [teams[0], teams[m - 1], ...teams.slice(1, m - 1)];
+  }
+  return rounds;
 }
 
 /**

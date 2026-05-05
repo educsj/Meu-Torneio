@@ -92,14 +92,16 @@ describe('generateBracketFromPhases', () => {
   });
 
   describe('round_robin preset (single phase)', () => {
-    it('all matches stage=main; N*(N-1)/2 pairings', () => {
+    it('all matches stage=main; N*(N-1)/2 pairings across N-1 rounds', () => {
       const matches = generateBracketFromPhases(
         ROUND_ROBIN_PRESET,
         makeParticipants(4)
       );
       expect(matches).toHaveLength(6); // C(4,2)
       matches.forEach((m) => expect(m.stage).toBe('main'));
-      matches.forEach((m) => expect(m.round).toBe(1));
+      // Circle method: 4 teams → 3 rounds × 2 parallel matches per round.
+      const rounds = new Set(matches.map((m) => m.round));
+      expect(rounds.size).toBe(3);
     });
   });
 
@@ -141,11 +143,12 @@ describe('generateBracketFromPhases', () => {
         makeParticipants(4)
       );
       const league = matches.filter((m) => m.stage === 'group');
-      // C(4,2) * 2 = 12 (ida + volta)
+      // C(4,2) * 2 = 12 matches (ida + volta), distributed over 6 rounds:
+      // leg 1 → rounds 1..3, leg 2 → rounds 4..6.
       expect(league).toHaveLength(12);
       league.forEach((m) => expect(m.groupLabel).toBeNull());
-      const ida = league.filter((m) => m.round === 1);
-      const volta = league.filter((m) => m.round === 2);
+      const ida = league.filter((m) => m.round <= 3);
+      const volta = league.filter((m) => m.round >= 4);
       expect(ida).toHaveLength(6);
       expect(volta).toHaveLength(6);
     });

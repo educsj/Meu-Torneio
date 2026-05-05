@@ -204,27 +204,14 @@ export default function MatchesScreen() {
           </Text>
         </View>
       ) : isRoundRobin ? (
-        <View className="mt-4 gap-2">
-          {matches.map((m, idx) => (
-            <MatchCard
-              key={m.id}
-              match={m}
-              index={idx}
-              participantsById={participantsById}
-              onPress={() => setEditingMatchId(m.id)}
-            />
-          ))}
-        </View>
-      ) : renderAsLeaguePlayoff ? (
         <View className="mt-4">
-          {/* League phase (single-group double round-robin) */}
-          {groupStageMatches.length > 0 ? (
-            <View className="mb-6">
+          {groupByRound(matches).map(([round, roundMatches]) => (
+            <View key={round} className="mb-6">
               <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                {t('matches.leaguePhase')}
+                {t('matches.round', { n: round })}
               </Text>
               <View className="gap-2">
-                {groupStageMatches.map((m, idx) => (
+                {roundMatches.map((m, idx) => (
                   <MatchCard
                     key={m.id}
                     match={m}
@@ -234,6 +221,37 @@ export default function MatchesScreen() {
                   />
                 ))}
               </View>
+            </View>
+          ))}
+        </View>
+      ) : renderAsLeaguePlayoff ? (
+        <View className="mt-4">
+          {/* League phase (single-group double round-robin) */}
+          {groupStageMatches.length > 0 ? (
+            <View className="mb-6">
+              <Text className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('matches.leaguePhase')}
+              </Text>
+              {groupByRound(groupStageMatches).map(
+                ([round, roundMatches]) => (
+                  <View key={round} className="mb-4">
+                    <Text className="mb-2 text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {t('matches.round', { n: round })}
+                    </Text>
+                    <View className="gap-2">
+                      {roundMatches.map((m, idx) => (
+                        <MatchCard
+                          key={m.id}
+                          match={m}
+                          index={idx}
+                          participantsById={participantsById}
+                          onPress={() => setEditingMatchId(m.id)}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                )
+              )}
             </View>
           ) : null}
 
@@ -423,6 +441,19 @@ function ScheduleChip({
       ) : null}
     </View>
   );
+}
+
+/** Group matches by their `round` field, sorted ascending. Within each
+ * round, matches keep their listMatches() order (which is stage, round, id).
+ * Returns an array of [round, matches] pairs ready to map over. */
+function groupByRound(matches: Match[]): Array<[number, Match[]]> {
+  const map = new Map<number, Match[]>();
+  for (const m of matches) {
+    const arr = map.get(m.round) ?? [];
+    arr.push(m);
+    map.set(m.round, arr);
+  }
+  return Array.from(map.entries()).sort((a, b) => a[0] - b[0]);
 }
 
 /** Render an ISO/local timestamp as "DD/MM/AAAA às HH:MM" (or just the date
