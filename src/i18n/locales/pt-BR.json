@@ -132,6 +132,13 @@
     "clearResult": "Limpar resultado",
     "drawNotAllowed": "Empate não é permitido no mata-mata.",
     "scoreInvalid": "Informe placares válidos para os dois lados.",
+    "schedule": "Agendamento (opcional)",
+    "date": "Data",
+    "time": "Hora",
+    "location": "Local",
+    "locationPlaceholder": "Ex: Quadra Central",
+    "dateInvalid": "Data inválida. Use o formato DD/MM/AAAA.",
+    "timeInvalid": "Hora inválida. Use o formato HH:MM (24h).",
     "noOpponent": "Esta partida ainda não tem dois oponentes definidos.",
     "tournamentFinished": "🏆 Torneio finalizado! Campeão: {{name}}"
   },

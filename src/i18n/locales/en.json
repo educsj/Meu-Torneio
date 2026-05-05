@@ -132,6 +132,13 @@
     "clearResult": "Clear result",
     "drawNotAllowed": "Draws are not allowed in single elimination.",
     "scoreInvalid": "Enter a valid score for both sides.",
+    "schedule": "Schedule (optional)",
+    "date": "Date",
+    "time": "Time",
+    "location": "Location",
+    "locationPlaceholder": "e.g. Court 1",
+    "dateInvalid": "Invalid date. Use DD/MM/YYYY.",
+    "timeInvalid": "Invalid time. Use HH:MM (24h).",
     "noOpponent": "This match doesn't have two opponents yet.",
     "tournamentFinished": "🏆 Tournament finished! Champion: {{name}}"
   },

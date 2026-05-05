@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, Trophy } from 'lucide-react-native';
+import { Calendar, ChevronLeft, MapPin, Trophy } from 'lucide-react-native';
 
 import { ScoreEntryModal } from '@/components/ScoreEntryModal';
 import { Screen } from '@/components/ui/Screen';
@@ -25,6 +25,7 @@ export default function MatchesScreen() {
   const load = useMatchesStore((s) => s.load);
   const setScore = useMatchesStore((s) => s.setScore);
   const clearScore = useMatchesStore((s) => s.clearScore);
+  const saveSchedule = useMatchesStore((s) => s.saveSchedule);
   const tournament = useTournamentsStore((s) =>
     s.tournaments.find((tt) => tt.id === tournamentId)
   );
@@ -115,6 +116,14 @@ export default function MatchesScreen() {
     if (!editingMatch) return;
     await clearScore(tournamentId, editingMatch.id);
   }, [editingMatch, clearScore, tournamentId]);
+
+  const handleSaveSchedule = useCallback(
+    async (scheduledAt: string | null, location: string | null) => {
+      if (!editingMatch) return;
+      await saveSchedule(tournamentId, editingMatch.id, scheduledAt, location);
+    },
+    [editingMatch, saveSchedule, tournamentId]
+  );
 
   return (
     <Screen scroll>
@@ -246,6 +255,7 @@ export default function MatchesScreen() {
         onClose={() => setEditingMatchId(null)}
         onSave={handleSaveScore}
         onClear={handleClearScore}
+        onSaveSchedule={handleSaveSchedule}
       />
     </Screen>
   );
@@ -321,8 +331,57 @@ function MatchCard({
           {t('matches.tbd')}
         </Text>
       ) : null}
+      {match.scheduledAt || match.location ? (
+        <ScheduleChip
+          scheduledAt={match.scheduledAt}
+          location={match.location}
+        />
+      ) : null}
     </Pressable>
   );
+}
+
+function ScheduleChip({
+  scheduledAt,
+  location,
+}: {
+  scheduledAt: string | null;
+  location: string | null;
+}) {
+  return (
+    <View className="mt-2 flex-row flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 pt-2 dark:border-slate-800">
+      {scheduledAt ? (
+        <View className="flex-row items-center gap-1">
+          <Calendar size={11} color="#94a3b8" />
+          <Text className="text-[11px] text-slate-600 dark:text-slate-400">
+            {formatScheduledForDisplay(scheduledAt)}
+          </Text>
+        </View>
+      ) : null}
+      {location ? (
+        <View className="flex-row items-center gap-1">
+          <MapPin size={11} color="#94a3b8" />
+          <Text
+            className="text-[11px] text-slate-600 dark:text-slate-400"
+            numberOfLines={1}
+          >
+            {location}
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+/** Render an ISO/local timestamp as "DD/MM/AAAA às HH:MM" (or just the date
+ * if no time is present). Returns the raw string on parse failure so we
+ * never render a broken date. */
+function formatScheduledForDisplay(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/.exec(iso);
+  if (!m) return iso;
+  const [, y, mo, d, h, mi] = m;
+  const datePart = `${d}/${mo}/${y}`;
+  return h && mi ? `${datePart} às ${h}:${mi}` : datePart;
 }
 
 function Side({

@@ -9,6 +9,7 @@ import {
   recomputeTournamentStatus,
   seedKnockoutFromGroups,
   seedPlayoffFromLeague,
+  setMatchSchedule,
   setMatchScore,
 } from '@/db/matches';
 import type { Match } from '@/types/tournament';
@@ -29,6 +30,12 @@ interface MatchesState {
     scoreB: number
   ) => Promise<void>;
   clearScore: (tournamentId: number, matchId: number) => Promise<void>;
+  saveSchedule: (
+    tournamentId: number,
+    matchId: number,
+    scheduledAt: string | null,
+    location: string | null
+  ) => Promise<void>;
   clearForTournament: (tournamentId: number) => void;
 }
 
@@ -102,6 +109,13 @@ export const useMatchesStore = create<MatchesState>((set, get) => ({
       byTournament: { ...get().byTournament, [tournamentId]: list },
     });
     await useTournamentsStore.getState().refresh();
+  },
+  saveSchedule: async (tournamentId, matchId, scheduledAt, location) => {
+    await setMatchSchedule(matchId, scheduledAt, location);
+    const list = await listMatches(tournamentId);
+    set({
+      byTournament: { ...get().byTournament, [tournamentId]: list },
+    });
   },
   clearForTournament: (tournamentId) => {
     const next = { ...get().byTournament };

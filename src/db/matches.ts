@@ -14,6 +14,7 @@ import {
   type BracketMatch,
 } from '@/utils/bracket';
 import { computeStandings } from '@/utils/standings';
+import { computeTournamentStatus } from '@/utils/tournamentStatus';
 
 import { getDatabase } from './index';
 import { listParticipants } from './participants';
@@ -280,6 +281,23 @@ export async function setMatchScore(
 }
 
 /**
+ * Update the scheduled date/time and location of a match. Both fields are
+ * independent of the score — you can schedule a match before it happens and
+ * later record the result, or skip scheduling entirely. Pass null to clear.
+ */
+export async function setMatchSchedule(
+  matchId: number,
+  scheduledAt: string | null,
+  location: string | null
+): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    'UPDATE matches SET scheduled_at = ?, location = ? WHERE id = ?;',
+    [scheduledAt, location, matchId]
+  );
+}
+
+/**
  * Clear a match's score and winner. Also clears the slot in the next match
  * that this match feeds into (since the previous winner no longer applies).
  */
@@ -348,42 +366,22 @@ export async function recomputeTournamentStatus(
   if (!tournament) return null;
 
   const all = await db.getAllAsync<MatchRow>(
-    `SELECT id, round, score_a, score_b, winner_id, next_match_id
+    `SELECT id, round, score_a, score_b, winner_id, next_match_id, stage
      FROM matches WHERE tournament_id = ?;`,
     [tournamentId]
   );
-  if (all.length === 0) return null;
 
-  const isPlayed = (m: MatchRow) => m.score_a != null && m.score_b != null;
-  const anyPlayed = all.some(isPlayed);
-
-  let next: 'draft' | 'ongoing' | 'finished';
-  if (tournament.type === 'single_elimination') {
-    const final = all.find((m) => m.next_match_id == null);
-    if (final && final.winner_id != null) next = 'finished';
-    else if (anyPlayed) next = 'ongoing';
-    else next = 'draft';
-  } else if (tournament.type === 'groups_knockout') {
-    const knockout = all.filter((m) => m.stage === 'knockout');
-    const final = knockout.find((m) => m.next_match_id == null);
-    if (final && final.winner_id != null) next = 'finished';
-    else if (anyPlayed) next = 'ongoing';
-    else next = 'draft';
-  } else if (tournament.type === 'league_playoff') {
-    // Finished only when EVERY placement match has a winner — they're
-    // parallel, no bracket tree, so we can't pick a single "final".
-    const playoff = all.filter((m) => m.stage === 'knockout');
-    const allPlayoffDecided =
-      playoff.length > 0 && playoff.every((m) => m.winner_id != null);
-    if (allPlayoffDecided) next = 'finished';
-    else if (anyPlayed) next = 'ongoing';
-    else next = 'draft';
-  } else {
-    const allPlayed = all.every(isPlayed);
-    if (allPlayed) next = 'finished';
-    else if (anyPlayed) next = 'ongoing';
-    else next = 'draft';
-  }
+  const next = computeTournamentStatus(
+    tournament.type,
+    all.map((m) => ({
+      stage: m.stage,
+      scoreA: m.score_a,
+      scoreB: m.score_b,
+      winnerId: m.winner_id,
+      nextMatchId: m.next_match_id,
+    }))
+  );
+  if (next == null) return null;
 
   await db.runAsync('UPDATE tournaments SET status = ? WHERE id = ?;', [
     next,
