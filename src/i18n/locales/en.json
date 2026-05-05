@@ -223,6 +223,7 @@
     "legsDouble": "2 (home & away)",
     "groupCount": "Number of groups",
     "qualifiers": "Teams advancing to next phase",
+    "qualifiersHintTopTwo": "Top 2 from each group ({{groups}} groups × 2 = {{total}})",
     "scoringLabel": "Scoring",
     "scoringFifa": "Football (W3 / D1 / L0)",
     "scoringVolleyball": "Volleyball (3 / 2 / 1 / 0)",

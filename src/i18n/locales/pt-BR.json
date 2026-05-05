@@ -223,6 +223,7 @@
     "legsDouble": "2 (ida e volta)",
     "groupCount": "Número de grupos",
     "qualifiers": "Times que avançam à próxima fase",
+    "qualifiersHintTopTwo": "Top 2 de cada grupo ({{groups}} grupos × 2 = {{total}})",
     "scoringLabel": "Pontuação",
     "scoringFifa": "Futebol (V3 / E1 / D0)",
     "scoringVolleyball": "Vôlei (3 / 2 / 1 / 0)",

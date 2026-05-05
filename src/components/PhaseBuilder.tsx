@@ -40,6 +40,34 @@ export function PhaseBuilder({ value, onChange }: Props) {
     onChange(next);
   };
 
+  // Changing the SECOND phase's format can invalidate the FIRST phase's
+  // qualifiers (e.g. PP allows odd numbers, SE requires power-of-2 / 2×groupCount).
+  // Snap them in the same update so the UI never shows a stale invalid value.
+  const updateSecondPhaseFormat = (format: PhaseFormat) => {
+    if (value.length < 2) return;
+    const first = value[0];
+    let firstPatched = first;
+    if (format === 'single_elimination') {
+      if (first.groupCount > 1) {
+        firstPatched = { ...first, qualifiers: first.groupCount * 2 };
+      } else {
+        const q = first.qualifiers ?? 4;
+        const valid = [2, 4, 8, 16];
+        const snapped = valid.reduce(
+          (best, v) => (Math.abs(v - q) < Math.abs(best - q) ? v : best),
+          4
+        );
+        firstPatched = { ...first, qualifiers: snapped };
+      }
+    } else if (format === 'placement_playoff') {
+      const q = first.qualifiers ?? 4;
+      // PP requires even qualifiers ≥ 2.
+      const evened = q % 2 === 0 ? q : q + 1;
+      firstPatched = { ...first, qualifiers: Math.max(2, evened) };
+    }
+    onChange([firstPatched, { ...value[1], format }]);
+  };
+
   const addPhase = () => {
     if (value.length >= MAX_PHASES) return;
     // When adding a 2nd phase, the previous one must qualify SOMEONE.
@@ -95,7 +123,10 @@ export function PhaseBuilder({ value, onChange }: Props) {
 
             <FormatPicker
               value={phase.format}
-              onChange={(format) => update(index, { format })}
+              onChange={(format) => {
+                if (index === 1) updateSecondPhaseFormat(format);
+                else update(index, { format });
+              }}
               t={t}
             />
 
@@ -116,8 +147,25 @@ export function PhaseBuilder({ value, onChange }: Props) {
                   label={t('phaseBuilder.groupCount')}
                   value={phase.groupCount}
                   min={1}
-                  max={4}
-                  onChange={(groupCount) => update(index, { groupCount })}
+                  max={8}
+                  onChange={(groupCount) => {
+                    const next = value[index + 1];
+                    // Multi-group → SE: top-2 from each group qualifies, so
+                    // qualifiers is fully derived from groupCount. Keep them
+                    // in sync automatically so the user can't desync them.
+                    if (
+                      next &&
+                      next.format === 'single_elimination' &&
+                      groupCount > 1
+                    ) {
+                      update(index, {
+                        groupCount,
+                        qualifiers: groupCount * 2,
+                      });
+                    } else {
+                      update(index, { groupCount });
+                    }
+                  }}
                 />
                 <ToggleRow
                   label={t('phaseBuilder.scoringLabel')}
@@ -140,13 +188,11 @@ export function PhaseBuilder({ value, onChange }: Props) {
             ) : null}
 
             {!isLast ? (
-              <Stepper
-                label={t('phaseBuilder.qualifiers')}
-                value={phase.qualifiers ?? 4}
-                min={2}
-                max={16}
-                step={2}
+              <QualifiersField
+                phase={phase}
+                nextFormat={value[index + 1]?.format}
                 onChange={(qualifiers) => update(index, { qualifiers })}
+                t={t}
               />
             ) : null}
           </View>
@@ -312,6 +358,76 @@ function Stepper({
         </Pressable>
       </View>
     </View>
+  );
+}
+
+function QualifiersField({
+  phase,
+  nextFormat,
+  onChange,
+  t,
+}: {
+  phase: CustomPhaseInput;
+  nextFormat: PhaseFormat | undefined;
+  onChange: (q: number) => void;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  // Multi-group → single-elim: top-2 from each group, fully derived.
+  // Show as read-only with explanatory hint instead of an editable stepper.
+  if (
+    nextFormat === 'single_elimination' &&
+    phase.format === 'round_robin' &&
+    phase.groupCount > 1
+  ) {
+    const computed = phase.groupCount * 2;
+    return (
+      <View className="gap-1.5">
+        <Text className="text-xs font-medium text-slate-700 dark:text-slate-300">
+          {t('phaseBuilder.qualifiers')}
+        </Text>
+        <View className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/60">
+          <Text className="text-base font-semibold text-slate-900 dark:text-slate-100">
+            {computed}
+          </Text>
+          <Text className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            {t('phaseBuilder.qualifiersHintTopTwo', {
+              groups: phase.groupCount,
+              total: computed,
+            })}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+  // Single league → single-elim: bracket needs power-of-two qualifiers.
+  // Restrict the picker to {2,4,8,16} so the user can't land on an
+  // invalid value via the stepper.
+  if (nextFormat === 'single_elimination') {
+    const value = phase.qualifiers ?? 4;
+    return (
+      <ToggleRow
+        label={t('phaseBuilder.qualifiers')}
+        options={[
+          { value: 2, label: '2' },
+          { value: 4, label: '4' },
+          { value: 8, label: '8' },
+          { value: 16, label: '16' },
+        ]}
+        selected={value}
+        onChange={(v) => onChange(v as number)}
+      />
+    );
+  }
+  // Default (placement_playoff or no second phase): step-by-2 stepper.
+  return (
+    <Stepper
+      label={t('phaseBuilder.qualifiers')}
+      value={phase.qualifiers ?? 4}
+      min={2}
+      max={16}
+      step={2}
+      onChange={onChange}
+    />
   );
 }
 
