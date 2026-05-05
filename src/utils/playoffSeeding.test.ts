@@ -5,6 +5,7 @@ import type { Match, Participant } from '@/types/tournament';
 import {
   computeGroupsKnockoutSeeding,
   computeLeaguePlayoffSeeding,
+  computeSingleLeagueBracketSeeding,
 } from './playoffSeeding';
 
 function p(id: number, name: string): Participant {
@@ -112,6 +113,76 @@ describe('computeLeaguePlayoffSeeding', () => {
     expect(seeding).toEqual([
       { participantAId: A.id, participantBId: B.id },
       { participantAId: C.id, participantBId: D.id },
+    ]);
+  });
+});
+
+describe('computeSingleLeagueBracketSeeding', () => {
+  // Build a clean ranking A > B > C > D > E > F > G > H by giving each
+  // team progressively more wins via a star pattern of fake matches.
+  const players = Array.from({ length: 8 }, (_, i) =>
+    p(i + 1, String.fromCharCode(65 + i))
+  );
+
+  function leagueWithStanding(order: number[]): Match[] {
+    // Quick way to seed deterministic standings: give each i-th team in
+    // `order` (i+1) wins by beating one synthetic opponent per win.
+    // Implementation detail doesn't matter — we test the seeder's output.
+    const ms: Match[] = [];
+    let id = 1000;
+    for (let i = 0; i < order.length; i++) {
+      const winsNeeded = order.length - i; // top team most wins
+      for (let w = 0; w < winsNeeded; w++) {
+        const opponent = order[(i + 1 + w) % order.length];
+        ms.push(m(id++, order[i], opponent, 1, 0));
+      }
+    }
+    return ms;
+  }
+
+  it('rejects qualifiers that aren’t power-of-two ≥ 2', () => {
+    expect(
+      computeSingleLeagueBracketSeeding([], players, 0)
+    ).toBeNull();
+    expect(
+      computeSingleLeagueBracketSeeding([], players, 3)
+    ).toBeNull();
+    expect(
+      computeSingleLeagueBracketSeeding([], players, 6)
+    ).toBeNull();
+  });
+
+  it('returns null when standings have fewer entries than qualifiers', () => {
+    expect(
+      computeSingleLeagueBracketSeeding([], players.slice(0, 3), 4)
+    ).toBeNull();
+  });
+
+  it('K=4: pairs 1v4 and 2v3 (NCAA-style)', () => {
+    const matches = leagueWithStanding([1, 2, 3, 4]);
+    const seeding = computeSingleLeagueBracketSeeding(
+      matches,
+      players.slice(0, 4),
+      4
+    );
+    expect(seeding).toEqual([
+      { participantAId: 1, participantBId: 4 },
+      { participantAId: 2, participantBId: 3 },
+    ]);
+  });
+
+  it('K=8: positions are 1v8, 4v5, 2v7, 3v6', () => {
+    const matches = leagueWithStanding([1, 2, 3, 4, 5, 6, 7, 8]);
+    const seeding = computeSingleLeagueBracketSeeding(
+      matches,
+      players,
+      8
+    );
+    expect(seeding).toEqual([
+      { participantAId: 1, participantBId: 8 },
+      { participantAId: 4, participantBId: 5 },
+      { participantAId: 2, participantBId: 7 },
+      { participantAId: 3, participantBId: 6 },
     ]);
   });
 });

@@ -9,6 +9,7 @@ import {
   generatePlacementPlayoffPlaceholders,
   generateRoundRobinMatches,
   generateSingleEliminationBracket,
+  generateSingleEliminationPlaceholders,
   nextPowerOfTwo,
   splitIntoGroups,
 } from './bracket';
@@ -371,6 +372,55 @@ describe('generatePlacementPlayoffPlaceholders', () => {
 
   it('scales: 8 spots → 4 placement matches', () => {
     expect(generatePlacementPlayoffPlaceholders(8)).toHaveLength(4);
+  });
+});
+
+describe('generateSingleEliminationPlaceholders', () => {
+  it('throws on non-power-of-two qualifiers', () => {
+    expect(() => generateSingleEliminationPlaceholders(0)).toThrow();
+    expect(() => generateSingleEliminationPlaceholders(1)).toThrow();
+    expect(() => generateSingleEliminationPlaceholders(3)).toThrow();
+    expect(() => generateSingleEliminationPlaceholders(6)).toThrow();
+    expect(() => generateSingleEliminationPlaceholders(10)).toThrow();
+  });
+
+  it('K=2 → 1 final placeholder, no next-round link', () => {
+    const ms = generateSingleEliminationPlaceholders(2);
+    expect(ms).toHaveLength(1);
+    expect(ms[0]).toMatchObject({
+      round: 1,
+      indexInRound: 0,
+      participantAId: null,
+      participantBId: null,
+      nextRoundIndex: null,
+      stage: 'knockout',
+    });
+  });
+
+  it('K=8 → 4 + 2 + 1 with proper next-round links', () => {
+    const ms = generateSingleEliminationPlaceholders(8);
+    const r1 = ms.filter((m) => m.round === 1);
+    const r2 = ms.filter((m) => m.round === 2);
+    const r3 = ms.filter((m) => m.round === 3);
+    expect(r1).toHaveLength(4);
+    expect(r2).toHaveLength(2);
+    expect(r3).toHaveLength(1);
+    // r1[0] and r1[1] feed r2[0]; r1[2] and r1[3] feed r2[1]; both r2 feed r3.
+    expect(r1[0].nextRoundIndex).toBe(0);
+    expect(r1[1].nextRoundIndex).toBe(0);
+    expect(r1[2].nextRoundIndex).toBe(1);
+    expect(r1[3].nextRoundIndex).toBe(1);
+    expect(r2[0].nextRoundIndex).toBe(0);
+    expect(r2[1].nextRoundIndex).toBe(0);
+    expect(r3[0].nextRoundIndex).toBeNull();
+  });
+
+  it('K=16 → totals 8/4/2/1', () => {
+    const ms = generateSingleEliminationPlaceholders(16);
+    const counts: Record<number, number> = {};
+    for (const m of ms) counts[m.round] = (counts[m.round] ?? 0) + 1;
+    expect(counts).toEqual({ 1: 8, 2: 4, 3: 2, 4: 1 });
+    ms.forEach((m) => expect(m.stage).toBe('knockout'));
   });
 });
 

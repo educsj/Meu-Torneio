@@ -194,44 +194,55 @@ export function generateGroupStageMatches(
 }
 
 /**
- * Generate empty knockout placeholders (semifinal + final) for the
- * groups+knockout format. Always 2 groups → top 2 of each → 2 semis + 1 final.
+ * Generate empty single-elimination placeholders sized for `qualifiers`
+ * teams. Builds a complete bracket (no BYEs): for K teams there are K/2
+ * round-1 matches, K/4 round-2 matches, …, 1 final. All slots are null;
+ * the seeder fills them when the source phase finishes.
+ *
+ *   K = 2  → 1 match  (final only)
+ *   K = 4  → 2 + 1    (semis + final)
+ *   K = 8  → 4 + 2 + 1 (QFs + semis + final)
+ *   K = 16 → 8 + 4 + 2 + 1
+ *
+ * Throws if K isn't a power of two ≥ 2.
+ */
+export function generateSingleEliminationPlaceholders(
+  qualifiers: number
+): BracketMatch[] {
+  if (
+    qualifiers < 2 ||
+    (qualifiers & (qualifiers - 1)) !== 0
+  ) {
+    throw new Error('qualifiers must be a power of two ≥ 2');
+  }
+  const matches: BracketMatch[] = [];
+  const totalRounds = Math.log2(qualifiers);
+  let prevRoundCount = qualifiers / 2;
+  for (let r = 1; r <= totalRounds; r++) {
+    for (let i = 0; i < prevRoundCount; i++) {
+      matches.push({
+        round: r,
+        indexInRound: i,
+        participantAId: null,
+        participantBId: null,
+        winnerId: null,
+        nextRoundIndex: r < totalRounds ? Math.floor(i / 2) : null,
+        stage: 'knockout',
+        groupLabel: null,
+      });
+    }
+    prevRoundCount = prevRoundCount / 2;
+  }
+  return matches;
+}
+
+/**
+ * Backwards-compatible alias for the original 4-team groups+knockout
+ * shape (2 semis + 1 final). New code should call
+ * generateSingleEliminationPlaceholders(4) directly.
  */
 export function generateGroupsKnockoutPlaceholders(): BracketMatch[] {
-  return [
-    // Semis
-    {
-      round: 1,
-      indexInRound: 0,
-      participantAId: null,
-      participantBId: null,
-      winnerId: null,
-      nextRoundIndex: 0,
-      stage: 'knockout',
-      groupLabel: null,
-    },
-    {
-      round: 1,
-      indexInRound: 1,
-      participantAId: null,
-      participantBId: null,
-      winnerId: null,
-      nextRoundIndex: 0,
-      stage: 'knockout',
-      groupLabel: null,
-    },
-    // Final
-    {
-      round: 2,
-      indexInRound: 0,
-      participantAId: null,
-      participantBId: null,
-      winnerId: null,
-      nextRoundIndex: null,
-      stage: 'knockout',
-      groupLabel: null,
-    },
-  ];
+  return generateSingleEliminationPlaceholders(4);
 }
 
 /**

@@ -13,6 +13,7 @@ import {
 import {
   computeGroupsKnockoutSeeding,
   computeLeaguePlayoffSeeding,
+  computeSingleLeagueBracketSeeding,
 } from '@/utils/playoffSeeding';
 import { computeTournamentStatus } from '@/utils/tournamentStatus';
 
@@ -488,39 +489,58 @@ export async function seedKnockoutFromGroups(
   const participants = await listParticipants(tournamentId);
   const phases = await listPhases(tournamentId);
   const sourcePhase = phases.find((p) => p.ordinal === 0);
-  const seeding = computeGroupsKnockoutSeeding(groupMatches, participants, {
-    scoring: sourcePhase?.scoring,
-  });
+
+  // Pick the right seeder based on the source phase's shape:
+  //   - Multi-group (groupCount ≥ 2): cross-pair top of each group (existing
+  //     groups+knockout behavior).
+  //   - Single-group (groupCount = 1): take top-K from the league's
+  //     standings and seed them into the bracket via NCAA-style positions.
+  let seeding;
+  if (sourcePhase && sourcePhase.groupCount === 1) {
+    const qualifiers = sourcePhase.qualifiers ?? 4;
+    seeding = computeSingleLeagueBracketSeeding(
+      groupMatches,
+      participants,
+      qualifiers,
+      { scoring: sourcePhase.scoring }
+    );
+  } else {
+    seeding = computeGroupsKnockoutSeeding(groupMatches, participants, {
+      scoring: sourcePhase?.scoring,
+    });
+  }
   if (!seeding) return;
 
-  const knockout = allMatches
+  const knockoutR1 = allMatches
     .filter((m) => m.stage === 'knockout' && m.round === 1)
     .sort((m1, m2) => m1.id - m2.id);
-  if (knockout.length < seeding.length) return;
+  if (knockoutR1.length < seeding.length) return;
 
-  // Apply each cross-pairing to a semifinal slot.
+  // Apply each pairing to a round-1 slot.
   for (let i = 0; i < seeding.length; i++) {
     await db.runAsync(
       `UPDATE matches
        SET participant_a_id = ?, participant_b_id = ?,
            score_a = NULL, score_b = NULL, winner_id = NULL
        WHERE id = ?;`,
-      [seeding[i].participantAId, seeding[i].participantBId, knockout[i].id]
+      [seeding[i].participantAId, seeding[i].participantBId, knockoutR1[i].id]
     );
   }
 
-  // Final: clear slots in case they carry stale winners from a previous
-  // seeding (e.g. user edits a group score and the semifinal pairings shift).
-  const final = allMatches.find(
-    (m) => m.stage === 'knockout' && m.round === 2
+  // Later rounds: clear any stale slots and scores so the bracket can
+  // re-propagate from round 1 cleanly. Without this a re-seed after a
+  // group-stage score correction could leave a finalist slotted with
+  // someone the new R1 winners would never produce.
+  const laterRounds = allMatches.filter(
+    (m) => m.stage === 'knockout' && m.round > 1
   );
-  if (final) {
+  for (const m of laterRounds) {
     await db.runAsync(
       `UPDATE matches
        SET participant_a_id = NULL, participant_b_id = NULL,
            score_a = NULL, score_b = NULL, winner_id = NULL
        WHERE id = ?;`,
-      [final.id]
+      [m.id]
     );
   }
 }

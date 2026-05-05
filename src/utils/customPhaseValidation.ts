@@ -6,7 +6,8 @@ export type ValidationError =
   | { code: 'last_phase_has_qualifiers'; index: number }
   | { code: 'first_phase_no_qualifiers'; index: number }
   | { code: 'qualifiers_must_be_even'; index: number; got: number }
-  | { code: 'single_elim_qualifiers_must_be_4'; index: number; got: number }
+  | { code: 'single_elim_qualifiers_unsupported'; index: number; got: number }
+  | { code: 'single_elim_multi_group_unsupported'; index: number }
   | { code: 'second_phase_must_not_be_round_robin'; index: number };
 
 const MAX_PHASES = 2;
@@ -62,14 +63,29 @@ export function validateCustomPhases(
         got: q,
       });
     }
-    if (second.format === 'single_elimination' && q !== 4) {
-      // Brackets > 4 are configurable but the placeholder generator only
-      // ships 4-team semis-and-final today. Cap until PR6c lifts this.
-      errors.push({
-        code: 'single_elim_qualifiers_must_be_4',
-        index: 0,
-        got: q,
-      });
+    if (second.format === 'single_elimination') {
+      // Single-elim brackets need power-of-two qualifiers (2, 4, 8, 16).
+      // Larger sizes work mathematically but we cap at 16 to keep the UI
+      // sane for now.
+      const isPow2 = q >= 2 && q <= 16 && (q & (q - 1)) === 0;
+      if (!isPow2) {
+        errors.push({
+          code: 'single_elim_qualifiers_unsupported',
+          index: 0,
+          got: q,
+        });
+      }
+      // Multi-group → bracket cross-pairing only ships for groupCount=2,
+      // qualifiers=4 (the original groups+knockout shape). Other multi-
+      // group combos need a more elaborate seeder; reject for now so
+      // users get a clear message instead of silently broken seeding.
+      const sourceGroupCount = first.groupCount;
+      if (sourceGroupCount > 1 && q !== 4) {
+        errors.push({
+          code: 'single_elim_multi_group_unsupported',
+          index: 0,
+        });
+      }
     }
   }
 

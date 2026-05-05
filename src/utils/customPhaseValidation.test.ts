@@ -105,13 +105,43 @@ describe('validateCustomPhases', () => {
     });
   });
 
-  it('rejects single_elim phase with qualifiers ≠ 4 (current limitation)', () => {
+  it('accepts single-league → single_elim with qualifiers ∈ {2,4,8,16}', () => {
+    for (const q of [2, 4, 8, 16]) {
+      expect(
+        validateCustomPhases([rr({ groupCount: 1, qualifiers: q }), se()])
+      ).toEqual([]);
+    }
+  });
+
+  it('rejects non-power-of-two qualifiers feeding single_elim', () => {
     expect(
-      validateCustomPhases([rr({ qualifiers: 8 }), se()])
+      validateCustomPhases([rr({ qualifiers: 6 }), se()])
     ).toContainEqual({
-      code: 'single_elim_qualifiers_must_be_4',
+      code: 'single_elim_qualifiers_unsupported',
       index: 0,
-      got: 8,
+      got: 6,
+    });
+  });
+
+  it('rejects qualifiers above 16 for single_elim (UI cap)', () => {
+    expect(
+      validateCustomPhases([rr({ qualifiers: 32 }), se()])
+    ).toContainEqual({
+      code: 'single_elim_qualifiers_unsupported',
+      index: 0,
+      got: 32,
+    });
+  });
+
+  it('rejects multi-group → single_elim with qualifiers ≠ 4 (no cross-pairing yet)', () => {
+    expect(
+      validateCustomPhases([
+        rr({ groupCount: 2, qualifiers: 8 }),
+        se(),
+      ])
+    ).toContainEqual({
+      code: 'single_elim_multi_group_unsupported',
+      index: 0,
     });
   });
 

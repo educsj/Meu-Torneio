@@ -213,10 +213,12 @@ function formatErrors(
           return t('phaseBuilder.errors.qualifiersMustBeEven', {
             got: e.got,
           });
-        case 'single_elim_qualifiers_must_be_4':
-          return t('phaseBuilder.errors.singleElimQualifiersMustBe4', {
+        case 'single_elim_qualifiers_unsupported':
+          return t('phaseBuilder.errors.singleElimQualifiersUnsupported', {
             got: e.got,
           });
+        case 'single_elim_multi_group_unsupported':
+          return t('phaseBuilder.errors.singleElimMultiGroupUnsupported');
         case 'second_phase_must_not_be_round_robin':
           return t('phaseBuilder.errors.secondPhaseMustNotBeRoundRobin');
       }

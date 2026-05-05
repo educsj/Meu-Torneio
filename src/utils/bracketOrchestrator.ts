@@ -2,10 +2,10 @@ import type { MatchStage, Participant, Phase } from '@/types/tournament';
 
 import {
   generateGroupStageMatches,
-  generateGroupsKnockoutPlaceholders,
   generatePlacementPlayoffPlaceholders,
   generateRoundRobinMatches,
   generateSingleEliminationBracket,
+  generateSingleEliminationPlaceholders,
   type BracketMatch,
 } from './bracket';
 
@@ -95,17 +95,10 @@ function matchesForPhase(
           stage,
         }));
       }
-      // Later phase: bracket is sized by previous phase's qualifiers count.
-      // For now we only support 4-team brackets (the existing groups_knockout
-      // shape: 2 semis + 1 final). Larger sizes land in PR6b alongside the
-      // wizard UI that exposes them.
+      // Later phase: bracket is sized by the previous phase's qualifiers
+      // count. Any power of two from 2 (final only) up to 16 is supported.
       const qualifiers = qualifiersIn ?? 4;
-      if (qualifiers !== 4) {
-        throw new Error(
-          `single_elimination placeholder for ${qualifiers} qualifiers not supported yet.`
-        );
-      }
-      return generateGroupsKnockoutPlaceholders().map((m) => ({
+      return generateSingleEliminationPlaceholders(qualifiers).map((m) => ({
         ...m,
         stage,
       }));

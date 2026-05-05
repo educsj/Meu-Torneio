@@ -229,7 +229,8 @@
       "lastPhaseHasQualifiers": "A última fase não pode ter classificados.",
       "firstPhaseNoQualifiers": "Defina quantos times avançam da primeira fase.",
       "qualifiersMustBeEven": "Os Playoffs precisam de um número par de classificados ({{got}} é ímpar).",
-      "singleElimQualifiersMustBe4": "Mata-mata só suporta 4 classificados por enquanto (você pediu {{got}}).",
+      "singleElimQualifiersUnsupported": "Mata-mata aceita 2, 4, 8 ou 16 classificados (você pediu {{got}}).",
+      "singleElimMultiGroupUnsupported": "Mata-mata partindo de múltiplos grupos só suporta 4 classificados (top-2 de cada um) por enquanto.",
       "secondPhaseMustNotBeRoundRobin": "A segunda fase precisa ser Mata-mata ou Playoffs."
     }
   }
