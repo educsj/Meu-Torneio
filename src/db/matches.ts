@@ -5,14 +5,11 @@ import type {
   Phase,
   TournamentType,
 } from '@/types/tournament';
+import { type BracketMatch } from '@/utils/bracket';
 import {
-  generateGroupStageMatches,
-  generateGroupsKnockoutPlaceholders,
-  generatePlacementPlayoffPlaceholders,
-  generateRoundRobinMatches,
-  generateSingleEliminationBracket,
-  type BracketMatch,
-} from '@/utils/bracket';
+  computeMinParticipantsForPhases,
+  generateBracketFromPhases,
+} from '@/utils/bracketOrchestrator';
 import {
   computeGroupsKnockoutSeeding,
   computeLeaguePlayoffSeeding,
@@ -99,41 +96,21 @@ export async function generateBracketForTournament(
   if (!tournament) throw new Error('Torneio não encontrado.');
 
   const participants = await listParticipants(tournamentId);
-  const min =
-    tournament.type === 'groups_knockout' ||
-    tournament.type === 'league_playoff'
-      ? 4
-      : 2;
-  if (participants.length < min) {
-    throw new Error(`Adicione pelo menos ${min} participantes.`);
-  }
 
-  let bracket: BracketMatch[];
-  if (tournament.type === 'round_robin') {
-    bracket = generateRoundRobinMatches(participants);
-  } else if (tournament.type === 'groups_knockout') {
-    bracket = [
-      ...generateGroupStageMatches(participants, 2),
-      ...generateGroupsKnockoutPlaceholders(),
-    ];
-  } else if (tournament.type === 'league_playoff') {
-    // Single-group double round-robin (ida-e-volta) → 2 placement matches:
-    // 1st vs 2nd (final) and 3rd vs 4th (3rd-place). Top-4 seeds qualify.
-    const league = generateRoundRobinMatches(participants, { legs: 2 }).map(
-      (m) => ({ ...m, stage: 'group' as const, groupLabel: null })
-    );
-    bracket = [...league, ...generatePlacementPlayoffPlaceholders(4)];
-  } else {
-    bracket = generateSingleEliminationBracket(participants);
-  }
-
-  // Ensure phases exist and match the tournament type. If a tournament was
-  // created before the phase model landed, listPhases would be empty here —
-  // resetPhasesForType is idempotent and guarantees the right shape.
+  // Phases drive both the participant minimum and the bracket shape.
+  // resetPhasesForType is a safety net for tournaments created before the
+  // phase model landed (their phases would be empty until backfilled).
   let phases = await listPhases(tournamentId);
   if (phases.length === 0) {
     phases = await resetPhasesForType(tournamentId, tournament.type);
   }
+
+  const min = computeMinParticipantsForPhases(phases);
+  if (participants.length < min) {
+    throw new Error(`Adicione pelo menos ${min} participantes.`);
+  }
+
+  const bracket: BracketMatch[] = generateBracketFromPhases(phases, participants);
   const stageToPhaseId = buildStageToPhaseIdMap(tournament.type, phases);
 
   const db = await getDatabase();
