@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Calendar, ChevronLeft, MapPin, Trophy } from 'lucide-react-native';
 
@@ -107,9 +107,46 @@ export default function MatchesScreen() {
   const handleSaveScore = useCallback(
     async (a: number, b: number) => {
       if (!editingMatch) return;
+      // Re-seed safety: editing a group/league score on a multi-phase
+      // tournament re-runs seedXxxFromYyy and silently zeroes any playoff
+      // matches that were already played. Warn the user first.
+      const isMultiPhase =
+        tournament?.type === 'groups_knockout' ||
+        tournament?.type === 'league_playoff';
+      const editingGroupOrLeague = editingMatch.stage === 'group';
+      if (isMultiPhase && editingGroupOrLeague) {
+        const playedPlayoffCount = matches.filter(
+          (m) =>
+            m.stage === 'knockout' && m.scoreA != null && m.scoreB != null
+        ).length;
+        if (playedPlayoffCount > 0) {
+          const confirmed = await new Promise<boolean>((resolve) => {
+            Alert.alert(
+              t('matches.reseedWarningTitle'),
+              t('matches.reseedWarningMessage', {
+                count: playedPlayoffCount,
+              }),
+              [
+                {
+                  text: t('common.cancel'),
+                  style: 'cancel',
+                  onPress: () => resolve(false),
+                },
+                {
+                  text: t('common.confirm'),
+                  style: 'destructive',
+                  onPress: () => resolve(true),
+                },
+              ],
+              { onDismiss: () => resolve(false) }
+            );
+          });
+          if (!confirmed) return;
+        }
+      }
       await setScore(tournamentId, editingMatch.id, a, b);
     },
-    [editingMatch, setScore, tournamentId]
+    [editingMatch, matches, tournament, setScore, tournamentId, t]
   );
 
   const handleClearScore = useCallback(async () => {

@@ -116,6 +116,11 @@
     "regenerate": "Regenerate bracket",
     "regenerateConfirmTitle": "Regenerate bracket?",
     "regenerateConfirmMessage": "All current matches and results will be erased.",
+    "reseedWarningTitle": "Reorder standings?",
+    "reseedWarningMessage": {
+      "one": "Editing this score may change who plays the final stages. {{count}} already-played final match will be erased.",
+      "other": "Editing this score may change who plays the final stages. {{count}} already-played final matches will be erased."
+    },
     "needMoreParticipants": "Add at least 2 participants to generate the bracket.",
     "needMoreParticipantsGroups": "Add at least 4 participants for this format.",
     "groupStage": "Group stage",

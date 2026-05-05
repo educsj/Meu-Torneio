@@ -116,6 +116,11 @@
     "regenerate": "Recriar chaveamento",
     "regenerateConfirmTitle": "Recriar chaveamento?",
     "regenerateConfirmMessage": "Todas as partidas e resultados atuais serão apagados.",
+    "reseedWarningTitle": "Reordenar classificação?",
+    "reseedWarningMessage": {
+      "one": "Editar este placar pode mudar quem joga as fases finais. {{count}} partida final já jogada será apagada.",
+      "other": "Editar este placar pode mudar quem joga as fases finais. {{count}} partidas finais já jogadas serão apagadas."
+    },
     "needMoreParticipants": "Adicione pelo menos 2 participantes para gerar o chaveamento.",
     "needMoreParticipantsGroups": "Adicione pelo menos 4 participantes para esse formato.",
     "groupStage": "Fase de grupos",
