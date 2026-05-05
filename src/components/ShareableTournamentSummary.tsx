@@ -102,7 +102,11 @@ export const ShareableTournamentSummary = forwardRef<View, Props>(
         ref={ref}
         collapsable={false}
         className="bg-white p-6 dark:bg-slate-950"
-        style={{ width: 600 }}
+        // Width adapts to its container instead of being clamped at 600 — a
+        // fixed-width-larger-than-the-screen made the preview unreadable on
+        // phones, even though the captured PNG looked fine. captureRef
+        // captures at the native pixel ratio, so on a 3x-DPR phone a
+        // logical-360 layout still yields a >1000px-wide PNG.
       >
         <Header
           tournament={tournament}
