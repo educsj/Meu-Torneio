@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Match, Participant, Tournament } from '@/types/tournament';
+import type {
+  Match,
+  Participant,
+  Phase,
+  Tournament,
+} from '@/types/tournament';
 
 import {
   BACKUP_VERSION,
@@ -157,6 +162,135 @@ describe('parseBackup', () => {
     const bad = serializeTournament(t, ps, ms);
     const corrupted = { ...bad, matches: [{ localId: 1, round: 1 }] };
     expect(() => parseBackup(JSON.stringify(corrupted))).toThrow(/partida/i);
+  });
+});
+
+describe('backup v2 — phases roundtrip', () => {
+  const phases: Phase[] = [
+    {
+      id: 50,
+      tournamentId: 7,
+      ordinal: 0,
+      name: 'Liga',
+      format: 'round_robin',
+      legs: 2,
+      groupCount: 1,
+      qualifiers: 4,
+      status: 'pending',
+    },
+    {
+      id: 51,
+      tournamentId: 7,
+      ordinal: 1,
+      name: 'Playoffs',
+      format: 'placement_playoff',
+      legs: 1,
+      groupCount: 1,
+      qualifiers: null,
+      status: 'pending',
+    },
+  ];
+
+  it('serializes phases with localId and survives JSON roundtrip', () => {
+    const backup = serializeTournament(t, ps, ms, phases);
+    expect(backup.phases).toHaveLength(2);
+    expect(backup.phases![0]).toMatchObject({
+      localId: 50,
+      ordinal: 0,
+      format: 'round_robin',
+      legs: 2,
+      qualifiers: 4,
+    });
+    const parsed = parseBackup(JSON.stringify(backup));
+    expect(parsed.phases).toEqual(backup.phases);
+  });
+
+  it('matches reference phases via phaseLocalId in v2 output', () => {
+    const matchesWithPhase: Match[] = ms.map((m, i) => ({
+      ...m,
+      phaseId: i === 0 ? 50 : 51,
+    }));
+    const backup = serializeTournament(t, ps, matchesWithPhase, phases);
+    expect(backup.matches[0].phaseLocalId).toBe(50);
+    expect(backup.matches[1].phaseLocalId).toBe(51);
+  });
+
+  it('rejects malformed phase entries', () => {
+    const backup = serializeTournament(t, ps, ms, phases);
+    const corrupted: Record<string, unknown> = JSON.parse(
+      JSON.stringify(backup)
+    );
+    (corrupted.phases as unknown[])[0] = { localId: 1 }; // missing required
+    expect(() => parseBackup(JSON.stringify(corrupted))).toThrow(/fase/i);
+  });
+
+  it('rejects unknown phase format strings', () => {
+    const backup = serializeTournament(t, ps, ms, phases);
+    const corrupted: Record<string, unknown> = JSON.parse(
+      JSON.stringify(backup)
+    );
+    (corrupted.phases as Array<Record<string, unknown>>)[0].format =
+      'mystery';
+    expect(() => parseBackup(JSON.stringify(corrupted))).toThrow(/fase/i);
+  });
+});
+
+describe('backup v1 — legacy backwards compatibility', () => {
+  it('imports a v1 backup with no phases array (preset tournament)', () => {
+    // Hand-crafted v1 backup — represents what older app versions wrote.
+    const v1Backup = {
+      version: 1,
+      exportedAt: '2026-01-01T00:00:00Z',
+      tournament: {
+        name: 'Old Cup',
+        type: 'round_robin',
+        status: 'finished',
+        createdAt: '2025-12-01T00:00:00Z',
+      },
+      participants: [
+        { localId: 1, name: 'A', seed: null },
+        { localId: 2, name: 'B', seed: null },
+      ],
+      matches: [
+        {
+          localId: 10,
+          round: 1,
+          stage: 'main',
+          groupLabel: null,
+          participantALocalId: 1,
+          participantBLocalId: 2,
+          scoreA: 3,
+          scoreB: 1,
+          winnerLocalId: 1,
+          nextMatchLocalId: null,
+          scheduledAt: null,
+          location: null,
+        },
+      ],
+      // Note: no `phases` key, no `phaseLocalId` on matches.
+    };
+    const parsed = parseBackup(JSON.stringify(v1Backup));
+    expect(parsed.version).toBe(1);
+    expect(parsed.phases).toBeUndefined();
+    expect(parsed.matches[0].phaseLocalId).toBeUndefined();
+  });
+
+  it('rejects a backup with type=custom but no phases (impossible to reconstruct)', () => {
+    const broken = {
+      version: 1,
+      exportedAt: '2026-01-01T00:00:00Z',
+      tournament: {
+        name: 'Mystery Custom',
+        type: 'custom',
+        status: 'draft',
+        createdAt: '2025-12-01T00:00:00Z',
+      },
+      participants: [],
+      matches: [],
+    };
+    expect(() => parseBackup(JSON.stringify(broken))).toThrow(
+      /personalizado|custom/i
+    );
   });
 });
 

@@ -1,13 +1,24 @@
 import type {
   Match,
   Participant,
+  Phase,
+  PhaseFormat,
+  PhaseStatus,
   Tournament,
   TournamentType,
 } from '@/types/tournament';
 
 /**
- * Versioned snapshot of a single tournament + its participants and matches.
- * Stored with `version` so future format changes can be migrated cleanly.
+ * Versioned snapshot of a single tournament + its participants, matches,
+ * and (v2+) phases.
+ *
+ * v1 → v2 changes:
+ *   - Added optional top-level `phases` array.
+ *   - Added optional `phaseLocalId` on each match (FK into phases[].localId).
+ *
+ * v1 backups remain importable: phases are reconstructed from the legacy
+ * `tournament.type` via defaultPhasesForType, and matches' phase_id is
+ * inferred from `stage`. Custom tournaments require v2 (phases array).
  */
 export interface TournamentBackup {
   version: number;
@@ -24,6 +35,17 @@ export interface TournamentBackup {
     name: string;
     seed: number | null;
   }>;
+  /** v2+. Absent on v1 backups. */
+  phases?: Array<{
+    localId: number;
+    ordinal: number;
+    name: string;
+    format: PhaseFormat;
+    legs: 1 | 2;
+    groupCount: number;
+    qualifiers: number | null;
+    status: PhaseStatus;
+  }>;
   matches: Array<{
     localId: number;
     round: number;
@@ -37,17 +59,26 @@ export interface TournamentBackup {
     winnerLocalId: number | null;
     /** localId references into matches[].localId. */
     nextMatchLocalId: number | null;
+    /** localId references into phases[].localId. v2+; absent on v1. */
+    phaseLocalId?: number | null;
     scheduledAt: string | null;
     location: string | null;
   }>;
 }
 
-export const BACKUP_VERSION = 1;
+export const BACKUP_VERSION = 2;
+const VALID_PHASE_FORMATS: PhaseFormat[] = [
+  'single_elimination',
+  'round_robin',
+  'placement_playoff',
+];
+const VALID_PHASE_STATUS: PhaseStatus[] = ['pending', 'ongoing', 'finished'];
 const VALID_TYPES: TournamentType[] = [
   'single_elimination',
   'round_robin',
   'groups_knockout',
   'league_playoff',
+  'custom',
 ];
 const VALID_STATUS: Tournament['status'][] = ['draft', 'ongoing', 'finished'];
 
@@ -59,7 +90,8 @@ const VALID_STATUS: Tournament['status'][] = ['draft', 'ongoing', 'finished'];
 export function serializeTournament(
   tournament: Tournament,
   participants: Participant[],
-  matches: Match[]
+  matches: Match[],
+  phases: Phase[] = []
 ): TournamentBackup {
   return {
     version: BACKUP_VERSION,
@@ -75,6 +107,16 @@ export function serializeTournament(
       name: p.name,
       seed: p.seed,
     })),
+    phases: phases.map((p) => ({
+      localId: p.id,
+      ordinal: p.ordinal,
+      name: p.name,
+      format: p.format,
+      legs: p.legs,
+      groupCount: p.groupCount,
+      qualifiers: p.qualifiers,
+      status: p.status,
+    })),
     matches: matches.map((m) => ({
       localId: m.id,
       round: m.round,
@@ -86,6 +128,7 @@ export function serializeTournament(
       scoreB: m.scoreB,
       winnerLocalId: m.winnerId,
       nextMatchLocalId: m.nextMatchId,
+      phaseLocalId: m.phaseId,
       scheduledAt: m.scheduledAt,
       location: m.location,
     })),
@@ -173,6 +216,40 @@ export function parseBackup(json: string): TournamentBackup {
         `Partida #${i + 1} mal formada (esperado { localId, round, stage, ... }).`
       );
     }
+  }
+
+  // v2 phases: optional on input. When present each entry must be well-formed.
+  // When type='custom', phases are mandatory — there's no fallback shape.
+  const phasesRaw = obj.phases;
+  const hasPhases = Array.isArray(phasesRaw) && phasesRaw.length > 0;
+  if (phasesRaw !== undefined && !Array.isArray(phasesRaw)) {
+    throw new BackupParseError('Campo "phases" deve ser um array.');
+  }
+  if (hasPhases) {
+    for (const [i, raw] of phasesRaw.entries()) {
+      const pp = raw as Record<string, unknown>;
+      if (
+        typeof pp?.localId !== 'number' ||
+        typeof pp?.ordinal !== 'number' ||
+        typeof pp?.name !== 'string' ||
+        typeof pp?.format !== 'string' ||
+        !VALID_PHASE_FORMATS.includes(pp.format as PhaseFormat) ||
+        typeof pp?.legs !== 'number' ||
+        (pp.legs !== 1 && pp.legs !== 2) ||
+        typeof pp?.groupCount !== 'number' ||
+        (pp.qualifiers != null && typeof pp.qualifiers !== 'number') ||
+        typeof pp?.status !== 'string' ||
+        !VALID_PHASE_STATUS.includes(pp.status as PhaseStatus)
+      ) {
+        throw new BackupParseError(
+          `Fase #${i + 1} mal formada (esperado { localId, ordinal, name, format, legs, groupCount, qualifiers, status }).`
+        );
+      }
+    }
+  } else if (t.type === 'custom') {
+    throw new BackupParseError(
+      'Backup de torneio personalizado precisa incluir as fases (versão 2+).'
+    );
   }
 
   return raw as TournamentBackup;

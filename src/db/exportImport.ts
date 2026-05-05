@@ -8,7 +8,7 @@ import {
 import { getDatabase } from './index';
 import { listMatches } from './matches';
 import { listParticipants } from './participants';
-import { createDefaultPhasesForType } from './phases';
+import { createDefaultPhasesForType, listPhases } from './phases';
 import { getTournamentById } from './tournaments';
 
 /**
@@ -20,11 +20,12 @@ export async function exportTournamentJson(
 ): Promise<{ filename: string; json: string; backup: TournamentBackup }> {
   const tournament = await getTournamentById(tournamentId);
   if (!tournament) throw new Error('Torneio não encontrado.');
-  const [participants, matches] = await Promise.all([
+  const [participants, matches, phases] = await Promise.all([
     listParticipants(tournamentId),
     listMatches(tournamentId),
+    listPhases(tournamentId),
   ]);
-  const backup = serializeTournament(tournament, participants, matches);
+  const backup = serializeTournament(tournament, participants, matches, phases);
   const json = JSON.stringify(backup, null, 2);
   // Imported lazily to avoid a circular import — the suggested-name helper
   // lives in the pure-logic module.
@@ -62,21 +63,45 @@ export async function importTournamentJson(json: string): Promise<number> {
     );
     newTournamentId = tInsert.lastInsertRowId;
 
-    // 1b) phases — create defaults for the imported tournament's type and
-    // build a stage→phase_id map to attach to imported matches.
-    const phases = await createDefaultPhasesForType(
-      newTournamentId,
-      backup.tournament.type
-    );
+    // 1b) phases. Two paths:
+    //   v2 backup with phases array → insert them verbatim, build phaseLocalId
+    //                                  → newPhaseId map for matches.
+    //   v1 backup (no phases) → fall back to defaultPhasesForType + stage map.
+    const phaseIdMap = new Map<number, number>();
     const stageToPhaseId = new Map<string, number>();
-    if (backup.tournament.type === 'groups_knockout') {
-      const group = phases.find((p) => p.ordinal === 0)?.id;
-      const knockout = phases.find((p) => p.ordinal === 1)?.id;
-      if (group != null) stageToPhaseId.set('group', group);
-      if (knockout != null) stageToPhaseId.set('knockout', knockout);
+    if (backup.phases && backup.phases.length > 0) {
+      for (const p of backup.phases) {
+        const r = await db.runAsync(
+          `INSERT INTO phases
+            (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+          [
+            newTournamentId,
+            p.ordinal,
+            p.name,
+            p.format,
+            p.legs,
+            p.groupCount,
+            p.qualifiers,
+            p.status,
+          ]
+        );
+        phaseIdMap.set(p.localId, r.lastInsertRowId);
+      }
     } else {
-      const main = phases.find((p) => p.ordinal === 0)?.id;
-      if (main != null) stageToPhaseId.set('main', main);
+      const phases = await createDefaultPhasesForType(
+        newTournamentId,
+        backup.tournament.type
+      );
+      if (backup.tournament.type === 'groups_knockout') {
+        const group = phases.find((p) => p.ordinal === 0)?.id;
+        const knockout = phases.find((p) => p.ordinal === 1)?.id;
+        if (group != null) stageToPhaseId.set('group', group);
+        if (knockout != null) stageToPhaseId.set('knockout', knockout);
+      } else {
+        const main = phases.find((p) => p.ordinal === 0)?.id;
+        if (main != null) stageToPhaseId.set('main', main);
+      }
     }
 
     // 2) participants — keep mapping localId → newId
@@ -99,6 +124,12 @@ export async function importTournamentJson(json: string): Promise<number> {
 
     for (const m of backup.matches) {
       const stage = m.stage ?? 'main';
+      // v2 backups carry phaseLocalId per match → use the map. v1 backups
+      // don't, so fall back to the stage→phase_id mapping built earlier.
+      const phaseId =
+        m.phaseLocalId != null
+          ? (phaseIdMap.get(m.phaseLocalId) ?? null)
+          : (stageToPhaseId.get(stage) ?? null);
       const r = await db.runAsync(
         `INSERT INTO matches
           (tournament_id, round, participant_a_id, participant_b_id,
@@ -117,7 +148,7 @@ export async function importTournamentJson(json: string): Promise<number> {
           m.location,
           m.groupLabel,
           stage,
-          stageToPhaseId.get(stage) ?? null,
+          phaseId,
         ]
       );
       matchIdMap.set(m.localId, r.lastInsertRowId);
