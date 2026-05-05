@@ -13,7 +13,10 @@ import {
   generateSingleEliminationBracket,
   type BracketMatch,
 } from '@/utils/bracket';
-import { computeStandings } from '@/utils/standings';
+import {
+  computeGroupsKnockoutSeeding,
+  computeLeaguePlayoffSeeding,
+} from '@/utils/playoffSeeding';
 import { computeTournamentStatus } from '@/utils/tournamentStatus';
 
 import { getDatabase } from './index';
@@ -452,29 +455,24 @@ export async function seedPlayoffFromLeague(
   const allMatches = await listMatches(tournamentId);
   const leagueMatches = allMatches.filter((m) => m.stage === 'group');
   const participants = await listParticipants(tournamentId);
-  const standings = computeStandings(leagueMatches, participants);
-  if (standings.length < 4) return;
+  const seeding = computeLeaguePlayoffSeeding(leagueMatches, participants);
+  if (!seeding) return;
 
   const playoff = allMatches
     .filter((m) => m.stage === 'knockout')
     .sort((a, b) => a.id - b.id);
-  if (playoff.length < 2) return;
+  if (playoff.length < seeding.length) return;
 
-  // Match with smallest id = final (1st vs 2nd); next = 3rd-place (3rd vs 4th).
-  await db.runAsync(
-    `UPDATE matches
-     SET participant_a_id = ?, participant_b_id = ?,
-         score_a = NULL, score_b = NULL, winner_id = NULL
-     WHERE id = ?;`,
-    [standings[0].participantId, standings[1].participantId, playoff[0].id]
-  );
-  await db.runAsync(
-    `UPDATE matches
-     SET participant_a_id = ?, participant_b_id = ?,
-         score_a = NULL, score_b = NULL, winner_id = NULL
-     WHERE id = ?;`,
-    [standings[2].participantId, standings[3].participantId, playoff[1].id]
-  );
+  // playoff[0] = final (1st vs 2nd); playoff[1] = 3rd-place (3rd vs 4th).
+  for (let i = 0; i < seeding.length; i++) {
+    await db.runAsync(
+      `UPDATE matches
+       SET participant_a_id = ?, participant_b_id = ?,
+           score_a = NULL, score_b = NULL, winner_id = NULL
+       WHERE id = ?;`,
+      [seeding[i].participantAId, seeding[i].participantBId, playoff[i].id]
+    );
+  }
 }
 
 /**
@@ -492,59 +490,27 @@ export async function seedKnockoutFromGroups(
   const allMatches = await listMatches(tournamentId);
   const groupMatches = allMatches.filter((m) => m.stage === 'group');
   const participants = await listParticipants(tournamentId);
-
-  // Compute standings PER group
-  const groupLabels = Array.from(
-    new Set(groupMatches.map((m) => m.groupLabel).filter((g): g is string => g != null))
-  ).sort();
-
-  const topByGroup = new Map<string, { firstId: number; secondId: number }>();
-  for (const label of groupLabels) {
-    const matches = groupMatches.filter((m) => m.groupLabel === label);
-    // restrict participants to those in this group
-    const ids = new Set<number>();
-    for (const m of matches) {
-      if (m.participantAId) ids.add(m.participantAId);
-      if (m.participantBId) ids.add(m.participantBId);
-    }
-    const groupParticipants = participants.filter((p) => ids.has(p.id));
-    const standings = computeStandings(matches, groupParticipants);
-    if (standings.length < 2) continue;
-    topByGroup.set(label, {
-      firstId: standings[0].participantId,
-      secondId: standings[1].participantId,
-    });
-  }
-
-  // Need at least 2 groups
-  if (topByGroup.size < 2) return;
-  const [labelA, labelB] = groupLabels.slice(0, 2);
-  const a = topByGroup.get(labelA);
-  const b = topByGroup.get(labelB);
-  if (!a || !b) return;
+  const seeding = computeGroupsKnockoutSeeding(groupMatches, participants);
+  if (!seeding) return;
 
   const knockout = allMatches
     .filter((m) => m.stage === 'knockout' && m.round === 1)
     .sort((m1, m2) => m1.id - m2.id);
-  if (knockout.length < 2) return;
+  if (knockout.length < seeding.length) return;
 
-  // Semi 1: 1A vs 2B
-  await db.runAsync(
-    `UPDATE matches
-     SET participant_a_id = ?, participant_b_id = ?,
-         score_a = NULL, score_b = NULL, winner_id = NULL
-     WHERE id = ?;`,
-    [a.firstId, b.secondId, knockout[0].id]
-  );
-  // Semi 2: 1B vs 2A
-  await db.runAsync(
-    `UPDATE matches
-     SET participant_a_id = ?, participant_b_id = ?,
-         score_a = NULL, score_b = NULL, winner_id = NULL
-     WHERE id = ?;`,
-    [b.firstId, a.secondId, knockout[1].id]
-  );
-  // Final: clear slots in case they had stale values
+  // Apply each cross-pairing to a semifinal slot.
+  for (let i = 0; i < seeding.length; i++) {
+    await db.runAsync(
+      `UPDATE matches
+       SET participant_a_id = ?, participant_b_id = ?,
+           score_a = NULL, score_b = NULL, winner_id = NULL
+       WHERE id = ?;`,
+      [seeding[i].participantAId, seeding[i].participantBId, knockout[i].id]
+    );
+  }
+
+  // Final: clear slots in case they carry stale winners from a previous
+  // seeding (e.g. user edits a group score and the semifinal pairings shift).
   const final = allMatches.find(
     (m) => m.stage === 'knockout' && m.round === 2
   );
