@@ -5,14 +5,14 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { enableFreeze } from 'react-native-screens';
+import { enableScreens } from 'react-native-screens';
 import { useColorScheme } from 'react-native';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getDatabase } from '@/db';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 
-enableFreeze(false);
+enableScreens(false);
 
 export default function RootLayout() {
   const themePref = useSettingsStore((s) => s.theme);
