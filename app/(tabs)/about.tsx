@@ -5,12 +5,14 @@ import { ExternalLink } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
+import { useThemeIcon } from '@/hooks/useThemeIcon';
 import { useTranslation } from '@/i18n/useTranslation';
 
 const REPO_URL = 'https://github.com/educsj/Meu-Torneio';
 
 export default function AboutScreen() {
   const { t } = useTranslation();
+  const icon = useThemeIcon();
   const version = Constants.expoConfig?.version ?? '0.0.0';
 
   return (
@@ -58,7 +60,7 @@ export default function AboutScreen() {
         label={t('about.repository')}
         variant="secondary"
         onPress={() => Linking.openURL(REPO_URL)}
-        leading={<ExternalLink size={18} color="#0f172a" />}
+        leading={<ExternalLink size={18} color={icon.primary} />}
       />
     </Screen>
   );

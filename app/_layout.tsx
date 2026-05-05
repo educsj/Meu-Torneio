@@ -6,7 +6,12 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
-import { useColorScheme } from 'react-native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from '@react-navigation/native';
+import { colorScheme, useColorScheme } from 'nativewind';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getDatabase } from '@/db';
@@ -16,9 +21,12 @@ enableScreens(false);
 
 export default function RootLayout() {
   const themePref = useSettingsStore((s) => s.theme);
-  const systemScheme = useColorScheme();
-  const effective =
-    themePref === 'system' ? (systemScheme ?? 'light') : themePref;
+  const { colorScheme: active } = useColorScheme();
+  const isDark = active === 'dark';
+
+  useEffect(() => {
+    colorScheme.set(themePref);
+  }, [themePref]);
 
   useEffect(() => {
     getDatabase().catch((err) => {
@@ -26,23 +34,40 @@ export default function RootLayout() {
     });
   }, []);
 
+  const navTheme = useMemo(() => {
+    const base = isDark ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        background: isDark ? '#020617' : '#ffffff',
+        card: isDark ? '#0f172a' : '#ffffff',
+        text: isDark ? '#f8fafc' : '#0f172a',
+        border: isDark ? '#1e293b' : '#e2e8f0',
+        primary: '#1a78f5',
+      },
+    };
+  }, [isDark]);
+
   const screenOptions = useMemo(
     () => ({
       headerShown: false,
       contentStyle: {
-        backgroundColor: effective === 'dark' ? '#020617' : '#ffffff',
+        backgroundColor: isDark ? '#020617' : '#ffffff',
       },
     }),
-    [effective]
+    [isDark]
   );
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar style={effective === 'dark' ? 'light' : 'dark'} />
-        <ErrorBoundary>
-          <Stack screenOptions={screenOptions} />
-        </ErrorBoundary>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <ThemeProvider value={navTheme}>
+          <ErrorBoundary>
+            <Stack screenOptions={screenOptions} />
+          </ErrorBoundary>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { TextField } from '@/components/ui/TextField';
 import { TournamentTypePicker } from '@/components/TournamentTypePicker';
+import { useThemeIcon } from '@/hooks/useThemeIcon';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
 import type {
@@ -37,6 +38,7 @@ function defaultScoringFor(type: TournamentType): ScoringRule {
 export default function NewTournamentScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const icon = useThemeIcon();
   const add = useTournamentsStore((s) => s.add);
 
   const [name, setName] = useState('');
@@ -97,7 +99,7 @@ export default function NewTournamentScreen() {
           onPress={() => router.back()}
           className="-ml-2 mr-2 rounded-full p-2 active:bg-slate-100 dark:active:bg-slate-800"
         >
-          <ChevronLeft size={22} color="#475569" />
+          <ChevronLeft size={22} color={icon.secondary} />
         </Pressable>
         <Text className="text-2xl font-bold text-slate-900 dark:text-white">
           {t('newTournament.title')}

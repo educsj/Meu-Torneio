@@ -11,6 +11,7 @@ import { ShareableTournamentSummary } from '@/components/ShareableTournamentSumm
 import { Button } from '@/components/ui/Button';
 import { listParticipants } from '@/db/participants';
 import { listPhases } from '@/db/phases';
+import { useThemeIcon } from '@/hooks/useThemeIcon';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useMatchesStore } from '@/stores/useMatchesStore';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
@@ -24,6 +25,7 @@ export default function TournamentImageScreen() {
   const tournamentId = useMemo(() => Number(id), [id]);
   const router = useRouter();
   const { t } = useTranslation();
+  const icon = useThemeIcon();
 
   const tournament = useTournamentsStore((s) =>
     s.tournaments.find((tt) => tt.id === tournamentId)
@@ -124,7 +126,7 @@ export default function TournamentImageScreen() {
             onPress={() => router.back()}
             className="-ml-2 mr-2 rounded-full p-2 active:bg-slate-100 dark:active:bg-slate-800"
           >
-            <ChevronLeft size={22} color="#475569" />
+            <ChevronLeft size={22} color={icon.secondary} />
           </Pressable>
         </View>
       </SafeAreaView>
@@ -146,7 +148,7 @@ export default function TournamentImageScreen() {
           onPress={() => router.back()}
           className="-ml-2 rounded-full p-2 active:bg-slate-200 dark:active:bg-slate-800"
         >
-          <ChevronLeft size={22} color="#475569" />
+          <ChevronLeft size={22} color={icon.secondary} />
         </Pressable>
         <Text className="text-base font-semibold text-slate-900 dark:text-white">
           {t('image.title')}
@@ -187,7 +189,7 @@ export default function TournamentImageScreen() {
           onPress={handleSaveToGallery}
           disabled={sharing || saving}
           variant="secondary"
-          leading={<Download size={16} color="#0f172a" />}
+          leading={<Download size={16} color={icon.primary} />}
         />
       </View>
     </SafeAreaView>

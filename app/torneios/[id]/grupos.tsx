@@ -6,6 +6,7 @@ import { ChevronLeft, Users } from 'lucide-react-native';
 import { Screen } from '@/components/ui/Screen';
 import { listParticipants } from '@/db/participants';
 import { listPhases } from '@/db/phases';
+import { useThemeIcon } from '@/hooks/useThemeIcon';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useMatchesStore } from '@/stores/useMatchesStore';
 import type {
@@ -22,6 +23,7 @@ export default function GroupsScreen() {
   const tournamentId = useMemo(() => Number(id), [id]);
   const router = useRouter();
   const { t } = useTranslation();
+  const icon = useThemeIcon();
 
   const matches = useMatchesStore(
     (s) => s.byTournament[tournamentId] ?? EMPTY_MATCHES
@@ -85,7 +87,7 @@ export default function GroupsScreen() {
           onPress={() => router.back()}
           className="-ml-2 mr-2 rounded-full p-2 active:bg-slate-100 dark:active:bg-slate-800"
         >
-          <ChevronLeft size={22} color="#475569" />
+          <ChevronLeft size={22} color={icon.secondary} />
         </Pressable>
         <Text className="text-2xl font-bold text-slate-900 dark:text-white">
           {t('groups.title')}

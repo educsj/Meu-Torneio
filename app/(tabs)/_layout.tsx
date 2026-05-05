@@ -1,18 +1,14 @@
 import { useMemo } from 'react';
 import { Tabs } from 'expo-router';
 import { Info, Settings, Trophy } from 'lucide-react-native';
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from 'nativewind';
 
 import { useTranslation } from '@/i18n/useTranslation';
-import { useSettingsStore } from '@/stores/useSettingsStore';
 
 export default function TabsLayout() {
   const { t } = useTranslation();
-  const themePref = useSettingsStore((s) => s.theme);
-  const systemScheme = useColorScheme();
-  const isDark =
-    themePref === 'dark' ||
-    (themePref === 'system' && systemScheme === 'dark');
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
   const screenOptions = useMemo(
     () => ({

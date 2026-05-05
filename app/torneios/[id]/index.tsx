@@ -19,6 +19,7 @@ import { EditTournamentNameModal } from '@/components/EditTournamentNameModal';
 import { ParticipantList } from '@/components/ParticipantList';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
+import { useThemeIcon } from '@/hooks/useThemeIcon';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useMatchesStore } from '@/stores/useMatchesStore';
 import { useParticipantsStore } from '@/stores/useParticipantsStore';
@@ -46,6 +47,7 @@ export default function TournamentDetailScreen() {
   const tournamentId = useMemo(() => Number(id), [id]);
   const { t } = useTranslation();
   const router = useRouter();
+  const icon = useThemeIcon();
 
   const fetchById = useTournamentsStore((s) => s.fetchById);
   const removeTournament = useTournamentsStore((s) => s.remove);
@@ -194,7 +196,7 @@ export default function TournamentDetailScreen() {
       <View className="my-4 gap-2">
         <NavButton
           label={t('tournament.matches')}
-          icon={<Swords size={18} color="#475569" />}
+          icon={<Swords size={18} color={icon.secondary} />}
           onPress={() =>
             router.push({
               pathname: '/torneios/[id]/partidas',
@@ -205,7 +207,7 @@ export default function TournamentDetailScreen() {
         {isSingleElim ? (
           <NavButton
             label={t('tournament.bracket')}
-            icon={<GitBranch size={18} color="#475569" />}
+            icon={<GitBranch size={18} color={icon.secondary} />}
             onPress={() =>
               router.push({
                 pathname: '/torneios/[id]/chaveamento',
@@ -217,7 +219,7 @@ export default function TournamentDetailScreen() {
         {showStandings ? (
           <NavButton
             label={t('standings.title')}
-            icon={<ListOrdered size={18} color="#475569" />}
+            icon={<ListOrdered size={18} color={icon.secondary} />}
             onPress={() =>
               router.push({
                 pathname: '/torneios/[id]/classificacao',
@@ -229,7 +231,7 @@ export default function TournamentDetailScreen() {
         {showGroups ? (
           <NavButton
             label={t('groups.title')}
-            icon={<Users size={18} color="#475569" />}
+            icon={<Users size={18} color={icon.secondary} />}
             onPress={() =>
               router.push({
                 pathname: '/torneios/[id]/grupos',
@@ -240,7 +242,7 @@ export default function TournamentDetailScreen() {
         ) : null}
         <NavButton
           label={t('image.nav')}
-          icon={<ImageIcon size={18} color="#475569" />}
+          icon={<ImageIcon size={18} color={icon.secondary} />}
           onPress={() =>
             router.push({
               pathname: '/torneios/[id]/imagem',
@@ -259,7 +261,7 @@ export default function TournamentDetailScreen() {
           disabled={!canGenerate || generating}
           variant={hasMatches ? 'secondary' : 'primary'}
           leading={
-            <Shuffle size={16} color={hasMatches ? '#0f172a' : '#fff'} />
+            <Shuffle size={16} color={hasMatches ? icon.primary : '#fff'} />
           }
         />
         {!enoughParticipants ? (
@@ -329,6 +331,7 @@ function Header({
   onEdit: () => void;
 }) {
   const { t } = useTranslation();
+  const icon = useThemeIcon();
   return (
     <View className="pt-6">
       <View className="flex-row items-center justify-between">
@@ -336,14 +339,14 @@ function Header({
           onPress={onBack}
           className="-ml-2 rounded-full p-2 active:bg-slate-100 dark:active:bg-slate-800"
         >
-          <ChevronLeft size={22} color="#475569" />
+          <ChevronLeft size={22} color={icon.secondary} />
         </Pressable>
         <View className="flex-row items-center">
           <Pressable
             onPress={onEdit}
             className="rounded-full p-2 active:bg-slate-100 dark:active:bg-slate-800"
           >
-            <Pencil size={18} color="#475569" />
+            <Pencil size={18} color={icon.secondary} />
           </Pressable>
           <Pressable
             onPress={onDelete}
@@ -375,13 +378,14 @@ function NotFoundHeader({
   title: string;
   onBack: () => void;
 }) {
+  const icon = useThemeIcon();
   return (
     <View className="flex-row items-center pt-6">
       <Pressable
         onPress={onBack}
         className="-ml-2 mr-2 rounded-full p-2 active:bg-slate-100 dark:active:bg-slate-800"
       >
-        <ChevronLeft size={22} color="#475569" />
+        <ChevronLeft size={22} color={icon.secondary} />
       </Pressable>
       <Text className="text-xl font-bold text-slate-900 dark:text-white">
         {title}
