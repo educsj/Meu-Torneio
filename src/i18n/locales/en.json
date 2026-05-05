@@ -63,6 +63,23 @@
       "draft": "Draft",
       "ongoing": "Ongoing",
       "finished": "Finished"
+    },
+    "deleteTitle": "Delete tournament?",
+    "deleteMessage": "This action cannot be undone. All participants and matches will be removed too.",
+    "notFound": "Tournament not found.",
+    "comingSoon": "Coming soon."
+  },
+  "participants": {
+    "title": "Participants",
+    "add": "Add participant",
+    "placeholder": "Participant name",
+    "empty": "No participants yet.",
+    "emptyDescription": "Add participants to start generating matches.",
+    "deleteTitle": "Remove participant?",
+    "deleteMessage": "Are you sure you want to remove this participant?",
+    "count": {
+      "one": "1 participant",
+      "other": "{{count}} participants"
     }
   },
   "about": {

@@ -45,6 +45,17 @@ export async function createTournament(input: {
   return rowToTournament(row);
 }
 
+export async function getTournamentById(
+  id: number
+): Promise<Tournament | null> {
+  const db = await getDatabase();
+  const row = await db.getFirstAsync<TournamentRow>(
+    'SELECT id, name, type, status, created_at FROM tournaments WHERE id = ?;',
+    [id]
+  );
+  return row ? rowToTournament(row) : null;
+}
+
 export async function deleteTournament(id: number): Promise<void> {
   const db = await getDatabase();
   await db.runAsync('DELETE FROM tournaments WHERE id = ?;', [id]);

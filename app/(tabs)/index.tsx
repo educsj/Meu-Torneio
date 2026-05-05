@@ -49,7 +49,14 @@ export default function TournamentsScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <Card>
+          <Card
+            onPress={() =>
+              router.push({
+                pathname: '/torneios/[id]',
+                params: { id: String(item.id) },
+              })
+            }
+          >
             <Text className="text-base font-semibold text-slate-900 dark:text-white">
               {item.name}
             </Text>

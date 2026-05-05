@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import {
   createTournament,
   deleteTournament,
+  getTournamentById,
   listTournaments,
 } from '@/db/tournaments';
 import type { Tournament, TournamentType } from '@/types/tournament';
@@ -14,6 +15,8 @@ interface TournamentsState {
   refresh: () => Promise<void>;
   add: (input: { name: string; type: TournamentType }) => Promise<Tournament>;
   remove: (id: number) => Promise<void>;
+  getById: (id: number) => Tournament | undefined;
+  fetchById: (id: number) => Promise<Tournament | null>;
 }
 
 export const useTournamentsStore = create<TournamentsState>((set, get) => ({
@@ -37,5 +40,15 @@ export const useTournamentsStore = create<TournamentsState>((set, get) => ({
   remove: async (id) => {
     await deleteTournament(id);
     set({ tournaments: get().tournaments.filter((t) => t.id !== id) });
+  },
+  getById: (id) => get().tournaments.find((t) => t.id === id),
+  fetchById: async (id) => {
+    const cached = get().tournaments.find((t) => t.id === id);
+    if (cached) return cached;
+    const fetched = await getTournamentById(id);
+    if (fetched) {
+      set({ tournaments: [fetched, ...get().tournaments] });
+    }
+    return fetched;
   },
 }));

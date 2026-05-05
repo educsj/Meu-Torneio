@@ -63,6 +63,23 @@
       "draft": "Rascunho",
       "ongoing": "Em andamento",
       "finished": "Finalizado"
+    },
+    "deleteTitle": "Excluir torneio?",
+    "deleteMessage": "Esta ação não pode ser desfeita. Todos os participantes e partidas também serão removidos.",
+    "notFound": "Torneio não encontrado.",
+    "comingSoon": "Em breve."
+  },
+  "participants": {
+    "title": "Participantes",
+    "add": "Adicionar participante",
+    "placeholder": "Nome do participante",
+    "empty": "Nenhum participante cadastrado.",
+    "emptyDescription": "Adicione participantes para começar a gerar as partidas.",
+    "deleteTitle": "Remover participante?",
+    "deleteMessage": "Tem certeza que deseja remover este participante?",
+    "count": {
+      "one": "1 participante",
+      "other": "{{count}} participantes"
     }
   },
   "about": {
