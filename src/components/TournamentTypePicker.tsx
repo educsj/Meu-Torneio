@@ -8,6 +8,7 @@ const OPTIONS: { value: TournamentType; key: string }[] = [
   { value: 'round_robin', key: 'roundRobin' },
   { value: 'groups_knockout', key: 'groupsKnockout' },
   { value: 'league_playoff', key: 'leaguePlayoff' },
+  { value: 'custom', key: 'custom' },
 ];
 
 interface Props {

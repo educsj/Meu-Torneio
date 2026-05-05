@@ -417,6 +417,24 @@ export async function isGroupStageComplete(
 }
 
 /**
+ * Phase-driven seeder: looks at phase 1's format and dispatches to the
+ * appropriate playoff-seeding function. No-op for single-phase tournaments
+ * or unsupported phase compositions. Replaces the type-specific calls in
+ * the store so custom tournaments seed correctly without per-type branching.
+ */
+export async function seedNextPhase(tournamentId: number): Promise<void> {
+  const phases = await listPhases(tournamentId);
+  const target = phases.find((p) => p.ordinal === 1);
+  if (!target) return;
+  if (target.format === 'single_elimination') {
+    await seedKnockoutFromGroups(tournamentId);
+  } else if (target.format === 'placement_playoff') {
+    await seedPlayoffFromLeague(tournamentId);
+  }
+  // round_robin → round_robin chains aren't seeded automatically yet.
+}
+
+/**
  * After the league phase of a league_playoff tournament finishes, fill in
  * the placement matches: 1st vs 2nd (the final) and 3rd vs 4th (3rd-place).
  * Idempotent — recomputes standings and overwrites slots, so re-running
@@ -426,9 +444,6 @@ export async function seedPlayoffFromLeague(
   tournamentId: number
 ): Promise<void> {
   const db = await getDatabase();
-  const tournament = await getTournamentById(tournamentId);
-  if (!tournament || tournament.type !== 'league_playoff') return;
-
   const allMatches = await listMatches(tournamentId);
   const leagueMatches = allMatches.filter((m) => m.stage === 'group');
   const participants = await listParticipants(tournamentId);
@@ -461,9 +476,6 @@ export async function seedKnockoutFromGroups(
   tournamentId: number
 ): Promise<void> {
   const db = await getDatabase();
-  const tournament = await getTournamentById(tournamentId);
-  if (!tournament || tournament.type !== 'groups_knockout') return;
-
   const allMatches = await listMatches(tournamentId);
   const groupMatches = allMatches.filter((m) => m.stage === 'group');
   const participants = await listParticipants(tournamentId);

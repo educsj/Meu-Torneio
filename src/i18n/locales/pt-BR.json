@@ -38,14 +38,17 @@
       "singleElimination": "Mata-mata",
       "roundRobin": "Pontos corridos",
       "groupsKnockout": "Grupos + Mata-mata",
-      "leaguePlayoff": "Liga + Playoffs"
+      "leaguePlayoff": "Liga + Playoffs",
+      "custom": "Personalizado"
     },
     "typesDescription": {
       "singleElimination": "Eliminação direta. Quem perde, sai.",
       "roundRobin": "Todos contra todos. Vence quem somar mais pontos.",
       "groupsKnockout": "Fase de grupos seguida de mata-mata.",
-      "leaguePlayoff": "Pontos corridos ida-e-volta. Top-4 disputam final e 3º lugar."
+      "leaguePlayoff": "Pontos corridos ida-e-volta. Top-4 disputam final e 3º lugar.",
+      "custom": "Você define as fases e os formatos."
     },
+    "invalidPhasesTitle": "Configuração de fases inválida",
     "create": "Criar torneio",
     "validationName": "Informe um nome para o torneio."
   },
@@ -176,5 +179,30 @@
     "data": "Dados",
     "languageDescription": "Escolha o idioma do aplicativo.",
     "themeDescription": "Aparência clara, escura ou seguir o sistema."
+  },
+  "phaseBuilder": {
+    "title": "Fases do torneio",
+    "phaseN": "Fase {{n}}",
+    "format": "Modalidade",
+    "formats": {
+      "roundRobin": "Liga",
+      "singleElimination": "Mata-mata",
+      "placementPlayoff": "Playoffs"
+    },
+    "legsLabel": "Jogos por confronto",
+    "legsSingle": "1 (turno único)",
+    "legsDouble": "2 (ida e volta)",
+    "groupCount": "Número de grupos",
+    "qualifiers": "Times que avançam à próxima fase",
+    "addPhase": "Adicionar fase",
+    "errors": {
+      "noPhases": "Adicione pelo menos uma fase.",
+      "tooManyPhases": "Máximo de {{max}} fases por enquanto.",
+      "lastPhaseHasQualifiers": "A última fase não pode ter classificados.",
+      "firstPhaseNoQualifiers": "Defina quantos times avançam da primeira fase.",
+      "qualifiersMustBeEven": "Os Playoffs precisam de um número par de classificados ({{got}} é ímpar).",
+      "singleElimQualifiersMustBe4": "Mata-mata só suporta 4 classificados por enquanto (você pediu {{got}}).",
+      "secondPhaseMustNotBeRoundRobin": "A segunda fase precisa ser Mata-mata ou Playoffs."
+    }
   }
 }

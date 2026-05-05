@@ -7,14 +7,22 @@ import {
   listTournaments,
   renameTournament,
 } from '@/db/tournaments';
-import type { Tournament, TournamentType } from '@/types/tournament';
+import type {
+  CustomPhaseInput,
+  Tournament,
+  TournamentType,
+} from '@/types/tournament';
 
 interface TournamentsState {
   tournaments: Tournament[];
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  add: (input: { name: string; type: TournamentType }) => Promise<Tournament>;
+  add: (input: {
+    name: string;
+    type: TournamentType;
+    customPhases?: CustomPhaseInput[];
+  }) => Promise<Tournament>;
   remove: (id: number) => Promise<void>;
   rename: (id: number, name: string) => Promise<void>;
   getById: (id: number) => Tournament | undefined;

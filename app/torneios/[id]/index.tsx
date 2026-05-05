@@ -34,6 +34,7 @@ const TYPE_LABEL_KEY: Record<TournamentType, string> = {
   round_robin: 'roundRobin',
   groups_knockout: 'groupsKnockout',
   league_playoff: 'leaguePlayoff',
+  custom: 'custom',
 };
 
 const EMPTY_PARTICIPANTS: readonly Participant[] = Object.freeze([]);
@@ -160,8 +161,14 @@ export default function TournamentDetailScreen() {
   const isRoundRobin = tournament.type === 'round_robin';
   const isGroups = tournament.type === 'groups_knockout';
   const isLeaguePlayoff = tournament.type === 'league_playoff';
-  const showStandings = isRoundRobin || isLeaguePlayoff;
-  const minParticipants = isGroups || isLeaguePlayoff ? 4 : 2;
+  const isCustom = tournament.type === 'custom';
+  // For custom tournaments we can't tell from the type alone whether to
+  // surface standings/groups; for now we surface standings (most custom
+  // configs use a league phase) and skip the groups view (multi-group is
+  // an advanced case). Polish lands when the wizard exposes more shapes.
+  const showStandings = isRoundRobin || isLeaguePlayoff || isCustom;
+  const minParticipants =
+    isGroups || isLeaguePlayoff || isCustom ? 4 : 2;
   const enoughParticipants = participants.length >= minParticipants;
   const canGenerate = enoughParticipants;
   const hasMatches = matches.length > 0;
@@ -238,7 +245,7 @@ export default function TournamentDetailScreen() {
         />
         {!enoughParticipants ? (
           <Text className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            {isGroups || isLeaguePlayoff
+            {isGroups || isLeaguePlayoff || isCustom
               ? t('matches.needMoreParticipantsGroups')
               : t('matches.needMoreParticipants')}
           </Text>

@@ -1,4 +1,9 @@
-import type { Phase, PhaseFormat, PhaseStatus } from '@/types/tournament';
+import type {
+  CustomPhaseInput,
+  Phase,
+  PhaseFormat,
+  PhaseStatus,
+} from '@/types/tournament';
 
 import { defaultPhasesForType, getDatabase } from './index';
 
@@ -60,6 +65,39 @@ export async function createDefaultPhasesForType(
       [
         tournamentId,
         p.ordinal,
+        p.name,
+        p.format,
+        p.legs,
+        p.groupCount,
+        p.qualifiers,
+        'pending',
+      ]
+    );
+  }
+  return listPhases(tournamentId);
+}
+
+/**
+ * Persist user-defined phases for a 'custom' tournament. Each phase is
+ * inserted with the ordinal it appears at in the input array.
+ */
+export async function createCustomPhases(
+  tournamentId: number,
+  customPhases: CustomPhaseInput[]
+): Promise<Phase[]> {
+  if (customPhases.length === 0) {
+    throw new Error('Custom tournament needs at least one phase.');
+  }
+  const db = await getDatabase();
+  for (let i = 0; i < customPhases.length; i++) {
+    const p = customPhases[i];
+    await db.runAsync(
+      `INSERT INTO phases
+        (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+      [
+        tournamentId,
+        i,
         p.name,
         p.format,
         p.legs,

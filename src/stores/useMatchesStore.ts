@@ -7,8 +7,7 @@ import {
   isGroupStageComplete,
   listMatches,
   recomputeTournamentStatus,
-  seedKnockoutFromGroups,
-  seedPlayoffFromLeague,
+  seedNextPhase,
   setMatchSchedule,
   setMatchScore,
 } from '@/db/matches';
@@ -75,14 +74,8 @@ export const useMatchesStore = create<MatchesState>((set, get) => ({
       ? tournament.type !== 'single_elimination'
       : false;
     await setMatchScore(matchId, scoreA, scoreB, { allowDraws });
-    if (tournament?.type === 'groups_knockout') {
-      if (await isGroupStageComplete(tournamentId)) {
-        await seedKnockoutFromGroups(tournamentId);
-      }
-    } else if (tournament?.type === 'league_playoff') {
-      if (await isGroupStageComplete(tournamentId)) {
-        await seedPlayoffFromLeague(tournamentId);
-      }
+    if (await isGroupStageComplete(tournamentId)) {
+      await seedNextPhase(tournamentId);
     }
     await recomputeTournamentStatus(tournamentId);
     const list = await listMatches(tournamentId);
@@ -93,15 +86,8 @@ export const useMatchesStore = create<MatchesState>((set, get) => ({
   },
   clearScore: async (tournamentId, matchId) => {
     await clearMatchScore(matchId);
-    const tournament = useTournamentsStore.getState().getById(tournamentId);
-    if (tournament?.type === 'groups_knockout') {
-      if (await isGroupStageComplete(tournamentId)) {
-        await seedKnockoutFromGroups(tournamentId);
-      }
-    } else if (tournament?.type === 'league_playoff') {
-      if (await isGroupStageComplete(tournamentId)) {
-        await seedPlayoffFromLeague(tournamentId);
-      }
+    if (await isGroupStageComplete(tournamentId)) {
+      await seedNextPhase(tournamentId);
     }
     await recomputeTournamentStatus(tournamentId);
     const list = await listMatches(tournamentId);

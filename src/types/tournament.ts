@@ -2,7 +2,8 @@ export type TournamentType =
   | 'single_elimination'
   | 'round_robin'
   | 'groups_knockout'
-  | 'league_playoff';
+  | 'league_playoff'
+  | 'custom';
 
 export type TournamentStatus = 'draft' | 'ongoing' | 'finished';
 
@@ -75,4 +76,13 @@ export interface Phase {
   /** Number of participants advancing to next phase (null on the last). */
   qualifiers: number | null;
   status: PhaseStatus;
+}
+
+/** Phase configuration provided by the user when creating a custom tournament. */
+export interface CustomPhaseInput {
+  name: string;
+  format: PhaseFormat;
+  legs: 1 | 2;
+  groupCount: number;
+  qualifiers: number | null;
 }

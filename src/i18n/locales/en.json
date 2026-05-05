@@ -38,14 +38,17 @@
       "singleElimination": "Single Elimination",
       "roundRobin": "Round Robin",
       "groupsKnockout": "Groups + Knockout",
-      "leaguePlayoff": "League + Playoffs"
+      "leaguePlayoff": "League + Playoffs",
+      "custom": "Custom"
     },
     "typesDescription": {
       "singleElimination": "Lose once, you're out.",
       "roundRobin": "Everyone plays everyone. Most points wins.",
       "groupsKnockout": "Group stage followed by knockout.",
-      "leaguePlayoff": "Home-and-away round-robin. Top 4 play the final and 3rd-place match."
+      "leaguePlayoff": "Home-and-away round-robin. Top 4 play the final and 3rd-place match.",
+      "custom": "Define your own phases and formats."
     },
+    "invalidPhasesTitle": "Invalid phase configuration",
     "create": "Create tournament",
     "validationName": "Please provide a tournament name."
   },
@@ -176,5 +179,30 @@
     "data": "Data",
     "languageDescription": "Choose the app language.",
     "themeDescription": "Light, dark, or follow system."
+  },
+  "phaseBuilder": {
+    "title": "Tournament phases",
+    "phaseN": "Phase {{n}}",
+    "format": "Format",
+    "formats": {
+      "roundRobin": "League",
+      "singleElimination": "Knockout",
+      "placementPlayoff": "Playoffs"
+    },
+    "legsLabel": "Legs per match-up",
+    "legsSingle": "1 (single round)",
+    "legsDouble": "2 (home & away)",
+    "groupCount": "Number of groups",
+    "qualifiers": "Teams advancing to next phase",
+    "addPhase": "Add phase",
+    "errors": {
+      "noPhases": "Add at least one phase.",
+      "tooManyPhases": "Maximum of {{max}} phases for now.",
+      "lastPhaseHasQualifiers": "The last phase cannot have qualifiers.",
+      "firstPhaseNoQualifiers": "Set how many teams advance from the first phase.",
+      "qualifiersMustBeEven": "Playoffs need an even number of qualifiers ({{got}} is odd).",
+      "singleElimQualifiersMustBe4": "Knockout only supports 4 qualifiers for now (you set {{got}}).",
+      "secondPhaseMustNotBeRoundRobin": "The second phase must be Knockout or Playoffs."
+    }
   }
 }

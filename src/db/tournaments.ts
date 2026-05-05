@@ -1,7 +1,11 @@
-import type { Tournament, TournamentType } from '@/types/tournament';
+import type {
+  CustomPhaseInput,
+  Tournament,
+  TournamentType,
+} from '@/types/tournament';
 
 import { getDatabase } from './index';
-import { createDefaultPhasesForType } from './phases';
+import { createCustomPhases, createDefaultPhasesForType } from './phases';
 
 interface TournamentRow {
   id: number;
@@ -32,7 +36,11 @@ export async function listTournaments(): Promise<Tournament[]> {
 export async function createTournament(input: {
   name: string;
   type: TournamentType;
+  customPhases?: CustomPhaseInput[];
 }): Promise<Tournament> {
+  if (input.type === 'custom' && (!input.customPhases || input.customPhases.length === 0)) {
+    throw new Error('Custom tournament requires at least one phase.');
+  }
   const db = await getDatabase();
   const result = await db.runAsync(
     'INSERT INTO tournaments (name, type) VALUES (?, ?);',
@@ -43,9 +51,13 @@ export async function createTournament(input: {
     [result.lastInsertRowId]
   );
   if (!row) throw new Error('Failed to load created tournament');
-  // Phases are first-class even when the user is still picking from the 3
-  // legacy presets — keeps every tournament structurally uniform.
-  await createDefaultPhasesForType(row.id, row.type);
+  // Phases are first-class even when the user is still picking from a
+  // preset — keeps every tournament structurally uniform.
+  if (input.type === 'custom') {
+    await createCustomPhases(row.id, input.customPhases!);
+  } else {
+    await createDefaultPhasesForType(row.id, row.type);
+  }
   return rowToTournament(row);
 }
 

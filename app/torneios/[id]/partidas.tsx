@@ -33,13 +33,16 @@ export default function MatchesScreen() {
   const isRoundRobin = tournament?.type === 'round_robin';
   const isGroupsKnockout = tournament?.type === 'groups_knockout';
   const isLeaguePlayoff = tournament?.type === 'league_playoff';
+  const isCustom = tournament?.type === 'custom';
   // Draws allowed for league/group matches; disallowed for any single-shot
   // knockout match (single elim, groups+ko final, or placement playoff).
+  // For custom tournaments we use the per-match stage as the gate.
   const allowDrawsFor = (m: Match | null) => {
     if (!tournament) return false;
     if (tournament.type === 'single_elimination') return false;
     if (tournament.type === 'groups_knockout') return m?.stage === 'group';
     if (tournament.type === 'league_playoff') return m?.stage === 'group';
+    if (tournament.type === 'custom') return m?.stage !== 'knockout';
     return true;
   };
 
@@ -61,26 +64,6 @@ export default function MatchesScreen() {
     };
   }, [tournamentId, load]);
 
-  const matchesByRound = useMemo(() => {
-    const map = new Map<number, Match[]>();
-    // For SE, group all matches by round.
-    // For two-phase formats, group only the knockout stage by round.
-    const source =
-      isGroupsKnockout || isLeaguePlayoff
-        ? matches.filter((m) => m.stage === 'knockout')
-        : matches;
-    for (const m of source) {
-      const arr = map.get(m.round) ?? [];
-      arr.push(m);
-      map.set(m.round, arr);
-    }
-    for (const arr of map.values()) {
-      arr.sort((a, b) => a.id - b.id);
-    }
-    return map;
-  }, [matches, isGroupsKnockout, isLeaguePlayoff]);
-
-  const totalRounds = matchesByRound.size;
   const groupStageMatches = useMemo(
     () => matches.filter((m) => m.stage === 'group'),
     [matches]
@@ -92,6 +75,40 @@ export default function MatchesScreen() {
         .sort((a, b) => a.id - b.id),
     [matches]
   );
+
+  // For custom tournaments, derive the multi-phase shape from the matches
+  // themselves rather than the (single) tournament.type label.
+  const isCustomMultiPhase =
+    isCustom && groupStageMatches.length > 0 && playoffMatches.length > 0;
+  // Placement vs. bracketed knockout: placement playoffs have no nextMatchId
+  // (they're parallel single-shot matches). Used to choose the right render.
+  const playoffIsPlacement =
+    playoffMatches.length > 0 &&
+    playoffMatches.every((m) => m.nextMatchId == null);
+  const renderAsLeaguePlayoff =
+    isLeaguePlayoff || (isCustomMultiPhase && playoffIsPlacement);
+  const renderAsGroupsKnockout =
+    isGroupsKnockout || (isCustomMultiPhase && !playoffIsPlacement);
+
+  const matchesByRound = useMemo(() => {
+    const map = new Map<number, Match[]>();
+    // For SE, group all matches by round. For two-phase formats, group only
+    // the knockout stage by round (group matches have their own section).
+    const source = renderAsGroupsKnockout || renderAsLeaguePlayoff
+      ? matches.filter((m) => m.stage === 'knockout')
+      : matches;
+    for (const m of source) {
+      const arr = map.get(m.round) ?? [];
+      arr.push(m);
+      map.set(m.round, arr);
+    }
+    for (const arr of map.values()) {
+      arr.sort((a, b) => a.id - b.id);
+    }
+    return map;
+  }, [matches, renderAsGroupsKnockout, renderAsLeaguePlayoff]);
+
+  const totalRounds = matchesByRound.size;
 
   const editingMatch = useMemo(
     () => matches.find((m) => m.id === editingMatchId) ?? null,
@@ -107,14 +124,12 @@ export default function MatchesScreen() {
   const handleSaveScore = useCallback(
     async (a: number, b: number) => {
       if (!editingMatch) return;
-      // Re-seed safety: editing a group/league score on a multi-phase
-      // tournament re-runs seedXxxFromYyy and silently zeroes any playoff
-      // matches that were already played. Warn the user first.
-      const isMultiPhase =
-        tournament?.type === 'groups_knockout' ||
-        tournament?.type === 'league_playoff';
+      // Re-seed safety: editing a group/league score re-runs the seed
+      // function and silently zeroes any playoff matches that were already
+      // played. The check is type-agnostic — works for groups_knockout,
+      // league_playoff, AND custom multi-phase configurations.
       const editingGroupOrLeague = editingMatch.stage === 'group';
-      if (isMultiPhase && editingGroupOrLeague) {
+      if (editingGroupOrLeague) {
         const playedPlayoffCount = matches.filter(
           (m) =>
             m.stage === 'knockout' && m.scoreA != null && m.scoreB != null
@@ -146,7 +161,7 @@ export default function MatchesScreen() {
       }
       await setScore(tournamentId, editingMatch.id, a, b);
     },
-    [editingMatch, matches, tournament, setScore, tournamentId, t]
+    [editingMatch, matches, setScore, tournamentId, t]
   );
 
   const handleClearScore = useCallback(async () => {
@@ -200,7 +215,7 @@ export default function MatchesScreen() {
             />
           ))}
         </View>
-      ) : isLeaguePlayoff ? (
+      ) : renderAsLeaguePlayoff ? (
         <View className="mt-4">
           {/* League phase (single-group double round-robin) */}
           {groupStageMatches.length > 0 ? (
@@ -239,8 +254,8 @@ export default function MatchesScreen() {
         </View>
       ) : (
         <View className="mt-4">
-          {/* Group stage section (only for groups+knockout) */}
-          {isGroupsKnockout && groupStageMatches.length > 0 ? (
+          {/* Group stage section (groups+knockout AND custom-multi-phase) */}
+          {renderAsGroupsKnockout && groupStageMatches.length > 0 ? (
             <View className="mb-6">
               <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 {t('matches.groupStage')}
