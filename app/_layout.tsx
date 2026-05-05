@@ -1,6 +1,6 @@
 import '../global.css';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -22,18 +22,21 @@ export default function RootLayout() {
     });
   }, []);
 
+  const screenOptions = useMemo(
+    () => ({
+      headerShown: false,
+      contentStyle: {
+        backgroundColor: effective === 'dark' ? '#020617' : '#ffffff',
+      },
+    }),
+    [effective]
+  );
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar style={effective === 'dark' ? 'light' : 'dark'} />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: {
-              backgroundColor: effective === 'dark' ? '#020617' : '#ffffff',
-            },
-          }}
-        />
+        <Stack screenOptions={screenOptions} />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
