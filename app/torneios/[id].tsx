@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, Trash2 } from 'lucide-react-native';
 
 import { ParticipantList } from '@/components/ParticipantList';
@@ -21,7 +21,8 @@ const TYPE_LABEL_KEY: Record<TournamentType, string> = {
 
 export default function TournamentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const tournamentId = Number(id);
+  const tournamentId = useMemo(() => Number(id), [id]);
+
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -38,14 +39,24 @@ export default function TournamentDetailScreen() {
   const [loadAttempted, setLoadAttempted] = useState(false);
 
   useEffect(() => {
-    if (Number.isFinite(tournamentId)) {
-      fetchById(tournamentId).finally(() => setLoadAttempted(true));
-    } else {
+    if (!Number.isFinite(tournamentId)) {
       setLoadAttempted(true);
+      return;
     }
+    let cancelled = false;
+    fetchById(tournamentId).finally(() => {
+      if (!cancelled) setLoadAttempted(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [tournamentId, fetchById]);
 
-  const handleDelete = () => {
+  const handleBack = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  const handleDelete = useCallback(() => {
     Alert.alert(t('tournament.deleteTitle'), t('tournament.deleteMessage'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
@@ -58,48 +69,87 @@ export default function TournamentDetailScreen() {
         },
       },
     ]);
-  };
+  }, [t, remove, clearParticipants, tournamentId, router]);
+
+  const tabItems = useMemo(
+    () => [
+      { key: 'participants' as TabKey, label: t('tournament.participants') },
+      { key: 'matches' as TabKey, label: t('tournament.matches') },
+      { key: 'bracket' as TabKey, label: t('tournament.bracket') },
+    ],
+    [t]
+  );
 
   if (loadAttempted && !tournament) {
     return (
-      <Screen>
-        <Header title={t('tournament.notFound')} onBack={() => router.back()} />
-      </Screen>
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <Screen>
+          <Header title={t('tournament.notFound')} onBack={handleBack} />
+        </Screen>
+      </>
     );
   }
 
   if (!tournament) {
-    return <Screen />;
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <Screen />
+      </>
+    );
   }
 
   return (
-    <Screen>
-      <HeaderWithActions
-        tournament={tournament}
-        onBack={() => router.back()}
-        onDelete={handleDelete}
-      />
-
-      <View className="my-4">
-        <Tabs<TabKey>
-          value={activeTab}
-          onChange={setActiveTab}
-          items={[
-            { key: 'participants', label: t('tournament.participants') },
-            { key: 'matches', label: t('tournament.matches') },
-            { key: 'bracket', label: t('tournament.bracket') },
-          ]}
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <Screen>
+        <HeaderWithActions
+          tournament={tournament}
+          onBack={handleBack}
+          onDelete={handleDelete}
         />
-      </View>
 
-      <View className="flex-1">
-        {activeTab === 'participants' ? (
-          <ParticipantList tournamentId={tournamentId} />
-        ) : (
-          <ComingSoon label={t('tournament.comingSoon')} />
-        )}
-      </View>
-    </Screen>
+        <View className="my-4">
+          <Tabs<TabKey>
+            value={activeTab}
+            onChange={setActiveTab}
+            items={tabItems}
+          />
+        </View>
+
+        <View className="flex-1">
+          <Panel visible={activeTab === 'participants'}>
+            <ParticipantList tournamentId={tournamentId} />
+          </Panel>
+          <Panel visible={activeTab === 'matches'}>
+            <ComingSoon label={t('tournament.comingSoon')} />
+          </Panel>
+          <Panel visible={activeTab === 'bracket'}>
+            <ComingSoon label={t('tournament.comingSoon')} />
+          </Panel>
+        </View>
+      </Screen>
+    </>
+  );
+}
+
+function Panel({
+  visible,
+  children,
+}: {
+  visible: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <View
+      style={{
+        flex: visible ? 1 : 0,
+        display: visible ? 'flex' : 'none',
+      }}
+    >
+      {children}
+    </View>
   );
 }
 
