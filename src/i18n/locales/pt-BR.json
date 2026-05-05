@@ -45,7 +45,7 @@
       "singleElimination": "Eliminação direta. Quem perde, sai.",
       "roundRobin": "Todos contra todos. Vence quem somar mais pontos.",
       "groupsKnockout": "Fase de grupos seguida de mata-mata.",
-      "leaguePlayoff": "Pontos corridos ida-e-volta. Top-4 disputam final e 3º lugar.",
+      "leaguePlayoff": "Pontos corridos ida-e-volta com pontuação de vôlei. Top-4 disputam final e 3º lugar.",
       "custom": "Você define as fases e os formatos."
     },
     "invalidPhasesTitle": "Configuração de fases inválida",

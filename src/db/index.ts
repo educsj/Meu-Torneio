@@ -263,7 +263,11 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           legs: 2,
           groupCount: 1,
           qualifiers: 4,
-          scoring: 'fifa',
+          // The preset is built around the vôlei use case (top-4 disputam
+          // final + 3º lugar after a double round-robin); FIVB scoring is
+          // the natural default. Users wanting FIFA on this shape pick
+          // "Personalizado" and configure scoring=Futebol.
+          scoring: 'volleyball',
         },
         {
           ordinal: 1,

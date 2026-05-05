@@ -45,7 +45,7 @@
       "singleElimination": "Lose once, you're out.",
       "roundRobin": "Everyone plays everyone. Most points wins.",
       "groupsKnockout": "Group stage followed by knockout.",
-      "leaguePlayoff": "Home-and-away round-robin. Top 4 play the final and 3rd-place match.",
+      "leaguePlayoff": "Home-and-away round-robin with volleyball scoring. Top 4 play the final and 3rd-place match.",
       "custom": "Define your own phases and formats."
     },
     "invalidPhasesTitle": "Invalid phase configuration",
