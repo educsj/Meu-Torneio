@@ -17,9 +17,17 @@
 
 ### Recursos
 
-- 🏆 Três formatos de torneio: **Mata-mata**, **Pontos corridos** e **Grupos + Mata-mata**
+- 🏆 **Cinco formatos**: Mata-mata, Pontos corridos, Grupos + Mata-mata, Liga + Playoffs (vôlei) e **Personalizado** (compõe fases livremente)
+- 🛠️ Builder de torneio personalizado: 1–2 fases, escolhe formato, número de grupos, ida-e-volta, classificados e regra de pontuação por fase
+- ⚖️ **Pontuação configurável**: estilo futebol (V3/E1/D0) ou vôlei oficial (3-0/3-1 → 3 / 3-2 → 2-1 / 0-3 → 0)
+- 🥇 **Critério de desempate por confronto direto** (head-to-head) — quando há empate de pontos, mini-tabela entre os times empatados decide
+- 🔄 Round-robin com **rodadas paralelas** (algoritmo circular / Berger): T1×T2 e T3×T4 jogam ao mesmo tempo, ninguém fica esperando
+- 🌳 **Árvore de chaveamento visual** com linhas conectoras (single-elim e fase eliminatória de formatos multi-fase)
 - 👥 Suporta qualquer número de participantes (BYE automático em chaves ímpares)
+- 🚫 **Walkover (W.O.)** — botão dedicado no modal de placar marca o forfeit como 3-0 e exibe badge nas telas
 - ⚽ Lançamento de placares, datas, horários e locais para cada partida
+- 🖼️ **Exportar como imagem PNG**: compartilhar via apps do sistema ou salvar direto na galeria
+- 📦 Exportar/importar torneio em JSON (preserva fases, partidas, agendamento e tudo mais)
 - 📴 Funcionamento totalmente offline (SQLite local)
 - 🌗 Tema claro / escuro / sistema
 - 🌍 Português (Brasil) e Inglês
@@ -88,18 +96,28 @@ npm run typecheck
 - [x] Lançamento de placares e avanço automático do vencedor
 - [x] Status do torneio (rascunho → em andamento → finalizado)
 - [x] Pontos corridos (todos contra todos) com tabela de classificação
-- [x] Grupos + Mata-mata (2 grupos, top 2 classificam para semis)
+- [x] Grupos + Mata-mata
+- [x] Liga + Playoffs (vôlei: ida-e-volta + final + 3º lugar)
+- [x] **Modelo de fases** + builder de torneio personalizado (1–2 fases configuráveis)
 - [x] Editar nome do torneio
-- [x] Exportar/importar torneio (backup JSON via compartilhamento)
+- [x] Exportar/importar torneio (backup JSON v2 com fases)
 - [x] Coroa de campeão para torneios finalizados
-- [x] Testes unitários (Vitest) para a lógica pura
-- [ ] Datas/horários/locais por partida
-- [ ] Visualização gráfica de bracket com zoom/pan
-- [ ] Tabela de classificação (Pontos corridos)
-- [ ] Fase de grupos + mata-mata
-- [ ] Lançamento de placares com feedback visual
-- [ ] Visualização de chaves com zoom/pan
-- [ ] Exportação/importação de torneios
+- [x] Datas/horários/locais por partida
+- [x] **Round-robin com rodadas paralelas** (algoritmo circular)
+- [x] Árvore de chaveamento visual com conectores SVG
+- [x] Exportar como **imagem PNG** (compartilhamento + salvar na galeria)
+- [x] **Pontuação por fase** (estilo futebol ou vôlei oficial)
+- [x] **Confronto direto** (head-to-head) como critério de desempate
+- [x] **Walkover (W.O.)** com badge visual
+- [x] Aviso de re-seed antes de sobrescrever playoffs já jogados
+- [x] Brackets de mata-mata variáveis (4/8/16) saindo de liga única
+- [x] Multi-grupo → bracket grande via cross-pairing adjacente
+- [x] Testes unitários (Vitest) — atualmente 142 testes
+- [ ] 3+ fases customizadas (hoje cap em 2)
+- [ ] Tiebreakers configuráveis por fase (CONMEBOL, FIFA, vôlei…)
+- [ ] Edição de participantes após geração do bracket sem regenerar
+- [ ] Estatísticas multi-torneio (artilharia geral, defesa, etc.)
+- [ ] Polimento de empty states e loading skeletons
 
 ### Licença
 
@@ -115,9 +133,17 @@ npm run typecheck
 
 ### Features
 
-- 🏆 Three tournament formats: **Single Elimination**, **Round Robin** and **Groups + Knockout**
+- 🏆 **Five formats**: Single Elimination, Round Robin, Groups + Knockout, League + Playoffs (volleyball) and **Custom** (compose phases freely)
+- 🛠️ Custom tournament builder: 1–2 phases, configurable format, group count, home-and-away, qualifiers and scoring per phase
+- ⚖️ **Configurable scoring**: football-style (W3/D1/L0) or volleyball (3-0/3-1 → 3 / 3-2 → 2-1 / 0-3 → 0)
+- 🥇 **Head-to-head tiebreaker** — when teams tie on points, a mini-table among them decides the order
+- 🔄 Round-robin with **parallel rounds** (Berger / circle method): T1×T2 and T3×T4 play at the same time, no team waits idly
+- 🌳 **Visual bracket tree** with SVG connector lines (single-elim and the knockout phase of multi-phase formats)
 - 👥 Supports any number of participants (auto BYE for odd brackets)
+- 🚫 **Walkover (W.O.)** — dedicated button in the score modal flags forfeits as 3-0 and shows a badge across the UI
 - ⚽ Score entry, schedule and venue per match
+- 🖼️ **Export as PNG image**: share through system apps or save directly to the gallery
+- 📦 Tournament export/import (JSON v2 — preserves phases, matches, schedule and more)
 - 📴 Fully offline (local SQLite)
 - 🌗 Light / Dark / System theme
 - 🌍 English and Brazilian Portuguese
@@ -186,18 +212,28 @@ npm run typecheck
 - [x] Score entry with auto-advance to next round
 - [x] Tournament status (draft → ongoing → finished)
 - [x] Round robin (everyone plays everyone) with standings table
-- [x] Groups + Knockout (2 groups, top 2 advance to semis)
+- [x] Groups + Knockout
+- [x] League + Playoffs (volleyball: home-and-away + final + 3rd-place)
+- [x] **Phase model** + custom tournament builder (1–2 configurable phases)
 - [x] Edit tournament name
-- [x] Export/import tournament (JSON backup via system share)
+- [x] Export/import tournament (JSON backup v2 with phases)
 - [x] Champion crown for finished tournaments
-- [x] Unit tests (Vitest) for pure logic
-- [ ] Schedule/location per match
-- [ ] Graphical bracket visualization with zoom/pan
-- [ ] Standings table (Round Robin)
-- [ ] Group stage + knockout
-- [ ] Score entry with visual feedback
-- [ ] Bracket visualization with zoom/pan
-- [ ] Tournament import/export
+- [x] Schedule / time / venue per match
+- [x] **Round robin with parallel rounds** (circle method)
+- [x] Visual bracket tree with SVG connectors
+- [x] Export as **PNG image** (system share + save to gallery)
+- [x] **Per-phase scoring** (football or volleyball)
+- [x] **Head-to-head** tiebreaker
+- [x] **Walkover (W.O.)** with visual badge
+- [x] Re-seed warning before overwriting already-played playoffs
+- [x] Variable knockout brackets (4/8/16) from a single league
+- [x] Multi-group → larger bracket via adjacent cross-pairing
+- [x] Unit tests (Vitest) — currently 142 tests
+- [ ] 3+ custom phases (currently capped at 2)
+- [ ] Per-phase configurable tiebreakers (CONMEBOL, FIFA, FIVB…)
+- [ ] Edit participants after bracket generation without regenerating
+- [ ] Multi-tournament statistics (top scorer overall, etc.)
+- [ ] Empty states and loading skeleton polish
 
 ### License
 

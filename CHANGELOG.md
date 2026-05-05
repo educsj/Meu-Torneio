@@ -7,7 +7,67 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ## [Unreleased]
 
-### Added · Adicionado
+### Added · Adicionado (sessão atual / current session)
+
+#### Modelo de fases / Phase model
+
+- **Modelo de `Phase`** (schema v3) — torneios passam a ser uma lista ordenada de fases com `format`, `legs`, `groupCount`, `qualifiers`, `ordinal`, `status`. Os 4 presets existentes ganham fases default via `defaultPhasesForType`. Migration idempotente faz backfill em torneios pré-existentes. / **Phase entity** (schema v3): tournaments are now an ordered list of phases. Existing presets get default shapes; idempotent migration backfills pre-existing tournaments.
+- **Geração phase-driven** (PR refactor sem mudança de UX) — `generateBracketForTournament` itera sobre fases em vez de branchar em `tournament.type`, abrindo caminho pra composições arbitrárias. / Phase-driven generation refactor (no UX change) — `generateBracketForTournament` iterates phases instead of branching on `tournament.type`.
+- **Builder de torneio personalizado** (`'custom'`) — wizard pra compor 1–2 fases com `format`, `legs`, `groupCount`, `qualifiers` e `scoring`. Validação inline rejeita composições não-suportadas com mensagens claras. / **Custom tournament builder**: wizard for composing 1–2 phases with format/legs/groupCount/qualifiers/scoring. Inline validation rejects unsupported shapes with clear messages.
+
+#### Novos formatos / New formats
+
+- **Liga + Playoffs (vôlei)** — single-group double round-robin (legs=2) seguido de placement playoff (final + 3º lugar). Default de pontuação = vôlei oficial (3-0/3-1: 3-0 / 3-2: 2-1 / 0-3: 0-3). / **League + Playoffs (volleyball)** — single-group double round-robin followed by a placement playoff (final + 3rd-place). Default scoring = FIVB.
+- **Brackets de mata-mata variáveis** (4/8/16) saindo de uma liga única, semeados via NCAA-style (1v8, 4v5, 2v7, 3v6 …). / Variable single-elim bracket sizes from a single league, NCAA seed positions.
+- **Multi-grupo → bracket grande** via cross-pairing adjacente: 4 grupos → bracket de 8; 8 grupos → bracket de 16. Pares de grupos contribuem 1A-2B / 1B-2A. / Multi-group → larger SE bracket via adjacent cross-pairing.
+
+#### Pontuação e desempate / Scoring and tiebreakers
+
+- **Pontuação por fase** (schema v5) — escolha entre Futebol (V3/E1/D0) e Vôlei (3-0/3-1 → 3 / 3-2 → 2-1 / 0-3 → 0). Picker exposto na criação do torneio para todos os presets que produzem standings; wizard custom permite por fase. Helper puro `pointsForMatch(scoreA, scoreB, rule)`. / **Per-phase scoring** (schema v5) — Football or Volleyball rule. Picker on the new-tournament screen for any preset with a league phase; custom wizard sets per phase.
+- **Desempate por confronto direto** (head-to-head) — quando 2+ times empatam em pontos, mini-tabela usando só os jogos entre eles decide a ordem. Cai pra critérios gerais (saldo, gols pró, nome) só se H2H também empatar. / **Head-to-head tiebreaker** between points and goal-diff in the standings ladder; mini-table uses only matches between the tied teams.
+
+#### Walkover
+
+- **Walkover (W.O.)** — botão dedicado no modal de placar marca o forfeit (3-0 default) e flag `walkover` na partida. Badge visual nas telas de partidas, árvore de chaveamento e imagem compartilhável. (Schema v6.) / Walkover support — score modal exposes a "W.O. for X" action that sets the forfeit score and flags the match. Visual badge across all match displays.
+
+#### Round-robin agendamento / Round-robin scheduling
+
+- **Rodadas paralelas** via método circular (Berger): para N times, N/2 partidas por rodada e N-1 rodadas no total — todos jogam ao mesmo tempo, ninguém fica esperando. Para N ímpar, um time tem bye por rodada. Cabeçalhos "Rodada N" agora dividem as partidas. / **Parallel rounds** via the circle/Berger method.
+- **Ida-e-volta** (`legs=2`) com mando invertido na 2ª volta, ocupando rodadas N..2(N-1). / Home-and-away (`legs=2`) with reversed home/away on the second leg.
+
+#### Imagem do torneio / Tournament image
+
+- **Exportar como PNG** — view dedicada (sem chrome de nav) com cabeçalho, classificação, partidas agrupadas por fase/rodada e árvore visual nos formatos com mata-mata. Captura via `react-native-view-shot`. / **PNG export** — dedicated read-only view captured by `react-native-view-shot`.
+- **Compartilhar** via sheet do sistema (WhatsApp, e-mail, etc.) ou **salvar direto na galeria** (`expo-media-library` com prompt de permissão). / Share via system sheet or save directly to the photo gallery.
+
+#### Outras melhorias / Other improvements
+
+- **Árvore de chaveamento visual** com linhas conectoras SVG (substitui o placeholder "em breve" da tela de chaveamento). Usado também na imagem compartilhável para single-elim e fase eliminatória. / Visual bracket tree with SVG connector lines.
+- **Agendamento por partida** — modal ganha campos opcionais de data, hora e local. Chip com ícones aparece nos cards quando setado. / Per-match scheduling — date / time / venue fields with a discreet chip on the cards.
+- **Aviso de re-seed** antes de sobrescrever playoffs já jogados — alerta ao editar placar de fase de grupos quando partidas posteriores já têm resultado. / Re-seed safety alert before clobbering played playoffs.
+- **Backup format v2** (round-trip de fases customizadas) — backups antigos (v1) continuam importáveis com fallback pra `defaultPhasesForType`. / Backup format v2 with phases roundtrip; v1 backups remain importable.
+- **View "Grupos" disponível para custom multi-grupo** — gate dos botões de navegação derivado dos matches (não mais do `tournament.type`). / Groups view available for custom multi-group configurations.
+
+### Fixed · Corrigido (sessão atual / current session)
+
+- **Placar das partidas eliminatórias era apagado ao salvar** — em torneios "Liga + Playoffs" (e qualquer multi-fase), salvar o placar da final ou 3º lugar disparava `seedNextPhase`, que limpava os slots e placares do playoff. Fix: `seedNextPhase` só roda quando a partida editada é da fase de grupos (`stage === 'group'`); editar uma partida que já é de playoff não dispara re-seed. / **Playoff scores were silently wiped on save** — saving a final/3rd-place score on Liga + Playoffs (or any multi-phase) triggered `seedNextPhase` which cleared playoff slots. Fix: only re-seed when the edited match is itself in the group/league phase.
+
+### Refactor
+
+- **Funções DB-bound viraram wrappers de helpers puros**: `recomputeTournamentStatus` agora delega pra `computeTournamentStatus`; `seedKnockoutFromGroups` / `seedPlayoffFromLeague` delegam pra `compute*Seeding`. Os helpers puros têm cobertura por unit tests (vitest, sem necessidade de mock de SQLite). / DB-bound functions now thin-wrap pure helpers covered by unit tests.
+
+### Tests
+
+- Suite cresceu de 50 → **142 testes**, todos verdes. Áreas cobertas: scheduling round-robin, bracket placeholders variáveis, scoring (FIFA + vôlei), validação de phases customizadas, seeding (single-league + groups + placement), status do torneio por formato, tiebreaker H2H, parser de backup v1/v2.
+
+### Schema migrations
+
+- v3: tabela `phases` + coluna `phase_id` em `matches`, com backfill por `tournament.type`.
+- v4: relaxa `CHECK` em `tournaments.type` via rebuild da tabela (permite novos formatos sem migration nova).
+- v5: coluna `scoring` em `phases` (default `'fifa'`).
+- v6: coluna `walkover` em `matches` (default 0).
+
+### Added · Adicionado (anterior / previously added)
 
 - **Exportar torneio em JSON** — botão na tela de detalhe que serializa torneio + participantes + partidas (preservando referências cruzadas) e abre o sheet de compartilhamento do sistema (Drive, WhatsApp, Email, etc). Nome do arquivo é gerado automaticamente: `nome-do-torneio-AAAA-MM-DD.json`. / **Export tournament to JSON** — button on the detail screen serializes the tournament + participants + matches (preserving cross-references) and opens the system share sheet (Drive, WhatsApp, Email…). Filename auto-generated: `tournament-name-YYYY-MM-DD.json`.
 - **Importar torneio de JSON** — botão na home abre seletor de arquivos, valida o backup (JSON parseável, versão suportada, tipos válidos, schema correto) e importa transacionalmente como um NOVO torneio (re-mapeando IDs internamente para evitar colisão com outros torneios já existentes). / **Import tournament from JSON** — button on the home screen opens a file picker, validates the backup (parseable JSON, supported version, valid types, schema-correct) and imports transactionally as a NEW tournament (re-mapping internal ids to avoid colliding with existing tournaments).
