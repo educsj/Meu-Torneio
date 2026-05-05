@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, Trash2 } from 'lucide-react-native';
 
 import { ParticipantList } from '@/components/ParticipantList';
@@ -82,55 +82,44 @@ export default function TournamentDetailScreen() {
 
   if (loadAttempted && !tournament) {
     return (
-      <>
-        <Stack.Screen options={{ headerShown: false }} />
-        <Screen>
-          <Header title={t('tournament.notFound')} onBack={handleBack} />
-        </Screen>
-      </>
+      <Screen>
+        <Header title={t('tournament.notFound')} onBack={handleBack} />
+      </Screen>
     );
   }
 
   if (!tournament) {
-    return (
-      <>
-        <Stack.Screen options={{ headerShown: false }} />
-        <Screen />
-      </>
-    );
+    return <Screen />;
   }
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <Screen>
-        <HeaderWithActions
-          tournament={tournament}
-          onBack={handleBack}
-          onDelete={handleDelete}
+    <Screen>
+      <HeaderWithActions
+        tournament={tournament}
+        onBack={handleBack}
+        onDelete={handleDelete}
+      />
+
+      <View className="my-4">
+        <Tabs<TabKey>
+          value={activeTab}
+          onChange={setActiveTab}
+          items={tabItems}
         />
+      </View>
 
-        <View className="my-4">
-          <Tabs<TabKey>
-            value={activeTab}
-            onChange={setActiveTab}
-            items={tabItems}
-          />
-        </View>
-
-        <View className="flex-1">
-          <Panel visible={activeTab === 'participants'}>
-            <ParticipantList tournamentId={tournamentId} />
-          </Panel>
-          <Panel visible={activeTab === 'matches'}>
-            <ComingSoon label={t('tournament.comingSoon')} />
-          </Panel>
-          <Panel visible={activeTab === 'bracket'}>
-            <ComingSoon label={t('tournament.comingSoon')} />
-          </Panel>
-        </View>
-      </Screen>
-    </>
+      <View className="flex-1">
+        <Panel visible={activeTab === 'participants'}>
+          <ParticipantList tournamentId={tournamentId} />
+        </Panel>
+        <Panel visible={activeTab === 'matches'}>
+          <ComingSoon label={t('tournament.comingSoon')} />
+        </Panel>
+        <Panel visible={activeTab === 'bracket'}>
+          <ComingSoon label={t('tournament.comingSoon')} />
+        </Panel>
+      </View>
+    </Screen>
   );
 }
 

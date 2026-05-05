@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, FlatList, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Trash2, UserPlus, Users } from 'lucide-react-native';
 
 import { Button } from '@/components/ui/Button';
@@ -83,47 +83,51 @@ export function ParticipantList({ tournamentId }: Props) {
         </Text>
       ) : null}
 
-      <FlatList
-        data={participants}
-        keyExtractor={(item) => String(item.id)}
-        ItemSeparatorComponent={() => (
-          <View className="h-px bg-slate-100 dark:bg-slate-800" />
-        )}
-        contentContainerStyle={{ paddingBottom: 24 }}
-        ListEmptyComponent={
-          <View className="mt-12 items-center">
-            <View className="mb-4 rounded-full bg-slate-100 p-5 dark:bg-slate-800">
-              <Users size={32} color="#94a3b8" />
-            </View>
-            <Text className="text-base font-semibold text-slate-900 dark:text-white">
-              {t('participants.empty')}
-            </Text>
-            <Text className="mt-1 px-6 text-center text-sm text-slate-600 dark:text-slate-400">
-              {t('participants.emptyDescription')}
-            </Text>
+      {participants.length === 0 ? (
+        <View className="mt-12 items-center">
+          <View className="mb-4 rounded-full bg-slate-100 p-5 dark:bg-slate-800">
+            <Users size={32} color="#94a3b8" />
           </View>
-        }
-        renderItem={({ item, index }) => (
-          <View className="flex-row items-center justify-between py-3">
-            <View className="flex-row items-center gap-3">
-              <View className="h-8 w-8 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-950">
-                <Text className="text-sm font-semibold text-brand-700 dark:text-brand-200">
-                  {index + 1}
-                </Text>
+          <Text className="text-base font-semibold text-slate-900 dark:text-white">
+            {t('participants.empty')}
+          </Text>
+          <Text className="mt-1 px-6 text-center text-sm text-slate-600 dark:text-slate-400">
+            {t('participants.emptyDescription')}
+          </Text>
+        </View>
+      ) : (
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: 24 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          {participants.map((item, index) => (
+            <View key={item.id}>
+              {index > 0 ? (
+                <View className="h-px bg-slate-100 dark:bg-slate-800" />
+              ) : null}
+              <View className="flex-row items-center justify-between py-3">
+                <View className="flex-row items-center gap-3">
+                  <View className="h-8 w-8 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-950">
+                    <Text className="text-sm font-semibold text-brand-700 dark:text-brand-200">
+                      {index + 1}
+                    </Text>
+                  </View>
+                  <Text className="text-base text-slate-900 dark:text-slate-100">
+                    {item.name}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => handleRemove(item.id)}
+                  className="rounded-full p-2 active:bg-red-50 dark:active:bg-red-950"
+                >
+                  <Trash2 size={18} color="#dc2626" />
+                </Pressable>
               </View>
-              <Text className="text-base text-slate-900 dark:text-slate-100">
-                {item.name}
-              </Text>
             </View>
-            <Pressable
-              onPress={() => handleRemove(item.id)}
-              className="rounded-full p-2 active:bg-red-50 dark:active:bg-red-950"
-            >
-              <Trash2 size={18} color="#dc2626" />
-            </Pressable>
-          </View>
-        )}
-      />
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 }
