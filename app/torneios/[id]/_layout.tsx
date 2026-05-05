@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import {
+  Slot,
+  useLocalSearchParams,
+  usePathname,
+  useRouter,
+} from 'expo-router';
 import { ChevronLeft, Trash2 } from 'lucide-react-native';
 
-import { ParticipantList } from '@/components/ParticipantList';
-import { Tabs } from '@/components/Tabs';
 import { Screen } from '@/components/ui/Screen';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useParticipantsStore } from '@/stores/useParticipantsStore';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
 import type { Tournament, TournamentType } from '@/types/tournament';
-
-type TabKey = 'participants' | 'matches' | 'bracket';
 
 const TYPE_LABEL_KEY: Record<TournamentType, string> = {
   single_elimination: 'singleElimination',
@@ -19,12 +20,14 @@ const TYPE_LABEL_KEY: Record<TournamentType, string> = {
   groups_knockout: 'groupsKnockout',
 };
 
-export default function TournamentDetailScreen() {
+type TabKey = 'index' | 'partidas' | 'chaveamento';
+
+export default function TournamentDetailLayout() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const tournamentId = useMemo(() => Number(id), [id]);
-
   const { t } = useTranslation();
   const router = useRouter();
+  const pathname = usePathname();
 
   const fetchById = useTournamentsStore((s) => s.fetchById);
   const remove = useTournamentsStore((s) => s.remove);
@@ -35,7 +38,6 @@ export default function TournamentDetailScreen() {
     (s) => s.clearForTournament
   );
 
-  const [activeTab, setActiveTab] = useState<TabKey>('participants');
   const [loadAttempted, setLoadAttempted] = useState(false);
 
   useEffect(() => {
@@ -52,9 +54,7 @@ export default function TournamentDetailScreen() {
     };
   }, [tournamentId, fetchById]);
 
-  const handleBack = useCallback(() => {
-    router.back();
-  }, [router]);
+  const handleBack = useCallback(() => router.back(), [router]);
 
   const handleDelete = useCallback(() => {
     Alert.alert(t('tournament.deleteTitle'), t('tournament.deleteMessage'), [
@@ -71,19 +71,28 @@ export default function TournamentDetailScreen() {
     ]);
   }, [t, remove, clearParticipants, tournamentId, router]);
 
-  const tabItems = useMemo(
-    () => [
-      { key: 'participants' as TabKey, label: t('tournament.participants') },
-      { key: 'matches' as TabKey, label: t('tournament.matches') },
-      { key: 'bracket' as TabKey, label: t('tournament.bracket') },
-    ],
-    [t]
+  const activeTab: TabKey = pathname.endsWith('/partidas')
+    ? 'partidas'
+    : pathname.endsWith('/chaveamento')
+      ? 'chaveamento'
+      : 'index';
+
+  const goTab = useCallback(
+    (key: TabKey) => {
+      const map: Record<TabKey, string> = {
+        index: '',
+        partidas: '/partidas',
+        chaveamento: '/chaveamento',
+      };
+      router.replace(`/torneios/${tournamentId}${map[key]}` as never);
+    },
+    [router, tournamentId]
   );
 
   if (loadAttempted && !tournament) {
     return (
       <Screen>
-        <Header title={t('tournament.notFound')} onBack={handleBack} />
+        <NotFoundHeader title={t('tournament.notFound')} onBack={handleBack} />
       </Screen>
     );
   }
@@ -94,71 +103,65 @@ export default function TournamentDetailScreen() {
 
   return (
     <Screen>
-      <HeaderWithActions
+      <Header
         tournament={tournament}
         onBack={handleBack}
         onDelete={handleDelete}
       />
-
-      <View className="my-4">
-        <Tabs<TabKey>
-          value={activeTab}
-          onChange={setActiveTab}
-          items={tabItems}
+      <View className="my-4 flex-row rounded-2xl bg-slate-100 p-1 dark:bg-slate-800">
+        <TabButton
+          label={t('tournament.participants')}
+          selected={activeTab === 'index'}
+          onPress={() => goTab('index')}
+        />
+        <TabButton
+          label={t('tournament.matches')}
+          selected={activeTab === 'partidas'}
+          onPress={() => goTab('partidas')}
+        />
+        <TabButton
+          label={t('tournament.bracket')}
+          selected={activeTab === 'chaveamento'}
+          onPress={() => goTab('chaveamento')}
         />
       </View>
-
       <View className="flex-1">
-        <Panel visible={activeTab === 'participants'}>
-          <ParticipantList tournamentId={tournamentId} />
-        </Panel>
-        <Panel visible={activeTab === 'matches'}>
-          <ComingSoon label={t('tournament.comingSoon')} />
-        </Panel>
-        <Panel visible={activeTab === 'bracket'}>
-          <ComingSoon label={t('tournament.comingSoon')} />
-        </Panel>
+        <Slot />
       </View>
     </Screen>
   );
 }
 
-function Panel({
-  visible,
-  children,
+function TabButton({
+  label,
+  selected,
+  onPress,
 }: {
-  visible: boolean;
-  children: React.ReactNode;
+  label: string;
+  selected: boolean;
+  onPress: () => void;
 }) {
   return (
-    <View
-      style={{
-        flex: visible ? 1 : 0,
-        display: visible ? 'flex' : 'none',
-      }}
+    <Pressable
+      onPress={onPress}
+      className={`flex-1 items-center justify-center rounded-xl px-3 py-2 ${
+        selected ? 'bg-white shadow-sm dark:bg-slate-700' : ''
+      }`}
     >
-      {children}
-    </View>
-  );
-}
-
-function Header({ title, onBack }: { title: string; onBack: () => void }) {
-  return (
-    <View className="flex-row items-center pt-6">
-      <Pressable
-        onPress={onBack}
-        className="-ml-2 mr-2 rounded-full p-2 active:bg-slate-100 dark:active:bg-slate-800"
+      <Text
+        className={`text-sm font-medium ${
+          selected
+            ? 'text-slate-900 dark:text-white'
+            : 'text-slate-600 dark:text-slate-400'
+        }`}
       >
-        <ChevronLeft size={22} color="#475569" />
-      </Pressable>
-      <Text className="text-xl font-bold text-slate-900 dark:text-white">
-        {title}
+        {label}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 
-function HeaderWithActions({
+function Header({
   tournament,
   onBack,
   onDelete,
@@ -184,7 +187,6 @@ function HeaderWithActions({
           <Trash2 size={20} color="#dc2626" />
         </Pressable>
       </View>
-
       <Text className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
         {tournament.name}
       </Text>
@@ -196,6 +198,28 @@ function HeaderWithActions({
           {t(`tournament.status.${tournament.status}`)}
         </Badge>
       </View>
+    </View>
+  );
+}
+
+function NotFoundHeader({
+  title,
+  onBack,
+}: {
+  title: string;
+  onBack: () => void;
+}) {
+  return (
+    <View className="flex-row items-center pt-6">
+      <Pressable
+        onPress={onBack}
+        className="-ml-2 mr-2 rounded-full p-2 active:bg-slate-100 dark:active:bg-slate-800"
+      >
+        <ChevronLeft size={22} color="#475569" />
+      </Pressable>
+      <Text className="text-xl font-bold text-slate-900 dark:text-white">
+        {title}
+      </Text>
     </View>
   );
 }
@@ -221,16 +245,6 @@ function Badge({
     <View className={`rounded-full px-2.5 py-1 ${styles.container}`}>
       <Text className={`text-xs font-semibold ${styles.text}`}>
         {children}
-      </Text>
-    </View>
-  );
-}
-
-function ComingSoon({ label }: { label: string }) {
-  return (
-    <View className="flex-1 items-center justify-center">
-      <Text className="text-base text-slate-500 dark:text-slate-400">
-        {label}
       </Text>
     </View>
   );

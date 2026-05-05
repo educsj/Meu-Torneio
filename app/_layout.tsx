@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getDatabase } from '@/db';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 
@@ -36,7 +37,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar style={effective === 'dark' ? 'light' : 'dark'} />
-        <Stack screenOptions={screenOptions} />
+        <ErrorBoundary>
+          <Stack screenOptions={screenOptions} />
+        </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

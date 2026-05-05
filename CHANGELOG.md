@@ -15,6 +15,10 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 - Componente `Tabs` reutilizável (segmented control) / Reusable `Tabs` segmented-control component
 - Pluralização localizada para contagem de participantes / Localized pluralization for participant count
 
+### Changed · Mudado
+
+- Refatorada a tela de detalhe do torneio para usar **rotas reais** do expo-router (`app/torneios/[id]/_layout.tsx` + `index.tsx`/`partidas.tsx`/`chaveamento.tsx`) em vez de troca de aba via React state. As abas agora usam `router.replace` para alternar, eliminando qualquer ciclo state-driven que possa interagir mal com `react-native-screens`. Também adicionado `ErrorBoundary` no root para capturar render errors com mensagem amigável em vez de tela vermelha. / Refactored the tournament detail screen to use **real expo-router routes** (`app/torneios/[id]/_layout.tsx` + `index.tsx`/`partidas.tsx`/`chaveamento.tsx`) instead of React state-driven tab swapping. Tabs now switch via `router.replace`, removing any state cycle that could conflict with `react-native-screens`. Also added a root-level `ErrorBoundary` so render errors show a friendly message instead of the red box.
+
 ### Fixed · Corrigido
 
 - `Couldn't find a navigation context` continuava a quebrar mesmo após manter os painéis montados — removido o `<Stack.Screen>` que era renderizado em três branches condicionais (mount/unmount confundia o navegador) e trocado o `FlatList` da lista de participantes por `ScrollView` + `.map` (eliminando a virtualização do `react-native-screens`/`VirtualizedList` que parecia interagir mal com nosso layout). / `Couldn't find a navigation context` still crashed even after keeping panels mounted — removed the `<Stack.Screen>` rendered inside three conditional branches (its mount/unmount confused the navigator) and swapped the participants `FlatList` for `ScrollView` + `.map` (dropping `VirtualizedList` virtualization which was interacting badly with our layout).
