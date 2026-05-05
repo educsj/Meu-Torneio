@@ -74,11 +74,18 @@ export const useMatchesStore = create<MatchesState>((set, get) => ({
     const allowDraws = tournament
       ? tournament.type !== 'single_elimination'
       : false;
+    // Only group/league matches should trigger a re-seed. Saving a
+    // knockout-stage match (semi, final, placement playoff) must not
+    // re-seed — otherwise seedPlayoffFromLeague / seedKnockoutFromGroups
+    // would clear the score the user just entered.
+    const cachedMatches = get().byTournament[tournamentId] ?? [];
+    const editedMatch = cachedMatches.find((m) => m.id === matchId);
+    const editedFromGroup = editedMatch?.stage === 'group';
     await setMatchScore(matchId, scoreA, scoreB, {
       allowDraws,
       walkover: options?.walkover,
     });
-    if (await isGroupStageComplete(tournamentId)) {
+    if (editedFromGroup && (await isGroupStageComplete(tournamentId))) {
       await seedNextPhase(tournamentId);
     }
     await recomputeTournamentStatus(tournamentId);
@@ -89,8 +96,12 @@ export const useMatchesStore = create<MatchesState>((set, get) => ({
     await useTournamentsStore.getState().refresh();
   },
   clearScore: async (tournamentId, matchId) => {
+    // Same gate as setScore — clearing a knockout score shouldn't re-seed.
+    const cachedMatches = get().byTournament[tournamentId] ?? [];
+    const editedMatch = cachedMatches.find((m) => m.id === matchId);
+    const editedFromGroup = editedMatch?.stage === 'group';
     await clearMatchScore(matchId);
-    if (await isGroupStageComplete(tournamentId)) {
+    if (editedFromGroup && (await isGroupStageComplete(tournamentId))) {
       await seedNextPhase(tournamentId);
     }
     await recomputeTournamentStatus(tournamentId);
