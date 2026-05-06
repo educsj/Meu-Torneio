@@ -12,6 +12,7 @@ import Svg, {
 import { ParticipantBadge } from '@/components/ParticipantBadge';
 import { useTranslation } from '@/i18n/useTranslation';
 import type { Match, Participant } from '@/types/tournament';
+import type { StandingRow } from '@/utils/standings';
 
 const SLOT_HEIGHT = 50;
 const SLOT_WIDTH = 150;
@@ -35,13 +36,29 @@ function intrinsicWidth(sideRoundCount: number): number {
   );
 }
 
+/** Per-group standings the caller passes in for tournaments with a group
+ *  phase (groups_knockout, World Cup, anything multi-group). When omitted
+ *  the bracket is shown alone. */
+export interface ChampionsGroup {
+  label: string;
+  standings: StandingRow[];
+}
+
 interface Props {
   matches: Match[];
   participantsById: Map<number, Participant>;
   /** Tournament name shown above the bracket — provided by the caller so
    *  this component stays a pure layout. */
   title: string;
+  /** Optional: per-group standings to render above the bracket. */
+  groups?: ChampionsGroup[];
+  /** When `groups` is provided, this is the number of qualifiers per group
+   *  (top-K advance) — drives the gold highlight on those rows. Default 2. */
+  qualifiersPerGroup?: number;
 }
+
+const GROUP_CARD_WIDTH = 240;
+const GROUP_CARD_GAP = 12;
 
 /**
  * Champions-League–style symmetric bracket. Two halves of the field
@@ -53,7 +70,10 @@ interface Props {
  * to the simple summary.
  */
 export const ChampionsBracket = forwardRef<View, Props>(
-  function ChampionsBracket({ matches, participantsById, title }, ref) {
+  function ChampionsBracket(
+    { matches, participantsById, title, groups, qualifiersPerGroup = 2 },
+    ref
+  ) {
   const { t } = useTranslation();
 
   // Group matches by round, sort within round by id (the bracket inserter
@@ -94,13 +114,32 @@ export const ChampionsBracket = forwardRef<View, Props>(
   // cropped image.
   const contentWidth = intrinsicWidth(sideRounds.length);
 
+  // Estimate the group section's vertical footprint so the background
+  // gradient extends behind it. Groups wrap into rows of `cardsPerRow`,
+  // each row ~38px header + ~28px per standings line + 24px padding.
+  const groupCount = groups?.length ?? 0;
+  const cardsPerRow = Math.max(
+    1,
+    Math.floor(
+      (contentWidth - SIDE_PADDING * 2 + GROUP_CARD_GAP) /
+        (GROUP_CARD_WIDTH + GROUP_CARD_GAP)
+    )
+  );
+  const groupRows = Math.ceil(groupCount / cardsPerRow);
+  const maxRowsTeams =
+    groups && groups.length > 0
+      ? Math.max(...groups.map((g) => g.standings.length))
+      : 0;
+  const groupSectionHeight =
+    groupCount > 0 ? groupRows * (40 + maxRowsTeams * 26 + 24) + 60 : 0;
+
   return (
     <View
       ref={ref}
       collapsable={false}
       style={{ backgroundColor: '#0b1424', width: contentWidth }}
     >
-      <BackgroundGradient height={totalHeight + 220} />
+      <BackgroundGradient height={totalHeight + 220 + groupSectionHeight} />
 
       <View style={{ paddingTop: 28, paddingHorizontal: 16, paddingBottom: 24 }}>
         <Text
@@ -129,6 +168,15 @@ export const ChampionsBracket = forwardRef<View, Props>(
           {title.toUpperCase()}
         </Text>
       </View>
+
+      {groups && groups.length > 0 ? (
+        <GroupStageSection
+          groups={groups}
+          qualifiersPerGroup={qualifiersPerGroup}
+          containerWidth={contentWidth}
+          groupHeader={t('image.groupHeader')}
+        />
+      ) : null}
 
       <View
         style={{
@@ -539,6 +587,163 @@ function BackgroundGradient({ height }: { height: number }) {
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#bg)" />
       </Svg>
+    </View>
+  );
+}
+
+/**
+ * Group-stage section that sits above the bracket on the Champions image.
+ * Each group is a small dark card with the standings table — gold-tinted
+ * rows for the qualifying positions (top-K based on `qualifiersPerGroup`),
+ * neutral rows for the eliminated teams. Cards wrap into rows so the
+ * section grows downward, never sideways.
+ */
+function GroupStageSection({
+  groups,
+  qualifiersPerGroup,
+  containerWidth,
+  groupHeader,
+}: {
+  groups: ChampionsGroup[];
+  qualifiersPerGroup: number;
+  containerWidth: number;
+  groupHeader: string;
+}) {
+  return (
+    <View
+      style={{
+        paddingHorizontal: SIDE_PADDING,
+        paddingBottom: 24,
+        width: containerWidth,
+      }}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: GROUP_CARD_GAP,
+          justifyContent: 'center',
+        }}
+      >
+        {groups.map((g) => (
+          <View
+            key={g.label}
+            style={{
+              width: GROUP_CARD_WIDTH,
+              backgroundColor: '#1e293b',
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: '#334155',
+              overflow: 'hidden',
+            }}
+          >
+            <View
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                backgroundColor: '#0f172a',
+                borderBottomWidth: 1,
+                borderBottomColor: '#334155',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Text
+                style={{
+                  color: '#facc15',
+                  fontSize: 12,
+                  fontWeight: '700',
+                  letterSpacing: 1.5,
+                }}
+              >
+                {`${groupHeader} ${g.label}`.toUpperCase()}
+              </Text>
+              <Text
+                style={{
+                  color: '#94a3b8',
+                  fontSize: 10,
+                  fontWeight: '600',
+                  letterSpacing: 1,
+                }}
+              >
+                P
+              </Text>
+            </View>
+            {g.standings.map((row, idx) => {
+              const qualifies = idx < qualifiersPerGroup;
+              return (
+                <GroupStandingRow
+                  key={row.participantId}
+                  rank={idx + 1}
+                  row={row}
+                  qualifies={qualifies}
+                />
+              );
+            })}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function GroupStandingRow({
+  rank,
+  row,
+  qualifies,
+}: {
+  rank: number;
+  row: StandingRow;
+  qualifies: boolean;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        backgroundColor: qualifies
+          ? 'rgba(250, 204, 21, 0.10)'
+          : 'transparent',
+        borderLeftWidth: 3,
+        borderLeftColor: qualifies ? '#facc15' : 'transparent',
+      }}
+    >
+      <Text
+        style={{
+          width: 18,
+          fontSize: 11,
+          color: qualifies ? '#fde68a' : '#64748b',
+          fontWeight: '700',
+        }}
+      >
+        {rank}
+      </Text>
+      <Text
+        style={{
+          flex: 1,
+          fontSize: 12,
+          color: qualifies ? '#fef3c7' : '#e2e8f0',
+          fontWeight: qualifies ? '600' : '500',
+        }}
+        numberOfLines={1}
+      >
+        {row.name}
+      </Text>
+      <Text
+        style={{
+          fontSize: 12,
+          color: qualifies ? '#fde68a' : '#94a3b8',
+          fontWeight: '700',
+          fontVariant: ['tabular-nums'],
+          minWidth: 22,
+          textAlign: 'right',
+        }}
+      >
+        {row.points}
+      </Text>
     </View>
   );
 }

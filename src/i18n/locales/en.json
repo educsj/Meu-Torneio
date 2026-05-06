@@ -219,6 +219,7 @@
     "styleSimple": "Simple",
     "styleChampions": "Champions",
     "championsHeader": "Bracket",
+    "groupHeader": "Group",
     "participantsCount": {
       "one": "{{count}} participant",
       "other": "{{count}} participants"

@@ -7,7 +7,10 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
 
-import { ChampionsBracket } from '@/components/ChampionsBracket';
+import {
+  ChampionsBracket,
+  type ChampionsGroup,
+} from '@/components/ChampionsBracket';
 import { ShareableTournamentSummary } from '@/components/ShareableTournamentSummary';
 import { Button } from '@/components/ui/Button';
 import { listParticipants } from '@/db/participants';
@@ -24,6 +27,7 @@ import {
   WINNERS_BRACKET_LABEL,
 } from '@/utils/bracket';
 import { suggestedBackupFilename } from '@/utils/exportImport';
+import { computeStandings } from '@/utils/standings';
 
 type ImageStyle = 'simple' | 'champions';
 
@@ -88,6 +92,39 @@ export default function TournamentImageScreen() {
     () => new Map(participants.map((p) => [p.id, p])),
     [participants]
   );
+
+  // For tournaments with a real group phase (groups_knockout / world_cup /
+  // any custom multi-group), compute per-group standings to render above
+  // the bracket. Bracket-only tournaments leave this as null and only the
+  // bracket is shown.
+  const championsGroups = useMemo<ChampionsGroup[] | null>(() => {
+    const groupMatches = matches.filter((m) => m.stage === 'group');
+    if (groupMatches.length === 0) return null;
+    const labels = Array.from(
+      new Set(
+        groupMatches
+          .map((m) => m.groupLabel)
+          .filter((l): l is string => l != null)
+      )
+    ).sort();
+    if (labels.length === 0) return null;
+    const sourcePhase = phases.find((p) => p.ordinal === 0);
+    return labels.map((label) => {
+      const ms = groupMatches.filter((m) => m.groupLabel === label);
+      // Restrict participants to those who actually played in this group;
+      // otherwise computeStandings would include unrelated rows.
+      const ids = new Set<number>();
+      for (const m of ms) {
+        if (m.participantAId) ids.add(m.participantAId);
+        if (m.participantBId) ids.add(m.participantBId);
+      }
+      const groupParticipants = participants.filter((p) => ids.has(p.id));
+      const standings = computeStandings(ms, groupParticipants, {
+        scoring: sourcePhase?.scoring,
+      });
+      return { label, standings };
+    });
+  }, [matches, participants, phases]);
 
   // If the user picks Champions and then the bracket gets regenerated to a
   // shape that doesn't support it, snap back to Simple so the preview isn't
@@ -251,6 +288,13 @@ export default function TournamentImageScreen() {
                 matches={championsMatches}
                 participantsById={participantsById}
                 title={tournament.name}
+                groups={championsGroups ?? undefined}
+                qualifiersPerGroup={
+                  phases.find((p) => p.ordinal === 0)?.groupCount &&
+                  phases.find((p) => p.ordinal === 0)!.groupCount > 1
+                    ? 2 // multi-group → SE always seeds top-2 of each
+                    : undefined
+                }
               />
             </View>
           </ScrollView>

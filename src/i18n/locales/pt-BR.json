@@ -219,6 +219,7 @@
     "styleSimple": "Simples",
     "styleChampions": "Champions",
     "championsHeader": "Chaveamento",
+    "groupHeader": "Grupo",
     "participantsCount": {
       "one": "{{count}} participante",
       "other": "{{count}} participantes"
