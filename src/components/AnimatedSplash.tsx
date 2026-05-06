@@ -81,7 +81,7 @@ export function AnimatedSplash({ onFinish }: Props) {
         <Trophy size={132} color={GOLD} fill={GOLD} strokeWidth={1.5} />
       </Animated.View>
       <Animated.Text style={[styles.title, textStyle]}>
-        {t('splash.appName')}
+        {t('app.name')}
       </Animated.Text>
       {/* Two cannons firing inward from each top corner — covers the screen
           symmetrically without requiring a single cannon to overshoot. */}

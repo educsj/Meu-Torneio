@@ -39,7 +39,7 @@ export function ExportTournamentButton({ tournamentId }: ExportButtonProps) {
         UTI: 'public.json',
       });
     } catch (err) {
-      Alert.alert('Erro', (err as Error).message);
+      Alert.alert(t('common.error'), (err as Error).message);
     } finally {
       setBusy(false);
     }
@@ -84,7 +84,7 @@ export function ImportTournamentButton({ onImported }: ImportButtonProps) {
       const newId = await importTournamentJson(json);
       onImported(newId);
     } catch (err) {
-      Alert.alert('Erro', (err as Error).message);
+      Alert.alert(t('common.error'), (err as Error).message);
     } finally {
       setBusy(false);
     }

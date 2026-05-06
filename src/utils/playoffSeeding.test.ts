@@ -38,6 +38,8 @@ function m(
             : null,
     nextMatchId: null,
     loserNextMatchId: null,
+    nextSlot: null,
+    loserNextSlot: null,
     scheduledAt: null,
     location: null,
     groupLabel: options?.groupLabel ?? null,

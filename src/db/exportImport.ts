@@ -192,6 +192,21 @@ export async function importTournamentJson(json: string): Promise<number> {
           );
         }
       }
+      // v8 slot designators. Without these, DE cross-bracket propagation
+      // would fall back to "siblings sorted by id", which silently mis-
+      // routes WB-loser-vs-LB-winner picks. Pre-v8 backups omit them.
+      if (m.nextSlot === 'A' || m.nextSlot === 'B') {
+        await db.runAsync(
+          'UPDATE matches SET next_slot = ? WHERE id = ?;',
+          [m.nextSlot, meNew]
+        );
+      }
+      if (m.loserNextSlot === 'A' || m.loserNextSlot === 'B') {
+        await db.runAsync(
+          'UPDATE matches SET loser_next_slot = ? WHERE id = ?;',
+          [m.loserNextSlot, meNew]
+        );
+      }
     }
   });
 

@@ -61,6 +61,11 @@ function rowToMatch(row: MatchRow): Match {
     winnerId: row.winner_id,
     nextMatchId: row.next_match_id,
     loserNextMatchId: row.loser_next_match_id,
+    nextSlot: row.next_slot === 'A' || row.next_slot === 'B' ? row.next_slot : null,
+    loserNextSlot:
+      row.loser_next_slot === 'A' || row.loser_next_slot === 'B'
+        ? row.loser_next_slot
+        : null,
     scheduledAt: row.scheduled_at,
     location: row.location,
     groupLabel: row.group_label,
@@ -75,6 +80,7 @@ export async function listMatches(tournamentId: number): Promise<Match[]> {
   const rows = await db.getAllAsync<MatchRow>(
     `SELECT id, tournament_id, round, participant_a_id, participant_b_id,
             score_a, score_b, winner_id, next_match_id, loser_next_match_id,
+            next_slot, loser_next_slot,
             scheduled_at, location, group_label, stage, phase_id, walkover
      FROM matches
      WHERE tournament_id = ?

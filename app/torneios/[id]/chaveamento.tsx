@@ -8,7 +8,12 @@ import { Screen } from '@/components/ui/Screen';
 import { listParticipants } from '@/db/participants';
 import { useThemeIcon } from '@/hooks/useThemeIcon';
 import { useTranslation } from '@/i18n/useTranslation';
-import { THIRD_PLACE_LABEL } from '@/utils/bracket';
+import {
+  GRAND_FINAL_LABEL,
+  LOSERS_BRACKET_LABEL,
+  THIRD_PLACE_LABEL,
+  WINNERS_BRACKET_LABEL,
+} from '@/utils/bracket';
 import { useMatchesStore } from '@/stores/useMatchesStore';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
 import type { Match, Participant } from '@/types/tournament';
@@ -52,15 +57,20 @@ export default function BracketScreen() {
     [participants]
   );
 
-  // For single_elim every match is part of the bracket. The route is
-  // currently only navigated to from single_elim's detail screen, but we
-  // defensively narrow to stage='main' anyway in case future formats
-  // surface this view too. The 3rd-place match also has stage='main' but
-  // is NOT part of the bracket tree — render it separately below.
+  // Bracket-tree-friendly matches: pure single-elim (stage='main') AND the
+  // knockout phase of any multi-phase format (stage='knockout'). Excludes
+  // the 3rd-place playoff and the entire double-elimination layout (WB /
+  // LB / GF) because those don't fit a single connected tree — DE has its
+  // own dedicated visualization on the matches screen.
   const bracketMatches = useMemo(
     () =>
       matches.filter(
-        (m) => m.stage === 'main' && m.groupLabel !== THIRD_PLACE_LABEL
+        (m) =>
+          (m.stage === 'main' || m.stage === 'knockout') &&
+          m.groupLabel !== THIRD_PLACE_LABEL &&
+          m.groupLabel !== WINNERS_BRACKET_LABEL &&
+          m.groupLabel !== LOSERS_BRACKET_LABEL &&
+          m.groupLabel !== GRAND_FINAL_LABEL
       ),
     [matches]
   );

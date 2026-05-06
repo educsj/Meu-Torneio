@@ -124,7 +124,7 @@ export default function TournamentDetailScreen() {
     try {
       await generateBracket(tournamentId);
     } catch (err) {
-      Alert.alert('Erro', (err as Error).message);
+      Alert.alert(t('common.error'), (err as Error).message);
     } finally {
       setGenerating(false);
     }
@@ -174,6 +174,23 @@ export default function TournamentDetailScreen() {
     matches.some((m) => m.stage === 'group' && m.groupLabel != null) ||
     (matches.length === 0 && tournament.type === 'groups_knockout');
   const showGroups = hasMultiGroupPhase;
+  // The bracket-tree view supports any tournament whose matches form a
+  // connected tree: pure single-elim (always), the knockout phase of a
+  // multi-phase format (groups_knockout, world_cup, custom multi-phase),
+  // or a single-league → SE playoff. Detected by "has at least one match
+  // with a downstream feeder pointer" — naturally excludes round_robin,
+  // placement playoffs (parallel matches), and double-elimination (its
+  // WB/LB/GF labels don't fit a single tree).
+  const showBracket =
+    isSingleElim ||
+    matches.some(
+      (m) =>
+        (m.stage === 'main' || m.stage === 'knockout') &&
+        m.nextMatchId != null &&
+        m.groupLabel !== 'WB' &&
+        m.groupLabel !== 'LB' &&
+        m.groupLabel !== 'GF'
+    );
   // Standings only makes sense for single-group leagues. Multi-group
   // tournaments expose per-group standings inside the Groups view.
   const showStandings =
@@ -209,7 +226,7 @@ export default function TournamentDetailScreen() {
             })
           }
         />
-        {isSingleElim ? (
+        {showBracket ? (
           <NavButton
             label={t('tournament.bracket')}
             icon={<GitBranch size={18} color={icon.secondary} />}

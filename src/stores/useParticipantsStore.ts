@@ -4,6 +4,7 @@ import {
   createParticipant,
   deleteParticipant,
   listParticipants,
+  renameParticipant,
   updateParticipantIcon,
 } from '@/db/participants';
 import type { Participant } from '@/types/tournament';
@@ -19,6 +20,7 @@ interface ParticipantsState {
     options?: { icon?: string | null; iconColor?: string | null }
   ) => Promise<Participant>;
   remove: (tournamentId: number, id: number) => Promise<void>;
+  rename: (tournamentId: number, id: number, name: string) => Promise<void>;
   updateIcon: (
     tournamentId: number,
     id: number,
@@ -67,6 +69,20 @@ export const useParticipantsStore = create<ParticipantsState>((set, get) => ({
       byTournament: {
         ...get().byTournament,
         [tournamentId]: current.filter((p) => p.id !== id),
+      },
+    });
+  },
+  rename: async (tournamentId, id, name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    await renameParticipant(id, trimmed);
+    const current = get().byTournament[tournamentId] ?? [];
+    set({
+      byTournament: {
+        ...get().byTournament,
+        [tournamentId]: current.map((p) =>
+          p.id === id ? { ...p, name: trimmed } : p
+        ),
       },
     });
   },

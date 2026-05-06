@@ -3,9 +3,6 @@
     "name": "Meu Torneio",
     "tagline": "Torneios amadores na palma da sua mão"
   },
-  "splash": {
-    "appName": "Meu Torneio"
-  },
   "common": {
     "save": "Salvar",
     "cancel": "Cancelar",
@@ -19,6 +16,7 @@
     "confirm": "Confirmar",
     "yes": "Sim",
     "no": "Não",
+    "error": "Erro",
     "search": "Buscar",
     "settings": "Configurações",
     "language": "Idioma",

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Trash2, UserPlus, Users } from 'lucide-react-native';
 
+import { EditParticipantNameModal } from '@/components/EditParticipantNameModal';
 import { ParticipantBadge } from '@/components/ParticipantBadge';
 import { ParticipantBadgePicker } from '@/components/ParticipantBadgePicker';
 import { Button } from '@/components/ui/Button';
@@ -25,6 +26,7 @@ export function ParticipantList({ tournamentId }: Props) {
   const add = useParticipantsStore((s) => s.add);
   const remove = useParticipantsStore((s) => s.remove);
   const updateIcon = useParticipantsStore((s) => s.updateIcon);
+  const rename = useParticipantsStore((s) => s.rename);
 
   const [name, setName] = useState('');
   const [adding, setAdding] = useState(false);
@@ -35,6 +37,9 @@ export function ParticipantList({ tournamentId }: Props) {
   const [draftPickerOpen, setDraftPickerOpen] = useState(false);
   // Editing target: id of the participant whose badge is being edited.
   const [editingId, setEditingId] = useState<number | null>(null);
+  // Renaming target — separate from the badge edit so users can fix a
+  // typo without touching the icon, and vice versa.
+  const [renamingId, setRenamingId] = useState<number | null>(null);
 
   useEffect(() => {
     load(tournamentId);
@@ -42,6 +47,9 @@ export function ParticipantList({ tournamentId }: Props) {
 
   const editingTarget = editingId
     ? participants.find((p) => p.id === editingId)
+    : null;
+  const renamingTarget = renamingId
+    ? participants.find((p) => p.id === renamingId)
     : null;
 
   const handleAdd = async () => {
@@ -55,7 +63,7 @@ export function ParticipantList({ tournamentId }: Props) {
       });
       setName('');
     } catch (err) {
-      Alert.alert('Erro', (err as Error).message);
+      Alert.alert(t('common.error'), (err as Error).message);
     } finally {
       setAdding(false);
     }
@@ -146,12 +154,17 @@ export function ParticipantList({ tournamentId }: Props) {
                       size={36}
                     />
                   </Pressable>
-                  <Text
-                    className="flex-1 text-base text-slate-900 dark:text-slate-100"
-                    numberOfLines={1}
+                  <Pressable
+                    onPress={() => setRenamingId(item.id)}
+                    className="flex-1"
                   >
-                    {item.name}
-                  </Text>
+                    <Text
+                      className="text-base text-slate-900 dark:text-slate-100"
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                  </Pressable>
                 </View>
                 <Pressable
                   onPress={() => handleRemove(item.id)}
@@ -189,6 +202,17 @@ export function ParticipantList({ tournamentId }: Props) {
             updateIcon(tournamentId, editingId, icon, color);
           }
           setEditingId(null);
+        }}
+      />
+
+      <EditParticipantNameModal
+        visible={renamingTarget != null}
+        initialName={renamingTarget?.name ?? ''}
+        onClose={() => setRenamingId(null)}
+        onSave={async (next) => {
+          if (renamingId != null) {
+            await rename(tournamentId, renamingId, next);
+          }
         }}
       />
     </View>

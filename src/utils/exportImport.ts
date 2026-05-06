@@ -161,6 +161,8 @@ export function serializeTournament(
       winnerLocalId: m.winnerId,
       nextMatchLocalId: m.nextMatchId,
       loserNextMatchLocalId: m.loserNextMatchId,
+      nextSlot: m.nextSlot,
+      loserNextSlot: m.loserNextSlot,
       phaseLocalId: m.phaseId,
       scheduledAt: m.scheduledAt,
       location: m.location,

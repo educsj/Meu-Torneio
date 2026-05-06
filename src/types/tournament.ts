@@ -51,6 +51,15 @@ export interface Match {
    * grand final where the loser is simply eliminated).
    */
   loserNextMatchId: number | null;
+  /**
+   * Double-elimination only: explicit 'A' / 'B' slot the winner / loser
+   * fills in the downstream match. Null falls back to the legacy
+   * "siblings sorted by id → smaller-id is slot A" rule used by single
+   * elim. Cross-bracket DE propagation needs explicit slots because
+   * winner-from-LB and loser-from-WB land in the same downstream match.
+   */
+  nextSlot: 'A' | 'B' | null;
+  loserNextSlot: 'A' | 'B' | null;
   scheduledAt: string | null;
   location: string | null;
   groupLabel: string | null;

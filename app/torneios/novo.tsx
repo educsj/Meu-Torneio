@@ -114,7 +114,7 @@ export default function NewTournamentScreen() {
       });
       router.back();
     } catch (err) {
-      Alert.alert('Erro', (err as Error).message);
+      Alert.alert(t('common.error'), (err as Error).message);
     } finally {
       setSubmitting(false);
     }

@@ -1,10 +1,7 @@
 {
   "app": {
-    "name": "Tournament Master",
+    "name": "My Tournament",
     "tagline": "Amateur tournaments in your pocket"
-  },
-  "splash": {
-    "appName": "My Tournament"
   },
   "common": {
     "save": "Save",
@@ -19,6 +16,7 @@
     "confirm": "Confirm",
     "yes": "Yes",
     "no": "No",
+    "error": "Error",
     "search": "Search",
     "settings": "Settings",
     "language": "Language",

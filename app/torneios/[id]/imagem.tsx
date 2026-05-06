@@ -174,7 +174,7 @@ export default function TournamentImageScreen() {
         UTI: 'public.png',
       });
     } catch (err) {
-      Alert.alert('Erro', (err as Error).message);
+      Alert.alert(t('common.error'), (err as Error).message);
     } finally {
       setSharing(false);
     }
@@ -202,7 +202,7 @@ export default function TournamentImageScreen() {
       await MediaLibrary.saveToLibraryAsync(uri);
       Alert.alert(t('image.savedTitle'), t('image.savedMessage'));
     } catch (err) {
-      Alert.alert('Erro', (err as Error).message);
+      Alert.alert(t('common.error'), (err as Error).message);
     } finally {
       setSaving(false);
     }

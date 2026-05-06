@@ -158,7 +158,7 @@ export function ScoreEntryModal({
       }
       onClose();
     } catch (err) {
-      Alert.alert('Erro', (err as Error).message);
+      Alert.alert(t('common.error'), (err as Error).message);
     } finally {
       setSaving(false);
     }
@@ -170,7 +170,7 @@ export function ScoreEntryModal({
       await onClear();
       onClose();
     } catch (err) {
-      Alert.alert('Erro', (err as Error).message);
+      Alert.alert(t('common.error'), (err as Error).message);
     } finally {
       setSaving(false);
     }

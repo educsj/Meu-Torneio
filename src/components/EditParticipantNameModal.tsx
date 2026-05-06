@@ -21,7 +21,7 @@ interface Props {
   onSave: (name: string) => Promise<void> | void;
 }
 
-export function EditTournamentNameModal({
+export function EditParticipantNameModal({
   visible,
   initialName,
   onClose,
@@ -63,7 +63,7 @@ export function EditTournamentNameModal({
         <View className="w-full max-w-sm rounded-2xl bg-white p-5 dark:bg-slate-900">
           <View className="mb-4 flex-row items-center justify-between">
             <Text className="text-lg font-bold text-slate-900 dark:text-white">
-              {t('tournament.editTitle')}
+              {t('participants.editTitle')}
             </Text>
             <Pressable
               onPress={onClose}
@@ -74,10 +74,9 @@ export function EditTournamentNameModal({
           </View>
 
           <TextField
-            label={t('newTournament.name')}
             value={name}
             onChangeText={setName}
-            placeholder={t('newTournament.namePlaceholder')}
+            placeholder={t('participants.placeholder')}
             autoFocus
           />
 
