@@ -216,6 +216,9 @@
     "knockout": "Mata-mata",
     "noMatchesYet": "Nenhuma partida gerada ainda.",
     "footer": "Gerado por Meu Torneio · {{date}}",
+    "styleSimple": "Simples",
+    "styleChampions": "Champions",
+    "championsHeader": "Chaveamento",
     "participantsCount": {
       "one": "{{count}} participante",
       "other": "{{count}} participantes"

@@ -9,6 +9,10 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ### Added · Adicionado (mais recente / most recent)
 
+#### Imagem do torneio — estilo Champions / Tournament image — Champions style
+
+- **Novo layout "Champions"** na exportação de imagem — chaveamento simétrico de duas pontas convergindo num troféu central, fundo gradiente escuro e linhas de conexão amarelas, no espírito dos brackets de mata-mata da Champions League. Toggle "Simples / Champions" aparece quando o torneio tem chave de 4, 8 ou 16 times. Brackets de outros tamanhos / round-robin / dupla eliminação continuam só com o estilo Simples. / **New "Champions" image-export layout** — symmetric two-sided bracket converging on a centered trophy, dark gradient background, yellow connector lines. Toggle ("Simple / Champions") shows up only for 4/8/16-team brackets; other shapes stay on Simple.
+
 #### Identidade visual / Visual identity
 
 - **Nova arte do app** — ícone de troféu dourado em fundo azul de marca (#1a78f5). Renderizado a partir de SVGs versionados (`assets/icon-source.svg` + `assets/icon-foreground-source.svg`) via `node scripts/generate-icons.mjs`, gerando icon, adaptive-icon, splash-icon e favicon nas dimensões certas. / **New app artwork** — gold trophy on the brand-blue background. Source SVGs are committed; running `node scripts/generate-icons.mjs` (one-shot, uses sharp) produces all PNG variants.

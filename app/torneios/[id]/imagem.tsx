@@ -7,6 +7,7 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
 
+import { ChampionsBracket } from '@/components/ChampionsBracket';
 import { ShareableTournamentSummary } from '@/components/ShareableTournamentSummary';
 import { Button } from '@/components/ui/Button';
 import { listParticipants } from '@/db/participants';
@@ -16,7 +17,39 @@ import { useTranslation } from '@/i18n/useTranslation';
 import { useMatchesStore } from '@/stores/useMatchesStore';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
 import type { Match, Participant, Phase } from '@/types/tournament';
+import {
+  GRAND_FINAL_LABEL,
+  LOSERS_BRACKET_LABEL,
+  THIRD_PLACE_LABEL,
+  WINNERS_BRACKET_LABEL,
+} from '@/utils/bracket';
 import { suggestedBackupFilename } from '@/utils/exportImport';
+
+type ImageStyle = 'simple' | 'champions';
+
+/** Pull just the symmetric-tree-friendly knockout matches for the Champions
+ *  layout — excludes 3rd-place, DE WB/LB/GF, and bracket-reset matches. */
+function selectChampionsBracketMatches(matches: Match[]): Match[] {
+  return matches
+    .filter(
+      (m) =>
+        (m.stage === 'main' || m.stage === 'knockout') &&
+        m.groupLabel !== THIRD_PLACE_LABEL &&
+        m.groupLabel !== WINNERS_BRACKET_LABEL &&
+        m.groupLabel !== LOSERS_BRACKET_LABEL &&
+        m.groupLabel !== GRAND_FINAL_LABEL
+    )
+    .sort((a, b) => a.round - b.round || a.id - b.id);
+}
+
+/** True when the tournament has a single-elim bracket of 4/8/16 slots —
+ *  the shapes the symmetric Champions layout knows how to draw. */
+function supportsChampionsLayout(matches: Match[]): boolean {
+  const ms = selectChampionsBracketMatches(matches);
+  if (ms.length === 0) return false;
+  const r1 = ms.filter((m) => m.round === 1).length;
+  return r1 === 2 || r1 === 4 || r1 === 8; // 4 / 8 / 16 teams
+}
 
 const EMPTY_MATCHES: readonly Match[] = Object.freeze([]);
 
@@ -40,7 +73,30 @@ export default function TournamentImageScreen() {
   const [phases, setPhases] = useState<Phase[]>([]);
   const [sharing, setSharing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [style, setStyle] = useState<ImageStyle>('simple');
   const captureTargetRef = useRef<View>(null);
+
+  const championsAvailable = useMemo(
+    () => supportsChampionsLayout(matches),
+    [matches]
+  );
+  const championsMatches = useMemo(
+    () => selectChampionsBracketMatches(matches),
+    [matches]
+  );
+  const participantsById = useMemo(
+    () => new Map(participants.map((p) => [p.id, p])),
+    [participants]
+  );
+
+  // If the user picks Champions and then the bracket gets regenerated to a
+  // shape that doesn't support it, snap back to Simple so the preview isn't
+  // suddenly empty.
+  useEffect(() => {
+    if (style === 'champions' && !championsAvailable) {
+      setStyle('simple');
+    }
+  }, [style, championsAvailable]);
 
   useEffect(() => {
     if (!Number.isFinite(tournamentId)) return;
@@ -160,6 +216,21 @@ export default function TournamentImageScreen() {
         {t('image.previewHint', { filename })}
       </Text>
 
+      {championsAvailable ? (
+        <View className="flex-row gap-2 px-5 pb-2">
+          <StyleChip
+            label={t('image.styleSimple')}
+            selected={style === 'simple'}
+            onPress={() => setStyle('simple')}
+          />
+          <StyleChip
+            label={t('image.styleChampions')}
+            selected={style === 'champions'}
+            onPress={() => setStyle('champions')}
+          />
+        </View>
+      ) : null}
+
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-3 pb-4"
@@ -167,13 +238,22 @@ export default function TournamentImageScreen() {
         <View
           className="overflow-hidden rounded-2xl"
         >
-          <ShareableTournamentSummary
-            ref={captureTargetRef}
-            tournament={tournament}
-            participants={participants}
-            matches={matches}
-            phases={phases}
-          />
+          {style === 'champions' && championsAvailable ? (
+            <ChampionsBracket
+              ref={captureTargetRef}
+              matches={championsMatches}
+              participantsById={participantsById}
+              title={tournament.name}
+            />
+          ) : (
+            <ShareableTournamentSummary
+              ref={captureTargetRef}
+              tournament={tournament}
+              participants={participants}
+              matches={matches}
+              phases={phases}
+            />
+          )}
         </View>
       </ScrollView>
 
@@ -193,5 +273,36 @@ export default function TournamentImageScreen() {
         />
       </View>
     </SafeAreaView>
+  );
+}
+
+function StyleChip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`flex-1 rounded-xl border px-3 py-2 ${
+        selected
+          ? 'border-brand-500 bg-brand-50 dark:border-brand-400 dark:bg-brand-950'
+          : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800'
+      }`}
+    >
+      <Text
+        className={`text-center text-sm ${
+          selected
+            ? 'font-semibold text-brand-700 dark:text-brand-200'
+            : 'text-slate-700 dark:text-slate-300'
+        }`}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
