@@ -206,6 +206,8 @@ function applyHeadToHeadTiebreaker(
           tournamentId: 0,
           name: row.name,
           seed: null,
+          icon: null,
+          iconColor: null,
         });
       }
       const h2hMatches = allMatches.filter(

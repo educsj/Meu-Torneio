@@ -5,7 +5,7 @@ import type { Match, Participant } from '@/types/tournament';
 import { computeStandings, pointsForMatch } from './standings';
 
 function p(id: number, name: string): Participant {
-  return { id, tournamentId: 1, name, seed: null };
+  return { id, tournamentId: 1, name, seed: null, icon: null, iconColor: null };
 }
 
 function m(
@@ -202,8 +202,8 @@ describe('computeStandings — head-to-head tiebreaker', () => {
 });
 
 describe('computeStandings with volleyball scoring', () => {
-  const A = { id: 1, tournamentId: 1, name: 'A', seed: null };
-  const B = { id: 2, tournamentId: 1, name: 'B', seed: null };
+  const A = { id: 1, tournamentId: 1, name: 'A', seed: null, icon: null, iconColor: null };
+  const B = { id: 2, tournamentId: 1, name: 'B', seed: null, icon: null, iconColor: null };
 
   it('awards 3-0 / 2-1 / 0-3 per match according to set margin', () => {
     // Two matches between A and B: A wins 3-0, then B wins 3-2.

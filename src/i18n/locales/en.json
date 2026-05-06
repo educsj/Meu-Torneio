@@ -224,6 +224,13 @@
       "other": "{{count}} participants"
     }
   },
+  "badgePicker": {
+    "titleNew": "Icon for next participant",
+    "icon": "Icon",
+    "color": "Color",
+    "none": "None",
+    "clear": "Clear"
+  },
   "phaseBuilder": {
     "title": "Tournament phases",
     "phaseN": "Phase {{n}}",

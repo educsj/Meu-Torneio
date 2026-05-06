@@ -3,6 +3,7 @@ import { Alert, Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Calendar, ChevronLeft, MapPin, Trophy } from 'lucide-react-native';
 
+import { ParticipantBadge } from '@/components/ParticipantBadge';
 import { ScoreEntryModal } from '@/components/ScoreEntryModal';
 import { Screen } from '@/components/ui/Screen';
 import { listParticipants } from '@/db/participants';
@@ -550,6 +551,7 @@ function MatchCard({
         ) : null}
       </View>
       <Side
+        participant={a}
         name={a?.name ?? (aIsBye ? t('matches.bye') : t('matches.tbd'))}
         score={match.scoreA}
         isWinner={aIsWinner}
@@ -557,6 +559,7 @@ function MatchCard({
       />
       <View className="my-1.5 h-px bg-slate-100 dark:bg-slate-800" />
       <Side
+        participant={b}
         name={b?.name ?? (bIsBye ? t('matches.bye') : t('matches.tbd'))}
         score={match.scoreB}
         isWinner={bIsWinner}
@@ -634,18 +637,28 @@ function formatScheduledForDisplay(iso: string): string {
 }
 
 function Side({
+  participant,
   name,
   score,
   isWinner,
   isPlaceholder,
 }: {
+  participant: Participant | null | undefined;
   name: string;
   score: number | null;
   isWinner: boolean;
   isPlaceholder: boolean;
 }) {
   return (
-    <View className="flex-row items-center justify-between">
+    <View className="flex-row items-center justify-between gap-2">
+      {participant ? (
+        <ParticipantBadge
+          icon={participant.icon}
+          iconColor={participant.iconColor}
+          name={participant.name}
+          size={24}
+        />
+      ) : null}
       <Text
         className={`flex-1 text-sm ${
           isWinner

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Trash2, UserPlus, Users } from 'lucide-react-native';
 
+import { ParticipantBadge } from '@/components/ParticipantBadge';
+import { ParticipantBadgePicker } from '@/components/ParticipantBadgePicker';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -22,20 +24,35 @@ export function ParticipantList({ tournamentId }: Props) {
   const load = useParticipantsStore((s) => s.load);
   const add = useParticipantsStore((s) => s.add);
   const remove = useParticipantsStore((s) => s.remove);
+  const updateIcon = useParticipantsStore((s) => s.updateIcon);
 
   const [name, setName] = useState('');
   const [adding, setAdding] = useState(false);
+  // Pre-selected badge for the NEXT add. Persists across additions so the
+  // user can stamp out a series of participants with the same color.
+  const [draftIcon, setDraftIcon] = useState<string | null>(null);
+  const [draftColor, setDraftColor] = useState<string | null>(null);
+  const [draftPickerOpen, setDraftPickerOpen] = useState(false);
+  // Editing target: id of the participant whose badge is being edited.
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   useEffect(() => {
     load(tournamentId);
   }, [tournamentId, load]);
+
+  const editingTarget = editingId
+    ? participants.find((p) => p.id === editingId)
+    : null;
 
   const handleAdd = async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
     setAdding(true);
     try {
-      await add(tournamentId, trimmed);
+      await add(tournamentId, trimmed, {
+        icon: draftIcon,
+        iconColor: draftColor,
+      });
       setName('');
     } catch (err) {
       Alert.alert('Erro', (err as Error).message);
@@ -57,21 +74,34 @@ export function ParticipantList({ tournamentId }: Props) {
 
   return (
     <View className="flex-1">
-      <View className="mb-4 flex-row items-center gap-2">
-        <View className="flex-1">
-          <TextField
-            value={name}
-            onChangeText={setName}
-            placeholder={t('participants.placeholder')}
-          />
-        </View>
-        <View>
-          <Button
-            label={t('common.create')}
-            onPress={handleAdd}
-            disabled={adding || !name.trim()}
-            leading={<UserPlus size={16} color="#fff" />}
-          />
+      <View className="mb-4 gap-2">
+        <View className="flex-row items-center gap-2">
+          <Pressable
+            onPress={() => setDraftPickerOpen(true)}
+            className="rounded-full"
+          >
+            <ParticipantBadge
+              icon={draftIcon}
+              iconColor={draftColor}
+              name={name || '?'}
+              size={36}
+            />
+          </Pressable>
+          <View className="flex-1">
+            <TextField
+              value={name}
+              onChangeText={setName}
+              placeholder={t('participants.placeholder')}
+            />
+          </View>
+          <View>
+            <Button
+              label={t('common.create')}
+              onPress={handleAdd}
+              disabled={adding || !name.trim()}
+              leading={<UserPlus size={16} color="#fff" />}
+            />
+          </View>
         </View>
       </View>
 
@@ -107,13 +137,19 @@ export function ParticipantList({ tournamentId }: Props) {
                 <View className="h-px bg-slate-100 dark:bg-slate-800" />
               ) : null}
               <View className="flex-row items-center justify-between py-3">
-                <View className="flex-row items-center gap-3">
-                  <View className="h-8 w-8 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-950">
-                    <Text className="text-sm font-semibold text-brand-700 dark:text-brand-200">
-                      {index + 1}
-                    </Text>
-                  </View>
-                  <Text className="text-base text-slate-900 dark:text-slate-100">
+                <View className="flex-1 flex-row items-center gap-3">
+                  <Pressable onPress={() => setEditingId(item.id)}>
+                    <ParticipantBadge
+                      icon={item.icon}
+                      iconColor={item.iconColor}
+                      name={item.name}
+                      size={36}
+                    />
+                  </Pressable>
+                  <Text
+                    className="flex-1 text-base text-slate-900 dark:text-slate-100"
+                    numberOfLines={1}
+                  >
                     {item.name}
                   </Text>
                 </View>
@@ -128,6 +164,33 @@ export function ParticipantList({ tournamentId }: Props) {
           ))}
         </ScrollView>
       )}
+
+      <ParticipantBadgePicker
+        visible={draftPickerOpen}
+        title={t('badgePicker.titleNew')}
+        initialIcon={draftIcon}
+        initialColor={draftColor}
+        onClose={() => setDraftPickerOpen(false)}
+        onSave={(icon, color) => {
+          setDraftIcon(icon);
+          setDraftColor(color);
+          setDraftPickerOpen(false);
+        }}
+      />
+
+      <ParticipantBadgePicker
+        visible={editingTarget != null}
+        title={editingTarget?.name ?? ''}
+        initialIcon={editingTarget?.icon ?? null}
+        initialColor={editingTarget?.iconColor ?? null}
+        onClose={() => setEditingId(null)}
+        onSave={(icon, color) => {
+          if (editingId != null) {
+            updateIcon(tournamentId, editingId, icon, color);
+          }
+          setEditingId(null);
+        }}
+      />
     </View>
   );
 }

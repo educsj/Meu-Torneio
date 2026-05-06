@@ -9,6 +9,7 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 
+import { ParticipantBadge } from '@/components/ParticipantBadge';
 import { useTranslation } from '@/i18n/useTranslation';
 import type { Match, Participant } from '@/types/tournament';
 
@@ -246,6 +247,7 @@ function MatchSlot({
       }}
     >
       <SlotSide
+        participant={a}
         name={a?.name ?? (aIsBye ? byeLabel : tbdLabel)}
         score={match.scoreA}
         won={aWon}
@@ -253,6 +255,7 @@ function MatchSlot({
       />
       <View style={{ height: 1, backgroundColor: '#0b1424' }} />
       <SlotSide
+        participant={b}
         name={b?.name ?? (bIsBye ? byeLabel : tbdLabel)}
         score={match.scoreB}
         won={bWon}
@@ -263,11 +266,13 @@ function MatchSlot({
 }
 
 function SlotSide({
+  participant,
   name,
   score,
   won,
   placeholder,
 }: {
+  participant: Participant | null | undefined;
   name: string;
   score: number | null;
   won: boolean;
@@ -283,6 +288,16 @@ function SlotSide({
         backgroundColor: won ? 'rgba(250, 204, 21, 0.15)' : 'transparent',
       }}
     >
+      {participant ? (
+        <View style={{ marginRight: 6 }}>
+          <ParticipantBadge
+            icon={participant.icon}
+            iconColor={participant.iconColor}
+            name={participant.name}
+            size={22}
+          />
+        </View>
+      ) : null}
       <Text
         style={{
           flex: 1,
@@ -367,6 +382,7 @@ function CenterFinal({
         }}
       >
         <SlotSide
+          participant={a}
           name={a?.name ?? tbdLabel}
           score={match.scoreA}
           won={aWon}
@@ -374,6 +390,7 @@ function CenterFinal({
         />
         <View style={{ height: 1, backgroundColor: '#0b1424' }} />
         <SlotSide
+          participant={b}
           name={b?.name ?? tbdLabel}
           score={match.scoreB}
           won={bWon}

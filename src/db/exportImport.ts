@@ -111,13 +111,20 @@ export async function importTournamentJson(json: string): Promise<number> {
       }
     }
 
-    // 2) participants — keep mapping localId → newId
+    // 2) participants — keep mapping localId → newId. Icon/iconColor are
+    // optional (pre-v10 backups omit them); both default to null.
     const participantIdMap = new Map<number, number>();
     for (const p of backup.participants) {
       const r = await db.runAsync(
-        `INSERT INTO participants (tournament_id, name, seed)
-         VALUES (?, ?, ?);`,
-        [newTournamentId, p.name, p.seed ?? null]
+        `INSERT INTO participants (tournament_id, name, seed, icon, icon_color)
+         VALUES (?, ?, ?, ?, ?);`,
+        [
+          newTournamentId,
+          p.name,
+          p.seed ?? null,
+          p.icon ?? null,
+          p.iconColor ?? null,
+        ]
       );
       participantIdMap.set(p.localId, r.lastInsertRowId);
     }

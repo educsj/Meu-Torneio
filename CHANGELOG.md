@@ -9,6 +9,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ### Added · Adicionado (mais recente / most recent)
 
+#### Ícones de participantes / Participant badges
+
+- **Catálogo de 28 ícones** + paleta de 10 cores. Cada participante pode ter um ícone (Trophy, Star, Crown, Shield, Flame, Sword, Skull, Rocket, Diamond, etc.) sobre uma cor de fundo, exibido em listas, cards de partida, árvore de chaveamento e na imagem Champions exportada. Sem ícone, o app cai pra iniciais sobre fundo neutro. (Schema v10: colunas `icon` + `icon_color` em participants, ambas nullable.) / **28-icon catalog + 10-color palette.** Each participant can pick an icon over a colored circle; renders across lists, match cards, the bracket tree, and the Champions-style export. No icon → falls back to initials on a neutral background (schema v10).
+- **Picker via modal** — bottom sheet com grid horizontal de ícones e fila de cores. Acessível tocando no badge ao lado do nome (na criação OU em qualquer participante existente). A cor escolhida na criação fica memorizada pra "carimbar" vários participantes em sequência. / **Modal picker** — bottom sheet with icon grid + color row. Tap the badge next to the name field (when adding) or any existing participant's badge (to edit). The picked color persists across additions for stamping out a series.
+
 #### Imagem do torneio — estilo Champions / Tournament image — Champions style
 
 - **Novo layout "Champions"** na exportação de imagem — chaveamento simétrico de duas pontas convergindo num troféu central, fundo gradiente escuro e linhas de conexão amarelas, no espírito dos brackets de mata-mata da Champions League. Toggle "Simples / Champions" aparece quando o torneio tem chave de 4, 8 ou 16 times. Brackets de outros tamanhos / round-robin / dupla eliminação continuam só com o estilo Simples. / **New "Champions" image-export layout** — symmetric two-sided bracket converging on a centered trophy, dark gradient background, yellow connector lines. Toggle ("Simple / Champions") shows up only for 4/8/16-team brackets; other shapes stay on Simple.

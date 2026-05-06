@@ -21,6 +21,16 @@ export interface Participant {
   tournamentId: number;
   name: string;
   seed: number | null;
+  /**
+   * Identifier into the curated icon registry (see `src/utils/icons.ts`).
+   * Null means "no icon" — the UI falls back to plain initials.
+   */
+  icon: string | null;
+  /**
+   * Hex color (e.g. '#ef4444') used as the icon background. Null is treated
+   * as the default brand-blue when an icon is set but no color was picked.
+   */
+  iconColor: string | null;
 }
 
 export type MatchStage = 'main' | 'group' | 'knockout';

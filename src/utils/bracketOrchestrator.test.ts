@@ -13,6 +13,8 @@ function makeParticipants(n: number): Participant[] {
     tournamentId: 1,
     name: `P${i + 1}`,
     seed: i + 1,
+    icon: null,
+    iconColor: null,
   }));
 }
 

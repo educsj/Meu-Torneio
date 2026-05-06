@@ -99,6 +99,19 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
     );
   }
 
+  // v10: participants gain optional icon + icon_color (curated badge picker).
+  // Default NULL so all existing participants render exactly as before.
+  const partCols = await db.getAllAsync<{ name: string }>(
+    'PRAGMA table_info(participants);'
+  );
+  const partHas = new Set(partCols.map((c) => c.name));
+  if (!partHas.has('icon')) {
+    await db.execAsync(`ALTER TABLE participants ADD COLUMN icon TEXT;`);
+  }
+  if (!partHas.has('icon_color')) {
+    await db.execAsync(`ALTER TABLE participants ADD COLUMN icon_color TEXT;`);
+  }
+
   // Step 3b (v3): backfill phases for tournaments that don't have any yet,
   // then link existing matches.phase_id by mapping stage → phase ordinal.
   await backfillPhases(db);

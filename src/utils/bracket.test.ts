@@ -25,6 +25,8 @@ function makeParticipants(n: number): Participant[] {
     tournamentId: 1,
     name: `P${i + 1}`,
     seed: i + 1,
+    icon: null,
+    iconColor: null,
   }));
 }
 
@@ -151,10 +153,10 @@ describe('generateSingleEliminationBracket', () => {
 
   it('respects participant seeds when sorting', () => {
     const ps: Participant[] = [
-      { id: 10, tournamentId: 1, name: 'A', seed: 4 },
-      { id: 20, tournamentId: 1, name: 'B', seed: 1 },
-      { id: 30, tournamentId: 1, name: 'C', seed: 3 },
-      { id: 40, tournamentId: 1, name: 'D', seed: 2 },
+      { id: 10, tournamentId: 1, name: 'A', seed: 4, icon: null, iconColor: null },
+      { id: 20, tournamentId: 1, name: 'B', seed: 1, icon: null, iconColor: null },
+      { id: 30, tournamentId: 1, name: 'C', seed: 3, icon: null, iconColor: null },
+      { id: 40, tournamentId: 1, name: 'D', seed: 2, icon: null, iconColor: null },
     ];
     const matches = generateSingleEliminationBracket(ps);
     const r1 = matches.filter((m) => m.round === 1);

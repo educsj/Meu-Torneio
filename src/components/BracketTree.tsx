@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 
+import { ParticipantBadge } from '@/components/ParticipantBadge';
 import { useTranslation } from '@/i18n/useTranslation';
 import type { Match, Participant } from '@/types/tournament';
 
@@ -141,6 +142,7 @@ function BracketMatchBox({
       style={{ height: MATCH_HEIGHT }}
     >
       <BracketSide
+        participant={a}
         name={a?.name ?? (aIsBye ? byeLabel : tbdLabel)}
         score={match.scoreA}
         won={aWon}
@@ -148,6 +150,7 @@ function BracketMatchBox({
       />
       <View className="h-px bg-slate-100 dark:bg-slate-800" />
       <BracketSide
+        participant={b}
         name={b?.name ?? (bIsBye ? byeLabel : tbdLabel)}
         score={match.scoreB}
         won={bWon}
@@ -163,18 +166,28 @@ function BracketMatchBox({
 }
 
 function BracketSide({
+  participant,
   name,
   score,
   won,
   placeholder,
 }: {
+  participant: Participant | null | undefined;
   name: string;
   score: number | null;
   won: boolean;
   placeholder: boolean;
 }) {
   return (
-    <View className="flex-1 flex-row items-center justify-between px-2">
+    <View className="flex-1 flex-row items-center justify-between gap-1.5 px-2">
+      {participant ? (
+        <ParticipantBadge
+          icon={participant.icon}
+          iconColor={participant.iconColor}
+          name={participant.name}
+          size={18}
+        />
+      ) : null}
       <Text
         className={`flex-1 text-xs ${
           won

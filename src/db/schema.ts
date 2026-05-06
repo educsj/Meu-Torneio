@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 /**
  * Base schema — idempotent (CREATE TABLE IF NOT EXISTS).
@@ -19,7 +19,9 @@ export const BASE_TABLES: string[] = [
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tournament_id INTEGER NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    seed INTEGER
+    seed INTEGER,
+    icon TEXT,
+    icon_color TEXT
   );`,
   `CREATE INDEX IF NOT EXISTS idx_participants_tournament
     ON participants(tournament_id);`,

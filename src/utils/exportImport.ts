@@ -35,6 +35,10 @@ export interface TournamentBackup {
     localId: number;
     name: string;
     seed: number | null;
+    /** v10+: optional badge picker. Pre-v10 backups omit these — the
+     *  importer treats both as null (= no icon, falls back to initials). */
+    icon?: string | null;
+    iconColor?: string | null;
   }>;
   /** v2+. Absent on v1 backups. */
   phases?: Array<{
@@ -129,6 +133,8 @@ export function serializeTournament(
       localId: p.id,
       name: p.name,
       seed: p.seed,
+      icon: p.icon,
+      iconColor: p.iconColor,
     })),
     phases: phases.map((p) => ({
       localId: p.id,

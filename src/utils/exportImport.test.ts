@@ -24,9 +24,9 @@ const t: Tournament = {
 };
 
 const ps: Participant[] = [
-  { id: 11, tournamentId: 7, name: 'Time A', seed: 1 },
-  { id: 12, tournamentId: 7, name: 'Time B', seed: 2 },
-  { id: 13, tournamentId: 7, name: 'Time C', seed: null },
+  { id: 11, tournamentId: 7, name: 'Time A', seed: 1, icon: null, iconColor: null },
+  { id: 12, tournamentId: 7, name: 'Time B', seed: 2, icon: null, iconColor: null },
+  { id: 13, tournamentId: 7, name: 'Time C', seed: null, icon: null, iconColor: null },
 ];
 
 const ms: Match[] = [
@@ -88,9 +88,9 @@ describe('serializeTournament', () => {
   it('preserves participant ids as localId for cross-reference', () => {
     const backup = serializeTournament(t, ps, ms);
     expect(backup.participants).toEqual([
-      { localId: 11, name: 'Time A', seed: 1 },
-      { localId: 12, name: 'Time B', seed: 2 },
-      { localId: 13, name: 'Time C', seed: null },
+      { localId: 11, name: 'Time A', seed: 1, icon: null, iconColor: null },
+      { localId: 12, name: 'Time B', seed: 2, icon: null, iconColor: null },
+      { localId: 13, name: 'Time C', seed: null, icon: null, iconColor: null },
     ]);
   });
 

@@ -9,7 +9,7 @@ import {
 } from './playoffSeeding';
 
 function p(id: number, name: string): Participant {
-  return { id, tournamentId: 1, name, seed: null };
+  return { id, tournamentId: 1, name, seed: null, icon: null, iconColor: null };
 }
 
 function m(
