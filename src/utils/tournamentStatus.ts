@@ -15,6 +15,11 @@ export interface StatusInputMatch {
   nextMatchId: number | null;
   /** Used to skip the 3rd-place match when locating the bracket's final. */
   groupLabel: string | null;
+  /** DE bracket-reset logic needs to know which slot won GF1: slot A is
+   * the WB Champion (no rematch needed), slot B is the LB Champion (GF2
+   * decides). Optional for non-DE inputs. */
+  round?: number;
+  participantAId?: number | null;
 }
 
 /**
@@ -56,11 +61,23 @@ export function computeTournamentStatus(
   }
 
   if (type === 'double_elimination') {
-    // The grand final is the only terminal match in DE — it's marked with
-    // groupLabel='GF' at generation time. LB losers and the WB-Final loser
-    // also have nextMatchId=null but they're not the deciding match.
-    const grandFinal = matches.find((m) => m.groupLabel === GRAND_FINAL_LABEL);
-    if (grandFinal && grandFinal.winnerId != null) return 'finished';
+    // GF1 is the grand final (round=1). GF2 (round=2) only exists when
+    // bracket reset is enabled — it's the rematch played when the LB
+    // Champion won GF1, since both finalists then have one loss each.
+    const gfs = matches
+      .filter((m) => m.groupLabel === GRAND_FINAL_LABEL)
+      .sort((a, b) => (a.round ?? 1) - (b.round ?? 1));
+    const gf1 = gfs[0];
+    const gf2 = gfs[1];
+    if (gf1 && gf1.winnerId != null) {
+      if (!gf2) return 'finished'; // no reset configured
+      // Slot A = WB Champion (set up at generation time). If they won GF1
+      // there's no rematch — they'd need to lose 2x and they haven't.
+      if (gf1.winnerId === gf1.participantAId) return 'finished';
+      // Otherwise the LB Champion won — GF2 is the actual decider.
+      if (gf2.winnerId != null) return 'finished';
+      return 'ongoing';
+    }
     return anyPlayed ? 'ongoing' : 'draft';
   }
 

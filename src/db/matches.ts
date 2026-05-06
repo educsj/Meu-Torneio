@@ -5,7 +5,11 @@ import type {
   Phase,
   TournamentType,
 } from '@/types/tournament';
-import { THIRD_PLACE_LABEL, type BracketMatch } from '@/utils/bracket';
+import {
+  GRAND_FINAL_LABEL,
+  THIRD_PLACE_LABEL,
+  type BracketMatch,
+} from '@/utils/bracket';
 import {
   computeMinParticipantsForPhases,
   generateBracketFromPhases,
@@ -303,7 +307,7 @@ export async function setMatchScore(
   const match = await db.getFirstAsync<MatchRow>(
     `SELECT id, tournament_id, round, participant_a_id, participant_b_id,
             score_a, score_b, winner_id, next_match_id, loser_next_match_id,
-            next_slot, loser_next_slot, scheduled_at, location
+            next_slot, loser_next_slot, group_label, stage, scheduled_at, location
      FROM matches WHERE id = ?;`,
     [matchId]
   );
@@ -335,6 +339,7 @@ export async function setMatchScore(
     await propagateWinnerToNextMatch(match, winnerId);
     await propagateLoserToThirdPlace(match, loserId);
     await propagateLoserToLoserNext(match, loserId);
+    await propagateGrandFinalToReset(match);
   });
 }
 
@@ -364,7 +369,7 @@ export async function clearMatchScore(matchId: number): Promise<void> {
   const match = await db.getFirstAsync<MatchRow>(
     `SELECT id, tournament_id, round, participant_a_id, participant_b_id,
             score_a, score_b, winner_id, next_match_id, loser_next_match_id,
-            next_slot, loser_next_slot, scheduled_at, location
+            next_slot, loser_next_slot, group_label, stage, scheduled_at, location
      FROM matches WHERE id = ?;`,
     [matchId]
   );
@@ -378,6 +383,7 @@ export async function clearMatchScore(matchId: number): Promise<void> {
     await propagateWinnerToNextMatch(match, null);
     await propagateLoserToThirdPlace(match, null);
     await propagateLoserToLoserNext(match, null);
+    await propagateGrandFinalToReset(match);
   });
 }
 
@@ -438,6 +444,36 @@ async function propagateLoserToLoserNext(
      SET ${slotCol} = ?, score_a = NULL, score_b = NULL, winner_id = NULL
      WHERE id = ?;`,
     [newLoserId, match.loser_next_match_id]
+  );
+}
+
+/**
+ * Bracket-reset propagation: when GF1 is scored / cleared, mirror its two
+ * participants into GF2 if it exists. The mirror is unconditional (both
+ * slots are filled regardless of who won GF1) so that:
+ *   - When the LB Champion wins GF1, GF2 already has both finalists and
+ *     becomes the actual deciding match.
+ *   - When the WB Champion wins GF1, GF2 still has them slotted but the
+ *     UI hides it (no rematch needed).
+ *
+ * No-op for any match other than GF1 of a DE tournament configured with
+ * bracket reset (detected by the existence of a GF2 sibling).
+ */
+async function propagateGrandFinalToReset(match: MatchRow): Promise<void> {
+  if (match.group_label !== GRAND_FINAL_LABEL || match.round !== 1) return;
+  const db = await getDatabase();
+  const gf2 = await db.getFirstAsync<{ id: number }>(
+    `SELECT id FROM matches
+     WHERE tournament_id = ? AND group_label = ? AND stage = ? AND round = 2;`,
+    [match.tournament_id, GRAND_FINAL_LABEL, match.stage]
+  );
+  if (!gf2) return;
+  await db.runAsync(
+    `UPDATE matches
+     SET participant_a_id = ?, participant_b_id = ?,
+         score_a = NULL, score_b = NULL, winner_id = NULL
+     WHERE id = ?;`,
+    [match.participant_a_id, match.participant_b_id, gf2.id]
   );
 }
 
@@ -503,7 +539,8 @@ export async function recomputeTournamentStatus(
   if (!tournament) return null;
 
   const all = await db.getAllAsync<MatchRow>(
-    `SELECT id, round, score_a, score_b, winner_id, next_match_id, stage, group_label
+    `SELECT id, round, score_a, score_b, winner_id, next_match_id, stage,
+            group_label, participant_a_id
      FROM matches WHERE tournament_id = ?;`,
     [tournamentId]
   );
@@ -517,6 +554,8 @@ export async function recomputeTournamentStatus(
       winnerId: m.winner_id,
       nextMatchId: m.next_match_id,
       groupLabel: m.group_label,
+      round: m.round,
+      participantAId: m.participant_a_id,
     }))
   );
   if (next == null) return null;

@@ -128,7 +128,9 @@ function matchesForPhase(
       if (!isFirstPhase) {
         throw new Error('Double elimination must be the first phase.');
       }
-      return generateDoubleEliminationBracket(participants).map((m) => ({
+      return generateDoubleEliminationBracket(participants, {
+        bracketReset: phase.bracketReset,
+      }).map((m) => ({
         ...m,
         stage,
         groupLabel: m.groupLabel ?? null,

@@ -411,7 +411,8 @@ export function scheduleRoundRobin(n: number): Array<Array<[number, number]>> {
  * UX on a phone screen needs design work first.
  */
 export function generateDoubleEliminationBracket(
-  participants: Participant[]
+  participants: Participant[],
+  options: { bracketReset?: boolean } = {}
 ): BracketMatch[] {
   const N = participants.length;
   if (N < 4) {
@@ -567,6 +568,23 @@ export function generateDoubleEliminationBracket(
     stage: 'main',
     groupLabel: GRAND_FINAL_LABEL,
   });
+
+  if (options.bracketReset) {
+    // Bracket reset: a 2nd grand final played only when the LB Champion
+    // wins GF1 (since that means both finalists then have one loss each).
+    // Both slots are populated by a custom propagation step at score-time;
+    // the UI hides this match when GF1 was won by the WB Champion.
+    matches.push({
+      round: 2,
+      indexInRound: 0,
+      participantAId: null,
+      participantBId: null,
+      winnerId: null,
+      nextRoundIndex: null,
+      stage: 'main',
+      groupLabel: GRAND_FINAL_LABEL,
+    });
+  }
 
   return matches;
 }

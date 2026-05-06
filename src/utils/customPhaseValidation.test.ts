@@ -13,6 +13,7 @@ function de(overrides: Partial<CustomPhaseInput> = {}): CustomPhaseInput {
     qualifiers: null,
     scoring: 'fifa',
     thirdPlace: false,
+    bracketReset: false,
     ...overrides,
   };
 }
@@ -26,6 +27,7 @@ function rr(overrides: Partial<CustomPhaseInput> = {}): CustomPhaseInput {
     qualifiers: null,
     scoring: 'fifa',
     thirdPlace: false,
+    bracketReset: false,
     ...overrides,
   };
 }
@@ -38,6 +40,7 @@ function se(overrides: Partial<CustomPhaseInput> = {}): CustomPhaseInput {
     qualifiers: null,
     scoring: 'fifa',
     thirdPlace: false,
+    bracketReset: false,
     ...overrides,
   };
 }
@@ -50,6 +53,7 @@ function pp(overrides: Partial<CustomPhaseInput> = {}): CustomPhaseInput {
     qualifiers: null,
     scoring: 'fifa',
     thirdPlace: false,
+    bracketReset: false,
     ...overrides,
   };
 }

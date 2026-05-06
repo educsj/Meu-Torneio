@@ -114,6 +114,13 @@ export interface Phase {
    * with at least 4 qualifiers (so semifinals exist).
    */
   thirdPlace: boolean;
+  /**
+   * double_elimination only: when true, generate a 2nd grand final
+   * placeholder. If the LB Champion wins GF1, GF2 ("bracket reset") is
+   * the actual deciding match — the WB Champion now has 1 loss too,
+   * matching the LB Champion's record.
+   */
+  bracketReset: boolean;
 }
 
 /** Phase configuration provided by the user when creating a custom tournament. */
@@ -125,4 +132,5 @@ export interface CustomPhaseInput {
   qualifiers: number | null;
   scoring: ScoringRule;
   thirdPlace: boolean;
+  bracketReset: boolean;
 }

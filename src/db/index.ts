@@ -91,6 +91,13 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
       `ALTER TABLE phases ADD COLUMN third_place INTEGER NOT NULL DEFAULT 0;`
     );
   }
+  // v9: bracket_reset boolean for double_elimination phases. Existing rows
+  // default to 0 — preserves the single-grand-final behavior shipped in v8.
+  if (!phaseHas.has('bracket_reset')) {
+    await db.execAsync(
+      `ALTER TABLE phases ADD COLUMN bracket_reset INTEGER NOT NULL DEFAULT 0;`
+    );
+  }
 
   // Step 3b (v3): backfill phases for tournaments that don't have any yet,
   // then link existing matches.phase_id by mapping stage → phase ordinal.
@@ -175,8 +182,9 @@ async function backfillPhases(db: SQLite.SQLiteDatabase): Promise<void> {
     for (const p of phases) {
       const r = await db.runAsync(
         `INSERT INTO phases
-          (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status, scoring, third_place)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+          (tournament_id, ordinal, name, format, legs, group_count, qualifiers,
+           status, scoring, third_place, bracket_reset)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         [
           t.id,
           p.ordinal,
@@ -188,6 +196,7 @@ async function backfillPhases(db: SQLite.SQLiteDatabase): Promise<void> {
           'pending',
           p.scoring,
           p.thirdPlace ? 1 : 0,
+          p.bracketReset ? 1 : 0,
         ]
       );
       ordinalToPhaseId.set(p.ordinal, r.lastInsertRowId);
@@ -227,6 +236,7 @@ interface DefaultPhase {
   qualifiers: number | null;
   scoring: 'fifa' | 'volleyball';
   thirdPlace: boolean;
+  bracketReset: boolean;
 }
 
 /**
@@ -246,6 +256,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           qualifiers: null,
           scoring: 'fifa',
           thirdPlace: false,
+          bracketReset: false,
         },
       ];
     case 'groups_knockout':
@@ -259,6 +270,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           qualifiers: 4,
           scoring: 'fifa',
           thirdPlace: false,
+          bracketReset: false,
         },
         {
           ordinal: 1,
@@ -269,6 +281,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           qualifiers: null,
           scoring: 'fifa',
           thirdPlace: false,
+          bracketReset: false,
         },
       ];
     case 'league_playoff':
@@ -286,6 +299,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           // "Personalizado" and configure scoring=Futebol.
           scoring: 'volleyball',
           thirdPlace: false,
+          bracketReset: false,
         },
         {
           ordinal: 1,
@@ -296,6 +310,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           qualifiers: null,
           scoring: 'fifa',
           thirdPlace: false,
+          bracketReset: false,
         },
       ];
     case 'double_elimination':
@@ -309,6 +324,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           qualifiers: null,
           scoring: 'fifa',
           thirdPlace: false,
+          bracketReset: false,
         },
       ];
     case 'single_elimination':
@@ -323,6 +339,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           qualifiers: null,
           scoring: 'fifa',
           thirdPlace: false,
+          bracketReset: false,
         },
       ];
   }

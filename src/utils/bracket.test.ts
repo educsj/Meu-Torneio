@@ -590,6 +590,29 @@ describe('generateDoubleEliminationBracket', () => {
     expect(wbFinal.loserDestRound).toBe(4); // LB-Final round for 8-team
     expect(wbFinal.loserDestIndex).toBe(0);
   });
+
+  it('appends a bracket-reset placeholder when option is enabled', () => {
+    const ms = generateDoubleEliminationBracket(makeParticipants(4), {
+      bracketReset: true,
+    });
+    // 4-team DE = 6 base matches + 1 bracket-reset = 7.
+    expect(ms).toHaveLength(7);
+    const gfs = ms
+      .filter((m) => m.groupLabel === GRAND_FINAL_LABEL)
+      .sort((a, b) => a.round - b.round);
+    expect(gfs).toHaveLength(2);
+    expect(gfs[0].round).toBe(1);
+    expect(gfs[1].round).toBe(2);
+    // GF2 starts empty — populated only when GF1 is scored.
+    expect(gfs[1].participantAId).toBeNull();
+    expect(gfs[1].participantBId).toBeNull();
+  });
+
+  it('does not append a bracket-reset placeholder by default', () => {
+    const ms = generateDoubleEliminationBracket(makeParticipants(8));
+    const gfs = ms.filter((m) => m.groupLabel === GRAND_FINAL_LABEL);
+    expect(gfs).toHaveLength(1);
+  });
 });
 
 describe('generateGroupsKnockoutPlaceholders', () => {

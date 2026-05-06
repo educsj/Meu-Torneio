@@ -143,10 +143,23 @@ export default function MatchesScreen() {
         .sort((a, b) => a.round - b.round || a.id - b.id),
     [matches]
   );
-  const grandFinalMatch = useMemo(
-    () => matches.find((m) => m.groupLabel === GRAND_FINAL_LABEL) ?? null,
+  const grandFinalMatches = useMemo(
+    () =>
+      matches
+        .filter((m) => m.groupLabel === GRAND_FINAL_LABEL)
+        .sort((a, b) => a.round - b.round),
     [matches]
   );
+  const grandFinalMatch = grandFinalMatches[0] ?? null;
+  const bracketResetMatch = grandFinalMatches[1] ?? null;
+  // GF2 (the bracket reset) is only visible once GF1 has a winner AND that
+  // winner is the LB Champion (slot B). When the WB Champion (slot A) wins
+  // GF1 there's no rematch — they'd need to lose 2x and they haven't.
+  const showBracketReset =
+    bracketResetMatch != null &&
+    grandFinalMatch != null &&
+    grandFinalMatch.winnerId != null &&
+    grandFinalMatch.winnerId === grandFinalMatch.participantBId;
 
   const editingMatch = useMemo(
     () => matches.find((m) => m.id === editingMatchId) ?? null,
@@ -312,6 +325,23 @@ export default function MatchesScreen() {
                 index={0}
                 participantsById={participantsById}
                 onPress={() => setEditingMatchId(grandFinalMatch.id)}
+              />
+            </View>
+          ) : null}
+
+          {showBracketReset && bracketResetMatch ? (
+            <View className="mb-6">
+              <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('matches.bracketReset')}
+              </Text>
+              <Text className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+                {t('matches.bracketResetHint')}
+              </Text>
+              <MatchCard
+                match={bracketResetMatch}
+                index={0}
+                participantsById={participantsById}
+                onPress={() => setEditingMatchId(bracketResetMatch.id)}
               />
             </View>
           ) : null}

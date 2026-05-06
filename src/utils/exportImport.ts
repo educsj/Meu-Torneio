@@ -52,6 +52,9 @@ export interface TournamentBackup {
     /** v2 backups created before the 3rd-place feature may omit this;
      * treat absent as false on import. */
     thirdPlace?: boolean;
+    /** v9+: double-elimination bracket-reset flag. Pre-v9 backups omit
+     * this — default to false on import. */
+    bracketReset?: boolean;
   }>;
   matches: Array<{
     localId: number;
@@ -138,6 +141,7 @@ export function serializeTournament(
       status: p.status,
       scoring: p.scoring,
       thirdPlace: p.thirdPlace,
+      bracketReset: p.bracketReset,
     })),
     matches: matches.map((m) => ({
       localId: m.id,

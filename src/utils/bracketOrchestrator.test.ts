@@ -28,6 +28,7 @@ function phase(overrides: Partial<Phase> & Pick<Phase, 'format'>): Phase {
     status: 'pending',
     scoring: 'fifa',
     thirdPlace: false,
+    bracketReset: false,
     ...overrides,
   };
 }

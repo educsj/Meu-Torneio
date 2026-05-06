@@ -21,6 +21,7 @@ const DEFAULT_PHASE: CustomPhaseInput = {
   qualifiers: null,
   scoring: 'fifa',
   thirdPlace: false,
+  bracketReset: false,
 };
 
 const FORMAT_KEYS: { value: PhaseFormat; key: string }[] = [
@@ -88,6 +89,7 @@ export function PhaseBuilder({ value, onChange }: Props) {
         qualifiers: null,
         scoring: 'fifa',
         thirdPlace: false,
+        bracketReset: false,
       },
     ]);
   };
@@ -203,6 +205,14 @@ export function PhaseBuilder({ value, onChange }: Props) {
               <ThirdPlaceToggle
                 value={phase.thirdPlace}
                 onChange={(thirdPlace) => update(index, { thirdPlace })}
+                t={t}
+              />
+            ) : null}
+
+            {phase.format === 'double_elimination' ? (
+              <BracketResetToggle
+                value={phase.bracketReset}
+                onChange={(bracketReset) => update(index, { bracketReset })}
                 t={t}
               />
             ) : null}
@@ -372,6 +382,45 @@ function Stepper({
   );
 }
 
+function BracketResetToggle({
+  value,
+  onChange,
+  t,
+}: {
+  value: boolean;
+  onChange: (v: boolean) => void;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  return (
+    <Pressable
+      onPress={() => onChange(!value)}
+      className="flex-row items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-800"
+    >
+      <View className="flex-1 pr-3">
+        <Text className="text-sm font-medium text-slate-900 dark:text-slate-100">
+          {t('phaseBuilder.bracketResetLabel')}
+        </Text>
+        <Text className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+          {t('phaseBuilder.bracketResetHint')}
+        </Text>
+      </View>
+      <View
+        className={`h-6 w-11 rounded-full p-0.5 ${
+          value
+            ? 'bg-brand-500 dark:bg-brand-400'
+            : 'bg-slate-300 dark:bg-slate-600'
+        }`}
+      >
+        <View
+          className={`h-5 w-5 rounded-full bg-white shadow ${
+            value ? 'ml-5' : ''
+          }`}
+        />
+      </View>
+    </Pressable>
+  );
+}
+
 function ThirdPlaceToggle({
   value,
   onChange,
@@ -498,6 +547,7 @@ export const WORLD_CUP_PHASES: CustomPhaseInput[] = [
     qualifiers: 16,
     scoring: 'fifa',
     thirdPlace: false,
+    bracketReset: false,
   },
   {
     name: 'Mata-mata',
@@ -507,5 +557,6 @@ export const WORLD_CUP_PHASES: CustomPhaseInput[] = [
     qualifiers: null,
     scoring: 'fifa',
     thirdPlace: true,
+    bracketReset: false,
   },
 ];

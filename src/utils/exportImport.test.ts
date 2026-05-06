@@ -183,6 +183,7 @@ describe('backup v2 — phases roundtrip', () => {
       status: 'pending',
       scoring: 'volleyball',
       thirdPlace: false,
+      bracketReset: false,
     },
     {
       id: 51,
@@ -196,6 +197,7 @@ describe('backup v2 — phases roundtrip', () => {
       status: 'pending',
       scoring: 'fifa',
       thirdPlace: false,
+      bracketReset: false,
     },
   ];
 

@@ -191,4 +191,61 @@ describe('computeTournamentStatus', () => {
       );
     });
   });
+
+  describe('double_elimination — bracket reset', () => {
+    // Helper: GF1 with the WB Champion in slot A (id=1) and LB Champion
+    // in slot B (id=2). winnerId picks who won.
+    const gf1 = (winnerId: number | null) =>
+      m({
+        groupLabel: 'GF',
+        round: 1,
+        participantAId: 1,
+        scoreA: winnerId ? 3 : null,
+        scoreB: winnerId ? 1 : null,
+        winnerId,
+      });
+    const gf2 = (winnerId: number | null) =>
+      m({
+        groupLabel: 'GF',
+        round: 2,
+        participantAId: 1,
+        scoreA: winnerId ? 3 : null,
+        scoreB: winnerId ? 1 : null,
+        winnerId,
+      });
+
+    it('finished when GF1 winner is the WB Champion (no rematch needed)', () => {
+      // GF2 exists (reset configured) but is irrelevant because the WB
+      // Champion (slot A, id=1) won GF1 — they have 0 losses still.
+      expect(
+        computeTournamentStatus('double_elimination', [gf1(1), gf2(null)])
+      ).toBe('finished');
+    });
+
+    it('ongoing when LB Champion won GF1 but GF2 has no winner yet', () => {
+      // LB Champion (slot B, id=2) won GF1 → both have 1 loss → GF2 must
+      // be played to crown the champion.
+      expect(
+        computeTournamentStatus('double_elimination', [gf1(2), gf2(null)])
+      ).toBe('ongoing');
+    });
+
+    it('finished when LB Champion won GF1 AND GF2 has a winner', () => {
+      expect(
+        computeTournamentStatus('double_elimination', [gf1(2), gf2(1)])
+      ).toBe('finished');
+      expect(
+        computeTournamentStatus('double_elimination', [gf1(2), gf2(2)])
+      ).toBe('finished');
+    });
+
+    it('still finished without GF2 when GF1 has any winner (no reset configured)', () => {
+      expect(computeTournamentStatus('double_elimination', [gf1(1)])).toBe(
+        'finished'
+      );
+      expect(computeTournamentStatus('double_elimination', [gf1(2)])).toBe(
+        'finished'
+      );
+    });
+  });
 });
