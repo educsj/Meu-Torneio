@@ -3,17 +3,25 @@ import { Pressable, Text, View } from 'react-native';
 import { useTranslation } from '@/i18n/useTranslation';
 import type { TournamentType } from '@/types/tournament';
 
-const OPTIONS: { value: TournamentType; key: string }[] = [
+/**
+ * UI-only option set: real tournament types + virtual "templates" that
+ * map to type='custom' with a pre-filled phase configuration. The parent
+ * screen unwraps the virtual values before persisting.
+ */
+export type PickerOption = TournamentType | 'world_cup';
+
+const OPTIONS: { value: PickerOption; key: string }[] = [
   { value: 'single_elimination', key: 'singleElimination' },
   { value: 'round_robin', key: 'roundRobin' },
   { value: 'groups_knockout', key: 'groupsKnockout' },
   { value: 'league_playoff', key: 'leaguePlayoff' },
+  { value: 'world_cup', key: 'worldCup' },
   { value: 'custom', key: 'custom' },
 ];
 
 interface Props {
-  value: TournamentType;
-  onChange: (value: TournamentType) => void;
+  value: PickerOption;
+  onChange: (value: PickerOption) => void;
 }
 
 export function TournamentTypePicker({ value, onChange }: Props) {

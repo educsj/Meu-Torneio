@@ -12,6 +12,7 @@ function m(partial: Partial<StatusInputMatch>): StatusInputMatch {
     scoreB: null,
     winnerId: null,
     nextMatchId: null,
+    groupLabel: null,
     ...partial,
   };
 }

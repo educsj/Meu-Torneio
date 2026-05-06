@@ -19,6 +19,7 @@ interface PhaseRow {
   qualifiers: number | null;
   status: PhaseStatus;
   scoring: string | null;
+  third_place: number | null;
 }
 
 function rowToPhase(row: PhaseRow): Phase {
@@ -34,6 +35,7 @@ function rowToPhase(row: PhaseRow): Phase {
     status: row.status,
     // Defensive default for very old rows that somehow predate the v5 column.
     scoring: (row.scoring as ScoringRule) ?? 'fifa',
+    thirdPlace: row.third_place === 1,
   };
 }
 
@@ -41,7 +43,7 @@ export async function listPhases(tournamentId: number): Promise<Phase[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<PhaseRow>(
     `SELECT id, tournament_id, ordinal, name, format, legs, group_count,
-            qualifiers, status, scoring
+            qualifiers, status, scoring, third_place
      FROM phases
      WHERE tournament_id = ?
      ORDER BY ordinal ASC;`,
@@ -72,8 +74,8 @@ export async function createDefaultPhasesForType(
         : p.scoring;
     await db.runAsync(
       `INSERT INTO phases
-        (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status, scoring)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status, scoring, third_place)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       [
         tournamentId,
         p.ordinal,
@@ -84,6 +86,7 @@ export async function createDefaultPhasesForType(
         p.qualifiers,
         'pending',
         scoring,
+        p.thirdPlace ? 1 : 0,
       ]
     );
   }
@@ -106,8 +109,8 @@ export async function createCustomPhases(
     const p = customPhases[i];
     await db.runAsync(
       `INSERT INTO phases
-        (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status, scoring)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        (tournament_id, ordinal, name, format, legs, group_count, qualifiers, status, scoring, third_place)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       [
         tournamentId,
         i,
@@ -118,6 +121,7 @@ export async function createCustomPhases(
         p.qualifiers,
         'pending',
         p.scoring,
+        p.thirdPlace ? 1 : 0,
       ]
     );
   }

@@ -39,6 +39,7 @@
       "roundRobin": "Pontos corridos",
       "groupsKnockout": "Grupos + Mata-mata",
       "leaguePlayoff": "Liga + Playoffs",
+      "worldCup": "Copa do Mundo",
       "custom": "Personalizado"
     },
     "typesDescription": {
@@ -46,6 +47,7 @@
       "roundRobin": "Todos contra todos. Vence quem somar mais pontos.",
       "groupsKnockout": "Fase de grupos seguida de mata-mata.",
       "leaguePlayoff": "Pontos corridos ida-e-volta com pontuação de vôlei. Top-4 disputam final e 3º lugar.",
+      "worldCup": "Modelo da Copa: 8 grupos × 4 → R16 → quartas → semis → final + 3º lugar. Editável.",
       "custom": "Você define as fases e os formatos."
     },
     "invalidPhasesTitle": "Configuração de fases inválida",
@@ -224,6 +226,8 @@
     "groupCount": "Número de grupos",
     "qualifiers": "Times que avançam à próxima fase",
     "qualifiersHintTopTwo": "Top 2 de cada grupo ({{groups}} grupos × 2 = {{total}})",
+    "thirdPlaceLabel": "Disputa de 3º lugar",
+    "thirdPlaceHint": "Adiciona uma partida extra entre os perdedores das semifinais.",
     "scoringLabel": "Pontuação",
     "scoringFifa": "Futebol (V3 / E1 / D0)",
     "scoringVolleyball": "Vôlei (3 / 2 / 1 / 0)",

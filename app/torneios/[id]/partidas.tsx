@@ -8,6 +8,7 @@ import { Screen } from '@/components/ui/Screen';
 import { listParticipants } from '@/db/participants';
 import { useThemeIcon } from '@/hooks/useThemeIcon';
 import { useTranslation } from '@/i18n/useTranslation';
+import { THIRD_PLACE_LABEL } from '@/utils/bracket';
 import { useMatchesStore } from '@/stores/useMatchesStore';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
 import type { Match, Participant } from '@/types/tournament';
@@ -100,6 +101,9 @@ export default function MatchesScreen() {
       ? matches.filter((m) => m.stage === 'knockout')
       : matches;
     for (const m of source) {
+      // The 3rd-place match shares the final round but renders separately
+      // under its own label — exclude it from the per-round grouping here.
+      if (m.groupLabel === THIRD_PLACE_LABEL) continue;
       const arr = map.get(m.round) ?? [];
       arr.push(m);
       map.set(m.round, arr);
@@ -111,6 +115,11 @@ export default function MatchesScreen() {
   }, [matches, renderAsGroupsKnockout, renderAsLeaguePlayoff]);
 
   const totalRounds = matchesByRound.size;
+
+  const thirdPlaceMatch = useMemo(
+    () => matches.find((m) => m.groupLabel === THIRD_PLACE_LABEL) ?? null,
+    [matches]
+  );
 
   const editingMatch = useMemo(
     () => matches.find((m) => m.id === editingMatchId) ?? null,
@@ -315,6 +324,20 @@ export default function MatchesScreen() {
                 </View>
               </View>
             ))}
+
+          {thirdPlaceMatch ? (
+            <View className="mb-6">
+              <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('matches.thirdPlace')}
+              </Text>
+              <MatchCard
+                match={thirdPlaceMatch}
+                index={0}
+                participantsById={participantsById}
+                onPress={() => setEditingMatchId(thirdPlaceMatch.id)}
+              />
+            </View>
+          ) : null}
         </View>
       )}
 

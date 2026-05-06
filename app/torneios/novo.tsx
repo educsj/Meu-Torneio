@@ -3,11 +3,18 @@ import { Alert, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 
-import { PhaseBuilder, INITIAL_CUSTOM_PHASES } from '@/components/PhaseBuilder';
+import {
+  INITIAL_CUSTOM_PHASES,
+  PhaseBuilder,
+  WORLD_CUP_PHASES,
+} from '@/components/PhaseBuilder';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { TextField } from '@/components/ui/TextField';
-import { TournamentTypePicker } from '@/components/TournamentTypePicker';
+import {
+  TournamentTypePicker,
+  type PickerOption,
+} from '@/components/TournamentTypePicker';
 import { useThemeIcon } from '@/hooks/useThemeIcon';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
@@ -29,10 +36,22 @@ const PRESETS_WITH_STANDINGS: TournamentType[] = [
   'league_playoff',
 ];
 
-function defaultScoringFor(type: TournamentType): ScoringRule {
+function defaultScoringFor(type: PickerOption): ScoringRule {
   // The vôlei preset starts with FIVB scoring; other presets start FIFA.
   // User can override before creating.
   return type === 'league_playoff' ? 'volleyball' : 'fifa';
+}
+
+/** Resolve the picker option to the real DB tournament type. Templates
+ *  like 'world_cup' map to 'custom' under the hood. */
+function realType(option: PickerOption): TournamentType {
+  return option === 'world_cup' ? 'custom' : option;
+}
+
+/** True for any picker option that drives a custom-phases tournament — i.e.
+ *  the user-defined builder OR one of the pre-filled templates. */
+function usesCustomPhases(option: PickerOption): boolean {
+  return option === 'custom' || option === 'world_cup';
 }
 
 export default function NewTournamentScreen() {
@@ -42,7 +61,7 @@ export default function NewTournamentScreen() {
   const add = useTournamentsStore((s) => s.add);
 
   const [name, setName] = useState('');
-  const [type, setType] = useState<TournamentType>('single_elimination');
+  const [type, setType] = useState<PickerOption>('single_elimination');
   const [scoring, setScoring] = useState<ScoringRule>('fifa');
   const [customPhases, setCustomPhases] = useState<CustomPhaseInput[]>(
     INITIAL_CUSTOM_PHASES
@@ -54,9 +73,18 @@ export default function NewTournamentScreen() {
   // sensible default. They can still override before creating.
   useEffect(() => {
     setScoring(defaultScoringFor(type));
+    // Templates pre-fill the phase builder so the user lands on a fully
+    // configured starting point. Switching back to plain "Personalizado"
+    // resets to a single empty round-robin phase.
+    if (type === 'world_cup') setCustomPhases(WORLD_CUP_PHASES);
+    else if (type === 'custom') setCustomPhases(INITIAL_CUSTOM_PHASES);
   }, [type]);
 
-  const showScoringPicker = PRESETS_WITH_STANDINGS.includes(type);
+  const showScoringPicker =
+    type !== 'world_cup' &&
+    type !== 'custom' &&
+    PRESETS_WITH_STANDINGS.includes(type as TournamentType);
+  const showPhaseBuilder = usesCustomPhases(type);
 
   const onSubmit = async () => {
     if (!name.trim()) {
@@ -65,7 +93,7 @@ export default function NewTournamentScreen() {
     }
     setError(undefined);
 
-    if (type === 'custom') {
+    if (showPhaseBuilder) {
       const errors = validateCustomPhases(customPhases);
       if (errors.length > 0) {
         Alert.alert(
@@ -80,8 +108,8 @@ export default function NewTournamentScreen() {
     try {
       await add({
         name: name.trim(),
-        type,
-        customPhases: type === 'custom' ? customPhases : undefined,
+        type: realType(type),
+        customPhases: showPhaseBuilder ? customPhases : undefined,
         scoring: showScoringPicker ? scoring : undefined,
       });
       router.back();
@@ -143,7 +171,7 @@ export default function NewTournamentScreen() {
           </View>
         ) : null}
 
-        {type === 'custom' ? (
+        {showPhaseBuilder ? (
           <View className="gap-2">
             <Text className="text-sm font-medium text-slate-700 dark:text-slate-300">
               {t('phaseBuilder.title')}

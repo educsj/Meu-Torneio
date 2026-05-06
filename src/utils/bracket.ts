@@ -1,5 +1,12 @@
 import type { Participant } from '@/types/tournament';
 
+/**
+ * Marker stored in `groupLabel` to identify the 3rd-place playoff match
+ * inside a single-elimination bracket. Pure-SE tournaments don't use
+ * groupLabel for anything else, so this is unambiguous.
+ */
+export const THIRD_PLACE_LABEL = '3P';
+
 export interface BracketMatch {
   round: number;
   indexInRound: number;
@@ -53,7 +60,8 @@ export function bracketSeedOrder(size: number): number[] {
  * caller can control seeding by setting `seed` on each participant.
  */
 export function generateSingleEliminationBracket(
-  participants: Participant[]
+  participants: Participant[],
+  options: { thirdPlace?: boolean } = {}
 ): BracketMatch[] {
   if (participants.length < 2) {
     throw new Error('Need at least 2 participants to generate a bracket');
@@ -111,6 +119,10 @@ export function generateSingleEliminationBracket(
       });
     }
     prevRoundCount = count;
+  }
+
+  if (options.thirdPlace && bracketSize >= 4) {
+    matches.push(thirdPlacePlaceholder(totalRounds));
   }
 
   return matches;
@@ -207,7 +219,8 @@ export function generateGroupStageMatches(
  * Throws if K isn't a power of two ≥ 2.
  */
 export function generateSingleEliminationPlaceholders(
-  qualifiers: number
+  qualifiers: number,
+  options: { thirdPlace?: boolean } = {}
 ): BracketMatch[] {
   if (
     qualifiers < 2 ||
@@ -233,7 +246,30 @@ export function generateSingleEliminationPlaceholders(
     }
     prevRoundCount = prevRoundCount / 2;
   }
+  if (options.thirdPlace && qualifiers >= 4) {
+    matches.push({
+      ...thirdPlacePlaceholder(totalRounds),
+      stage: 'knockout',
+    });
+  }
   return matches;
+}
+
+/**
+ * Build the placeholder match for a 3rd-place playoff. It sits in the same
+ * round as the final (so it renders alongside it) but with indexInRound=1
+ * and groupLabel=THIRD_PLACE_LABEL so the UI/seeder can find it.
+ */
+function thirdPlacePlaceholder(finalRound: number): BracketMatch {
+  return {
+    round: finalRound,
+    indexInRound: 1,
+    participantAId: null,
+    participantBId: null,
+    winnerId: null,
+    nextRoundIndex: null,
+    groupLabel: THIRD_PLACE_LABEL,
+  };
 }
 
 /**

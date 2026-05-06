@@ -7,6 +7,14 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ## [Unreleased]
 
+### Added · Adicionado (mais recente / most recent)
+
+#### Formatos com mais flexibilidade / More flexible formats
+
+- **Até 8 grupos no construtor custom** (era 4) — desbloqueia composições estilo Champions League / Copa do Mundo. Quando a próxima fase é mata-mata, o número de classificados é derivado automaticamente (top-2 de cada grupo) e exibido como campo somente-leitura, evitando configurações inválidas. Para liga única → mata-mata, o picker de classificados virou um toggle entre 2/4/8/16 (potências de 2 válidas). / **Up to 8 groups in the custom builder** (was 4) — unlocks Champions League / World Cup-style shapes. Qualifiers auto-derive from group count when the next phase is single-elim and lock to {2,4,8,16} otherwise.
+- **Disputa de 3º lugar** opcional no mata-mata — toggle por fase. Adiciona uma partida extra entre os perdedores das semifinais; perdedores são propagados automaticamente quando a SF é jogada. (Schema v7.) / **Third-place playoff** opt-in flag on single-elim phases. Generates an extra match between SF losers; loser propagation runs automatically on SF score save (schema v7).
+- **Preset "Copa do Mundo"** — opção no picker de formato que pré-preenche o construtor custom com 8 grupos × 4 → R16 → quartas → semis → final + 3º lugar. O usuário pode editar livremente depois. / **"World Cup" preset** — type-picker option that pre-fills the custom builder with 8 groups × 4 → R16 → QF → SF → Final + 3rd-place. Fully editable.
+
 ### Added · Adicionado (sessão atual / current session)
 
 #### Modelo de fases / Phase model
@@ -50,6 +58,7 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ### Fixed · Corrigido (sessão atual / current session)
 
+- **Tema claro/escuro não pegava no app inteiro** — picker em Configurações só atualizava o store; o runtime do NativeWind nunca era avisado, então classes `dark:` continuavam reagindo só ao SO. Agora `colorScheme.set()` roda em toda mudança, a preferência é persistida via AsyncStorage, e ~10 cores hardcoded de ícones viraram tokens reativos via novo `useThemeIcon`. / **Light/dark theme didn't actually toggle the app** — picker only updated the Zustand store; NativeWind's runtime was never notified, so `dark:` classes kept following the OS. Now `colorScheme.set()` fires on every change, the preference persists via AsyncStorage, and ~10 hardcoded icon colors became theme-reactive tokens.
 - **Placar das partidas eliminatórias era apagado ao salvar** — em torneios "Liga + Playoffs" (e qualquer multi-fase), salvar o placar da final ou 3º lugar disparava `seedNextPhase`, que limpava os slots e placares do playoff. Fix: `seedNextPhase` só roda quando a partida editada é da fase de grupos (`stage === 'group'`); editar uma partida que já é de playoff não dispara re-seed. / **Playoff scores were silently wiped on save** — saving a final/3rd-place score on Liga + Playoffs (or any multi-phase) triggered `seedNextPhase` which cleared playoff slots. Fix: only re-seed when the edited match is itself in the group/league phase.
 
 ### Refactor

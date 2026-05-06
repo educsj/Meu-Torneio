@@ -49,6 +49,9 @@ export interface TournamentBackup {
     /** v2 backups created before per-phase scoring may omit this; treat
      * absent as 'fifa' on import. */
     scoring?: ScoringRule;
+    /** v2 backups created before the 3rd-place feature may omit this;
+     * treat absent as false on import. */
+    thirdPlace?: boolean;
   }>;
   matches: Array<{
     localId: number;
@@ -124,6 +127,7 @@ export function serializeTournament(
       qualifiers: p.qualifiers,
       status: p.status,
       scoring: p.scoring,
+      thirdPlace: p.thirdPlace,
     })),
     matches: matches.map((m) => ({
       localId: m.id,

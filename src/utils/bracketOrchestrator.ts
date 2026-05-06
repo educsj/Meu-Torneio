@@ -90,17 +90,26 @@ function matchesForPhase(
 
     case 'single_elimination': {
       if (isFirstPhase) {
-        return generateSingleEliminationBracket(participants).map((m) => ({
+        return generateSingleEliminationBracket(participants, {
+          thirdPlace: phase.thirdPlace,
+        }).map((m) => ({
           ...m,
           stage,
+          // Preserve the THIRD_PLACE_LABEL set by the generator; pure-SE
+          // tournaments don't carry a real groupLabel so the default null
+          // is fine for everything else.
+          groupLabel: m.groupLabel ?? null,
         }));
       }
       // Later phase: bracket is sized by the previous phase's qualifiers
       // count. Any power of two from 2 (final only) up to 16 is supported.
       const qualifiers = qualifiersIn ?? 4;
-      return generateSingleEliminationPlaceholders(qualifiers).map((m) => ({
+      return generateSingleEliminationPlaceholders(qualifiers, {
+        thirdPlace: phase.thirdPlace,
+      }).map((m) => ({
         ...m,
         stage,
+        groupLabel: m.groupLabel ?? null,
       }));
     }
 

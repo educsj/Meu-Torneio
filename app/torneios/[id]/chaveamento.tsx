@@ -8,6 +8,7 @@ import { Screen } from '@/components/ui/Screen';
 import { listParticipants } from '@/db/participants';
 import { useThemeIcon } from '@/hooks/useThemeIcon';
 import { useTranslation } from '@/i18n/useTranslation';
+import { THIRD_PLACE_LABEL } from '@/utils/bracket';
 import { useMatchesStore } from '@/stores/useMatchesStore';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
 import type { Match, Participant } from '@/types/tournament';
@@ -54,9 +55,17 @@ export default function BracketScreen() {
   // For single_elim every match is part of the bracket. The route is
   // currently only navigated to from single_elim's detail screen, but we
   // defensively narrow to stage='main' anyway in case future formats
-  // surface this view too.
+  // surface this view too. The 3rd-place match also has stage='main' but
+  // is NOT part of the bracket tree — render it separately below.
   const bracketMatches = useMemo(
-    () => matches.filter((m) => m.stage === 'main'),
+    () =>
+      matches.filter(
+        (m) => m.stage === 'main' && m.groupLabel !== THIRD_PLACE_LABEL
+      ),
+    [matches]
+  );
+  const thirdPlaceMatch = useMemo(
+    () => matches.find((m) => m.groupLabel === THIRD_PLACE_LABEL) ?? null,
     [matches]
   );
 
@@ -87,20 +96,101 @@ export default function BracketScreen() {
           </Text>
         </View>
       ) : (
-        // Wider brackets (8+ teams) overflow phone width — let the user
-        // pan horizontally instead of clipping or shrinking the layout.
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator
-          className="mt-4 -mx-5"
-          contentContainerClassName="px-5 pb-6"
-        >
-          <BracketTree
-            matches={bracketMatches}
-            participantsById={participantsById}
-          />
-        </ScrollView>
+        <>
+          {/* Wider brackets (8+ teams) overflow phone width — let the user
+              pan horizontally instead of clipping or shrinking the layout. */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator
+            className="mt-4 -mx-5"
+            contentContainerClassName="px-5 pb-6"
+          >
+            <BracketTree
+              matches={bracketMatches}
+              participantsById={participantsById}
+            />
+          </ScrollView>
+          {thirdPlaceMatch ? (
+            <View className="mt-2">
+              <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('matches.thirdPlace')}
+              </Text>
+              <ThirdPlaceCard
+                match={thirdPlaceMatch}
+                participantsById={participantsById}
+                tbdLabel={t('matches.tbd')}
+              />
+            </View>
+          ) : null}
+        </>
       )}
     </Screen>
+  );
+}
+
+function ThirdPlaceCard({
+  match,
+  participantsById,
+  tbdLabel,
+}: {
+  match: Match;
+  participantsById: Map<number, Participant>;
+  tbdLabel: string;
+}) {
+  const a = match.participantAId
+    ? participantsById.get(match.participantAId)
+    : null;
+  const b = match.participantBId
+    ? participantsById.get(match.participantBId)
+    : null;
+  const aIsWinner = match.winnerId != null && match.winnerId === a?.id;
+  const bIsWinner = match.winnerId != null && match.winnerId === b?.id;
+  return (
+    <View className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+      <ThirdPlaceSide
+        name={a?.name ?? tbdLabel}
+        score={match.scoreA}
+        isWinner={aIsWinner}
+      />
+      <View className="my-1 h-px bg-slate-200 dark:bg-slate-800" />
+      <ThirdPlaceSide
+        name={b?.name ?? tbdLabel}
+        score={match.scoreB}
+        isWinner={bIsWinner}
+      />
+    </View>
+  );
+}
+
+function ThirdPlaceSide({
+  name,
+  score,
+  isWinner,
+}: {
+  name: string;
+  score: number | null;
+  isWinner: boolean;
+}) {
+  return (
+    <View className="flex-row items-center justify-between py-1">
+      <Text
+        className={`flex-1 text-sm ${
+          isWinner
+            ? 'font-bold text-slate-900 dark:text-white'
+            : 'text-slate-700 dark:text-slate-300'
+        }`}
+      >
+        {name}
+      </Text>
+      <Text
+        className={`ml-3 min-w-[28px] text-right text-sm tabular-nums ${
+          isWinner
+            ? 'font-bold text-slate-900 dark:text-white'
+            : 'text-slate-500 dark:text-slate-400'
+        }`}
+      >
+        {score ?? '–'}
+      </Text>
+    </View>
   );
 }

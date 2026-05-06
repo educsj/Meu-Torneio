@@ -12,6 +12,7 @@ import {
   generateSingleEliminationPlaceholders,
   nextPowerOfTwo,
   splitIntoGroups,
+  THIRD_PLACE_LABEL,
 } from './bracket';
 
 function makeParticipants(n: number): Participant[] {
@@ -421,6 +422,61 @@ describe('generateSingleEliminationPlaceholders', () => {
     for (const m of ms) counts[m.round] = (counts[m.round] ?? 0) + 1;
     expect(counts).toEqual({ 1: 8, 2: 4, 3: 2, 4: 1 });
     ms.forEach((m) => expect(m.stage).toBe('knockout'));
+  });
+});
+
+describe('thirdPlace option', () => {
+  it('appends a 3rd-place placeholder to a 4-team SE bracket placeholder', () => {
+    const matches = generateSingleEliminationPlaceholders(4, {
+      thirdPlace: true,
+    });
+    // 2 semis + 1 final + 1 third-place = 4 matches total.
+    expect(matches).toHaveLength(4);
+    const tp = matches.find((m) => m.groupLabel === THIRD_PLACE_LABEL);
+    expect(tp).toBeDefined();
+    expect(tp!.round).toBe(2); // same round as the final
+    expect(tp!.indexInRound).toBe(1);
+    expect(tp!.nextRoundIndex).toBeNull();
+    expect(tp!.participantAId).toBeNull();
+    expect(tp!.participantBId).toBeNull();
+  });
+
+  it('appends a 3rd-place placeholder to an 8-team SE bracket placeholder', () => {
+    const matches = generateSingleEliminationPlaceholders(8, {
+      thirdPlace: true,
+    });
+    // 4 QFs + 2 SFs + 1 Final + 1 ThirdPlace = 8 matches total.
+    expect(matches).toHaveLength(8);
+    const tp = matches.find((m) => m.groupLabel === THIRD_PLACE_LABEL);
+    expect(tp).toBeDefined();
+    expect(tp!.round).toBe(3); // same round as the final
+  });
+
+  it('does not append a 3rd-place when qualifiers < 4 (no semifinals)', () => {
+    const matches = generateSingleEliminationPlaceholders(2, {
+      thirdPlace: true,
+    });
+    // K=2 → just the final, no semis → no 3rd-place.
+    expect(matches).toHaveLength(1);
+    expect(matches.find((m) => m.groupLabel === THIRD_PLACE_LABEL)).toBeUndefined();
+  });
+
+  it('appends a 3rd-place to a populated single-elim bracket too', () => {
+    const matches = generateSingleEliminationBracket(makeParticipants(4), {
+      thirdPlace: true,
+    });
+    // 2 R1 + 1 R2 (final) + 1 ThirdPlace = 4 matches.
+    expect(matches).toHaveLength(4);
+    const tp = matches.find((m) => m.groupLabel === THIRD_PLACE_LABEL);
+    expect(tp).toBeDefined();
+    // Starts empty — slots get filled when the semifinals are played.
+    expect(tp!.participantAId).toBeNull();
+    expect(tp!.participantBId).toBeNull();
+  });
+
+  it('does not append a 3rd-place when option is omitted (default off)', () => {
+    const matches = generateSingleEliminationPlaceholders(4);
+    expect(matches.find((m) => m.groupLabel === THIRD_PLACE_LABEL)).toBeUndefined();
   });
 });
 

@@ -5,7 +5,7 @@ import type {
   Phase,
   TournamentType,
 } from '@/types/tournament';
-import { type BracketMatch } from '@/utils/bracket';
+import { THIRD_PLACE_LABEL, type BracketMatch } from '@/utils/bracket';
 import {
   computeMinParticipantsForPhases,
   generateBracketFromPhases,
@@ -257,6 +257,12 @@ export async function setMatchScore(
       : scoreA > scoreB
         ? match.participant_a_id
         : match.participant_b_id;
+  const loserId =
+    winnerId == null
+      ? null
+      : winnerId === match.participant_a_id
+        ? match.participant_b_id
+        : match.participant_a_id;
 
   await db.withTransactionAsync(async () => {
     await db.runAsync(
@@ -264,6 +270,7 @@ export async function setMatchScore(
       [scoreA, scoreB, winnerId, walkover ? 1 : 0, matchId]
     );
     await propagateWinnerToNextMatch(match, winnerId);
+    await propagateLoserToThirdPlace(match, loserId);
   });
 }
 
@@ -304,6 +311,7 @@ export async function clearMatchScore(matchId: number): Promise<void> {
       [matchId]
     );
     await propagateWinnerToNextMatch(match, null);
+    await propagateLoserToThirdPlace(match, null);
   });
 }
 
@@ -338,6 +346,52 @@ async function propagateWinnerToNextMatch(
 }
 
 /**
+ * If `match` is a semifinal of a SE bracket that has a 3rd-place playoff,
+ * place `newLoserId` into the appropriate slot of the 3P match (and clear
+ * any prior score so the slot change doesn't leave a stale outcome). No-op
+ * for any non-SF match (detected by the absence of a 3P match in the round
+ * above this one).
+ *
+ * Slot rule: among the SFs sharing this match's `next_match_id` (the final),
+ * the smaller-id one feeds slot A of the 3P, the other slot B — same
+ * convention as winner→final propagation, so the same SF always feeds the
+ * same slot in both downstream matches.
+ */
+async function propagateLoserToThirdPlace(
+  match: MatchRow,
+  newLoserId: number | null
+): Promise<void> {
+  if (match.next_match_id == null) return;
+  const db = await getDatabase();
+  const final = await db.getFirstAsync<{
+    tournament_id: number;
+    stage: string;
+  }>(
+    'SELECT tournament_id, stage FROM matches WHERE id = ?;',
+    [match.next_match_id]
+  );
+  if (!final) return;
+  const thirdPlace = await db.getFirstAsync<{ id: number }>(
+    `SELECT id FROM matches
+     WHERE tournament_id = ? AND stage = ? AND round = ? AND group_label = ?;`,
+    [final.tournament_id, final.stage, match.round + 1, THIRD_PLACE_LABEL]
+  );
+  if (!thirdPlace) return;
+  const siblings = await db.getAllAsync<{ id: number }>(
+    'SELECT id FROM matches WHERE next_match_id = ? AND round = ? ORDER BY id ASC;',
+    [match.next_match_id, match.round]
+  );
+  const slotIsA = siblings.length > 0 && siblings[0].id === match.id;
+  const slotCol = slotIsA ? 'participant_a_id' : 'participant_b_id';
+  await db.runAsync(
+    `UPDATE matches
+     SET ${slotCol} = ?, score_a = NULL, score_b = NULL, winner_id = NULL
+     WHERE id = ?;`,
+    [newLoserId, thirdPlace.id]
+  );
+}
+
+/**
  * Compute and persist the tournament status based on its matches.
  *
  * - Single elimination: finished when the final has a winner; ongoing if
@@ -353,7 +407,7 @@ export async function recomputeTournamentStatus(
   if (!tournament) return null;
 
   const all = await db.getAllAsync<MatchRow>(
-    `SELECT id, round, score_a, score_b, winner_id, next_match_id, stage
+    `SELECT id, round, score_a, score_b, winner_id, next_match_id, stage, group_label
      FROM matches WHERE tournament_id = ?;`,
     [tournamentId]
   );
@@ -366,6 +420,7 @@ export async function recomputeTournamentStatus(
       scoreB: m.score_b,
       winnerId: m.winner_id,
       nextMatchId: m.next_match_id,
+      groupLabel: m.group_label,
     }))
   );
   if (next == null) return null;

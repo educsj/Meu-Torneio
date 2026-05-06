@@ -39,6 +39,7 @@
       "roundRobin": "Round Robin",
       "groupsKnockout": "Groups + Knockout",
       "leaguePlayoff": "League + Playoffs",
+      "worldCup": "World Cup",
       "custom": "Custom"
     },
     "typesDescription": {
@@ -46,6 +47,7 @@
       "roundRobin": "Everyone plays everyone. Most points wins.",
       "groupsKnockout": "Group stage followed by knockout.",
       "leaguePlayoff": "Home-and-away round-robin with volleyball scoring. Top 4 play the final and 3rd-place match.",
+      "worldCup": "World Cup template: 8 groups × 4 → R16 → QF → SF → Final + 3rd. Editable.",
       "custom": "Define your own phases and formats."
     },
     "invalidPhasesTitle": "Invalid phase configuration",
@@ -224,6 +226,8 @@
     "groupCount": "Number of groups",
     "qualifiers": "Teams advancing to next phase",
     "qualifiersHintTopTwo": "Top 2 from each group ({{groups}} groups × 2 = {{total}})",
+    "thirdPlaceLabel": "3rd-place match",
+    "thirdPlaceHint": "Adds an extra match between the two semifinal losers.",
     "scoringLabel": "Scoring",
     "scoringFifa": "Football (W3 / D1 / L0)",
     "scoringVolleyball": "Volleyball (3 / 2 / 1 / 0)",

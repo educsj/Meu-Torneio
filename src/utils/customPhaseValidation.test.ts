@@ -12,6 +12,7 @@ function rr(overrides: Partial<CustomPhaseInput> = {}): CustomPhaseInput {
     groupCount: 1,
     qualifiers: null,
     scoring: 'fifa',
+    thirdPlace: false,
     ...overrides,
   };
 }
@@ -23,6 +24,7 @@ function se(overrides: Partial<CustomPhaseInput> = {}): CustomPhaseInput {
     groupCount: 1,
     qualifiers: null,
     scoring: 'fifa',
+    thirdPlace: false,
     ...overrides,
   };
 }
@@ -34,6 +36,7 @@ function pp(overrides: Partial<CustomPhaseInput> = {}): CustomPhaseInput {
     groupCount: 1,
     qualifiers: null,
     scoring: 'fifa',
+    thirdPlace: false,
     ...overrides,
   };
 }

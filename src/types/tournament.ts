@@ -94,6 +94,12 @@ export interface Phase {
   status: PhaseStatus;
   /** Scoring system for standings. Only used for round_robin phases. */
   scoring: ScoringRule;
+  /**
+   * single_elimination only: when true, an extra match between the two
+   * semifinal losers is generated alongside the final. Requires a bracket
+   * with at least 4 qualifiers (so semifinals exist).
+   */
+  thirdPlace: boolean;
 }
 
 /** Phase configuration provided by the user when creating a custom tournament. */
@@ -104,4 +110,5 @@ export interface CustomPhaseInput {
   groupCount: number;
   qualifiers: number | null;
   scoring: ScoringRule;
+  thirdPlace: boolean;
 }

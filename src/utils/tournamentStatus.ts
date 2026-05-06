@@ -4,6 +4,7 @@ import type {
   TournamentStatus,
   TournamentType,
 } from '@/types/tournament';
+import { THIRD_PLACE_LABEL } from './bracket';
 
 /** Subset of Match needed to compute status — keeps callers DB-agnostic. */
 export interface StatusInputMatch {
@@ -12,6 +13,8 @@ export interface StatusInputMatch {
   scoreB: number | null;
   winnerId: number | null;
   nextMatchId: number | null;
+  /** Used to skip the 3rd-place match when locating the bracket's final. */
+  groupLabel: string | null;
 }
 
 /**
@@ -39,15 +42,24 @@ export function computeTournamentStatus(
     m.scoreA != null && m.scoreB != null;
   const anyPlayed = matches.some(isPlayed);
 
+  // The 3rd-place match also has nextMatchId=null but it's NOT the bracket's
+  // final — exclude it from the "find the final" lookup.
+  const isThirdPlace = (m: StatusInputMatch) =>
+    m.groupLabel === THIRD_PLACE_LABEL;
+
   if (type === 'single_elimination') {
-    const final = matches.find((m) => m.nextMatchId == null);
+    const final = matches.find(
+      (m) => m.nextMatchId == null && !isThirdPlace(m)
+    );
     if (final && final.winnerId != null) return 'finished';
     return anyPlayed ? 'ongoing' : 'draft';
   }
 
   if (type === 'groups_knockout') {
     const knockout = matches.filter((m) => m.stage === 'knockout');
-    const final = knockout.find((m) => m.nextMatchId == null);
+    const final = knockout.find(
+      (m) => m.nextMatchId == null && !isThirdPlace(m)
+    );
     if (final && final.winnerId != null) return 'finished';
     return anyPlayed ? 'ongoing' : 'draft';
   }

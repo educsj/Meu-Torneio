@@ -20,6 +20,7 @@ const DEFAULT_PHASE: CustomPhaseInput = {
   groupCount: 1,
   qualifiers: null,
   scoring: 'fifa',
+  thirdPlace: false,
 };
 
 const FORMAT_KEYS: { value: PhaseFormat; key: string }[] = [
@@ -85,6 +86,7 @@ export function PhaseBuilder({ value, onChange }: Props) {
         groupCount: 1,
         qualifiers: null,
         scoring: 'fifa',
+        thirdPlace: false,
       },
     ]);
   };
@@ -192,6 +194,14 @@ export function PhaseBuilder({ value, onChange }: Props) {
                 phase={phase}
                 nextFormat={value[index + 1]?.format}
                 onChange={(qualifiers) => update(index, { qualifiers })}
+                t={t}
+              />
+            ) : null}
+
+            {phase.format === 'single_elimination' ? (
+              <ThirdPlaceToggle
+                value={phase.thirdPlace}
+                onChange={(thirdPlace) => update(index, { thirdPlace })}
                 t={t}
               />
             ) : null}
@@ -361,6 +371,45 @@ function Stepper({
   );
 }
 
+function ThirdPlaceToggle({
+  value,
+  onChange,
+  t,
+}: {
+  value: boolean;
+  onChange: (v: boolean) => void;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  return (
+    <Pressable
+      onPress={() => onChange(!value)}
+      className="flex-row items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-800"
+    >
+      <View className="flex-1 pr-3">
+        <Text className="text-sm font-medium text-slate-900 dark:text-slate-100">
+          {t('phaseBuilder.thirdPlaceLabel')}
+        </Text>
+        <Text className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+          {t('phaseBuilder.thirdPlaceHint')}
+        </Text>
+      </View>
+      <View
+        className={`h-6 w-11 rounded-full p-0.5 ${
+          value
+            ? 'bg-brand-500 dark:bg-brand-400'
+            : 'bg-slate-300 dark:bg-slate-600'
+        }`}
+      >
+        <View
+          className={`h-5 w-5 rounded-full bg-white shadow ${
+            value ? 'ml-5' : ''
+          }`}
+        />
+      </View>
+    </Pressable>
+  );
+}
+
 function QualifiersField({
   phase,
   nextFormat,
@@ -432,3 +481,30 @@ function QualifiersField({
 }
 
 export const INITIAL_CUSTOM_PHASES: CustomPhaseInput[] = [DEFAULT_PHASE];
+
+/**
+ * Pre-built phase template that mirrors a FIFA-World-Cup–style competition:
+ * 8 groups of 4 with the top 2 advancing to a 16-team single-elimination
+ * bracket (R16 → QF → SF → Final + 3rd-place). The user can still edit
+ * any field after picking the template — it's a starter, not a fixed shape.
+ */
+export const WORLD_CUP_PHASES: CustomPhaseInput[] = [
+  {
+    name: 'Fase de Grupos',
+    format: 'round_robin',
+    legs: 1,
+    groupCount: 8,
+    qualifiers: 16,
+    scoring: 'fifa',
+    thirdPlace: false,
+  },
+  {
+    name: 'Mata-mata',
+    format: 'single_elimination',
+    legs: 1,
+    groupCount: 1,
+    qualifiers: null,
+    scoring: 'fifa',
+    thirdPlace: true,
+  },
+];

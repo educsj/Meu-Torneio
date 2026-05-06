@@ -17,8 +17,8 @@
 
 ### Recursos
 
-- 🏆 **Cinco formatos**: Mata-mata, Pontos corridos, Grupos + Mata-mata, Liga + Playoffs (vôlei) e **Personalizado** (compõe fases livremente)
-- 🛠️ Builder de torneio personalizado: 1–2 fases, escolhe formato, número de grupos, ida-e-volta, classificados e regra de pontuação por fase
+- 🏆 **Seis formatos**: Mata-mata, Pontos corridos, Grupos + Mata-mata, Liga + Playoffs (vôlei), **Copa do Mundo** (8 grupos × 4 → R16 → quartas → semis → final + 3º) e **Personalizado** (compõe fases livremente)
+- 🛠️ Builder de torneio personalizado: 1–2 fases, escolhe formato, **até 8 grupos**, ida-e-volta, classificados, regra de pontuação por fase e disputa de 3º lugar opcional
 - ⚖️ **Pontuação configurável**: estilo futebol (V3/E1/D0) ou vôlei oficial (3-0/3-1 → 3 / 3-2 → 2-1 / 0-3 → 0)
 - 🥇 **Critério de desempate por confronto direto** (head-to-head) — quando há empate de pontos, mini-tabela entre os times empatados decide
 - 🔄 Round-robin com **rodadas paralelas** (algoritmo circular / Berger): T1×T2 e T3×T4 jogam ao mesmo tempo, ninguém fica esperando
@@ -133,8 +133,8 @@ npm run typecheck
 
 ### Features
 
-- 🏆 **Five formats**: Single Elimination, Round Robin, Groups + Knockout, League + Playoffs (volleyball) and **Custom** (compose phases freely)
-- 🛠️ Custom tournament builder: 1–2 phases, configurable format, group count, home-and-away, qualifiers and scoring per phase
+- 🏆 **Six formats**: Single Elimination, Round Robin, Groups + Knockout, League + Playoffs (volleyball), **World Cup** (8 groups × 4 → R16 → QF → SF → Final + 3rd) and **Custom** (compose phases freely)
+- 🛠️ Custom tournament builder: 1–2 phases, configurable format, **up to 8 groups**, home-and-away, qualifiers, per-phase scoring rule and optional 3rd-place playoff
 - ⚖️ **Configurable scoring**: football-style (W3/D1/L0) or volleyball (3-0/3-1 → 3 / 3-2 → 2-1 / 0-3 → 0)
 - 🥇 **Head-to-head tiebreaker** — when teams tie on points, a mini-table among them decides the order
 - 🔄 Round-robin with **parallel rounds** (Berger / circle method): T1×T2 and T3×T4 play at the same time, no team waits idly
