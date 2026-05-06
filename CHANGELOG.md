@@ -9,6 +9,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ### Added · Adicionado (mais recente / most recent)
 
+#### Identidade visual / Visual identity
+
+- **Nova arte do app** — ícone de troféu dourado em fundo azul de marca (#1a78f5). Renderizado a partir de SVGs versionados (`assets/icon-source.svg` + `assets/icon-foreground-source.svg`) via `node scripts/generate-icons.mjs`, gerando icon, adaptive-icon, splash-icon e favicon nas dimensões certas. / **New app artwork** — gold trophy on the brand-blue background. Source SVGs are committed; running `node scripts/generate-icons.mjs` (one-shot, uses sharp) produces all PNG variants.
+- **Splash animado** — sobre o splash estático, exibe o troféu surgindo com mola, confetes disparados dos dois cantos superiores e o nome do app aparecendo logo abaixo (PT-BR: "Meu Torneio" / EN: "My Tournament"). Após ~2s o overlay esmaece e revela a tela inicial. Implementado com `react-native-reanimated` + `react-native-confetti-cannon`. / **Animated splash overlay** — trophy springs in, confetti bursts from both top corners, app name fades in below (PT "Meu Torneio" / EN "My Tournament"). Fades out after ~2s revealing the home screen. Built with reanimated + confetti-cannon.
+
 #### Dupla eliminação / Double elimination
 
 - **Bracket reset** opcional na chave dupla — toggle por fase no construtor custom. Quando ativado, gera uma 2ª grande final que vira a partida decisiva caso o time da chave de perdedores ganhe a 1ª. A propagação dos dois finalistas para a GF2 é automática; o status do torneio só fica "finalizado" quando a partida decisiva (GF1 ou GF2 conforme o caso) é jogada. (Schema v9.) / **Bracket reset** opt-in flag for double elimination. When enabled, generates a 2nd grand final that becomes the deciding match if the LB Champion wins GF1. Both finalists auto-propagate into GF2; status logic only marks "finished" once the match that actually decides the title is played (schema v9).

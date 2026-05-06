@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Brand-blue background, full square (Expo also uses this for Android adaptive bg) -->
+  <rect width="1024" height="1024" fill="#1a78f5"/>
+
+  <!-- Soft inner glow ring so the trophy reads as the focal point on smaller sizes -->
+  <circle cx="512" cy="512" r="380" fill="#2f97ff" opacity="0.35"/>
+
+  <!-- Trophy: gold cup with handles, stem, and base. Centered around (512, 512).
+       Gradient gives subtle depth without going pictorial. -->
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset="0.5" stop-color="#f59e0b"/>
+      <stop offset="1" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="goldDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f59e0b"/>
+      <stop offset="1" stop-color="#92400e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Trophy handles (drawn before cup so cup sits on top) -->
+  <path d="M 320 360 Q 220 360 220 470 Q 220 560 340 580 L 340 520 Q 290 510 290 470 Q 290 420 340 420 Z"
+        fill="url(#goldDark)"/>
+  <path d="M 704 360 Q 804 360 804 470 Q 804 560 684 580 L 684 520 Q 734 510 734 470 Q 734 420 684 420 Z"
+        fill="url(#goldDark)"/>
+
+  <!-- Cup body -->
+  <path d="M 320 320 L 704 320 L 690 580 Q 678 670 600 700 L 424 700 Q 346 670 334 580 Z"
+        fill="url(#gold)"/>
+
+  <!-- Cup lip / rim band -->
+  <rect x="312" y="312" width="400" height="44" rx="12" fill="#fde68a"/>
+  <rect x="312" y="312" width="400" height="44" rx="12" fill="none" stroke="#b45309" stroke-width="6"/>
+
+  <!-- Star detail on cup face -->
+  <path d="M 512 440 L 525 478 L 565 478 L 533 502 L 545 540 L 512 517 L 479 540 L 491 502 L 459 478 L 499 478 Z"
+        fill="#fef3c7" opacity="0.85"/>
+
+  <!-- Trophy stem -->
+  <rect x="478" y="700" width="68" height="60" fill="url(#goldDark)"/>
+
+  <!-- Trophy base (two tiers) -->
+  <rect x="380" y="760" width="264" height="40" rx="8" fill="url(#gold)"/>
+  <rect x="340" y="800" width="344" height="56" rx="10" fill="url(#goldDark)"/>
+</svg>

@@ -3,6 +3,9 @@
     "name": "Tournament Master",
     "tagline": "Amateur tournaments in your pocket"
   },
+  "splash": {
+    "appName": "My Tournament"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
