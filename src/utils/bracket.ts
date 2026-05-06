@@ -7,6 +7,14 @@ import type { Participant } from '@/types/tournament';
  */
 export const THIRD_PLACE_LABEL = '3P';
 
+/**
+ * Group labels for double elimination — distinguish the winners bracket,
+ * losers bracket, and grand final inside a single-stage DE tournament.
+ */
+export const WINNERS_BRACKET_LABEL = 'WB';
+export const LOSERS_BRACKET_LABEL = 'LB';
+export const GRAND_FINAL_LABEL = 'GF';
+
 export interface BracketMatch {
   round: number;
   indexInRound: number;
@@ -14,12 +22,32 @@ export interface BracketMatch {
   participantBId: number | null;
   /** Auto-set winner when one side is BYE. */
   winnerId: number | null;
-  /** Index of the next-round match this feeds into. */
+  /**
+   * Index of the next-round match this feeds into (same stage / same
+   * groupLabel). For double elimination — where the winner can cross over
+   * to a different group (WB-Final winner → GF) — use `winnerDest*` fields
+   * instead and leave this null.
+   */
   nextRoundIndex: number | null;
   /** Stage label: 'main' (single elim or RR), 'group' (group stage), 'knockout'. */
   stage?: 'main' | 'group' | 'knockout';
   /** Group label like 'A', 'B' (only set for stage='group'). */
   groupLabel?: string | null;
+  /**
+   * Double-elimination cross-group destinations. When set, the persistence
+   * layer wires `next_match_id` / `loser_next_match_id` by looking up the
+   * match with the matching (groupLabel, round, indexInRound) coordinate
+   * within the same stage. Slots are explicit because DE matches don't have
+   * a clean "siblings sorted by id" rule like the single-elim bracket does.
+   */
+  winnerDestGroup?: string | null;
+  winnerDestRound?: number | null;
+  winnerDestIndex?: number | null;
+  winnerDestSlot?: 'A' | 'B' | null;
+  loserDestGroup?: string | null;
+  loserDestRound?: number | null;
+  loserDestIndex?: number | null;
+  loserDestSlot?: 'A' | 'B' | null;
 }
 
 /** Smallest power of two greater than or equal to n. */
@@ -362,6 +390,185 @@ export function scheduleRoundRobin(n: number): Array<Array<[number, number]>> {
     teams = [teams[0], teams[m - 1], ...teams.slice(1, m - 1)];
   }
   return rounds;
+}
+
+/**
+ * Generate a double-elimination bracket. Every team needs to lose twice
+ * to be eliminated: WB losers drop into LB; LB losers are out; the WB and
+ * LB champions meet in a single grand final (no bracket-reset rematch in
+ * the initial release).
+ *
+ * Returns a flat list of matches with three group labels:
+ *   - 'WB' (winners bracket): standard single-elim shape.
+ *   - 'LB' (losers bracket): minor/major round interleaving.
+ *   - 'GF' (grand final): single match.
+ *
+ * Each WB match carries cross-group `winnerDest*` / `loserDest*` fields
+ * so the persistence layer can wire next-match pointers across groups.
+ *
+ * Constraints (initial release): participant count must be a power of two
+ * in [4, 16]. Non-power-of-two and >16 brackets are tractable but their
+ * UX on a phone screen needs design work first.
+ */
+export function generateDoubleEliminationBracket(
+  participants: Participant[]
+): BracketMatch[] {
+  const N = participants.length;
+  if (N < 4) {
+    throw new Error('Double elimination needs at least 4 participants');
+  }
+  if ((N & (N - 1)) !== 0) {
+    throw new Error('Double elimination requires a power-of-two count');
+  }
+  if (N > 16) {
+    throw new Error('Double elimination is capped at 16 participants for now');
+  }
+
+  const k = Math.log2(N); // number of WB rounds
+  const sorted = [...participants].sort((a, b) => {
+    const sa = a.seed ?? Number.MAX_SAFE_INTEGER;
+    const sb = b.seed ?? Number.MAX_SAFE_INTEGER;
+    if (sa !== sb) return sa - sb;
+    return a.id - b.id;
+  });
+  const order = bracketSeedOrder(N);
+  const slots = order.map((seed) => sorted[seed - 1]);
+
+  const matches: BracketMatch[] = [];
+  const lbLastRound = 2 * k - 2; // LB-Final round number
+
+  // ── Winners bracket ────────────────────────────────────────────────────
+  // WB-R1: actual participants paired by canonical seed order.
+  const wbR1Count = N / 2;
+  for (let m = 0; m < wbR1Count; m++) {
+    const a = slots[m * 2];
+    const b = slots[m * 2 + 1];
+    matches.push({
+      round: 1,
+      indexInRound: m,
+      participantAId: a.id,
+      participantBId: b.id,
+      winnerId: null,
+      nextRoundIndex: null,
+      stage: 'main',
+      groupLabel: WINNERS_BRACKET_LABEL,
+      // Winner advances to WB-R2 (or to GF when WB has only one round, but
+      // that requires N=2 which we reject above so k≥2 always holds).
+      winnerDestGroup: WINNERS_BRACKET_LABEL,
+      winnerDestRound: 2,
+      winnerDestIndex: Math.floor(m / 2),
+      winnerDestSlot: m % 2 === 0 ? 'A' : 'B',
+      // Loser drops to LB-R1, paired with the adjacent WB-R1 loser.
+      loserDestGroup: LOSERS_BRACKET_LABEL,
+      loserDestRound: 1,
+      loserDestIndex: Math.floor(m / 2),
+      loserDestSlot: m % 2 === 0 ? 'A' : 'B',
+    });
+  }
+
+  // WB-R2 through WB-Final (round k). Empty placeholders.
+  for (let r = 2; r <= k; r++) {
+    const count = N / Math.pow(2, r);
+    for (let m = 0; m < count; m++) {
+      const isWBFinal = r === k;
+      matches.push({
+        round: r,
+        indexInRound: m,
+        participantAId: null,
+        participantBId: null,
+        winnerId: null,
+        nextRoundIndex: null,
+        stage: 'main',
+        groupLabel: WINNERS_BRACKET_LABEL,
+        // Winner of WB-Final → GF slot A. Earlier rounds → next WB round.
+        winnerDestGroup: isWBFinal ? GRAND_FINAL_LABEL : WINNERS_BRACKET_LABEL,
+        winnerDestRound: isWBFinal ? 1 : r + 1,
+        winnerDestIndex: isWBFinal ? 0 : Math.floor(m / 2),
+        winnerDestSlot: isWBFinal ? 'A' : m % 2 === 0 ? 'A' : 'B',
+        // Loser destination: WB-R(i) for i<k → LB-R(2*(i-1)) M(m), slot A.
+        // WB-Final loser → LB-R(2k-2) M(0) (= LB-Final), slot A.
+        loserDestGroup: LOSERS_BRACKET_LABEL,
+        loserDestRound: isWBFinal ? lbLastRound : 2 * (r - 1),
+        loserDestIndex: isWBFinal ? 0 : m,
+        loserDestSlot: 'A',
+      });
+    }
+  }
+
+  // ── Losers bracket ─────────────────────────────────────────────────────
+  // Round size pattern (for k≥2):
+  //   LB-R(2i-1) (minor) and LB-R(2i) (major) each have N/2^(i+1) matches.
+  // Minor rounds (1,3,5,...) only contain LB-internal pairings.
+  // Major rounds (2,4,6,...) pair LB winners with the round's WB drop-ins.
+  for (let lbR = 1; lbR <= lbLastRound; lbR++) {
+    const i = Math.ceil(lbR / 2); // 1-based group index
+    const lbCount = N / Math.pow(2, i + 1);
+    const isMinor = lbR % 2 === 1;
+    const isLBFinal = lbR === lbLastRound;
+    for (let m = 0; m < lbCount; m++) {
+      let winnerDest: {
+        group: string;
+        round: number;
+        index: number;
+        slot: 'A' | 'B';
+      };
+      if (isLBFinal) {
+        // LB-Final winner → GF slot B (WB champion holds slot A).
+        winnerDest = {
+          group: GRAND_FINAL_LABEL,
+          round: 1,
+          index: 0,
+          slot: 'B',
+        };
+      } else if (isMinor) {
+        // Minor → next major (same round size). LB winner takes slot B,
+        // the WB drop-in (added by the WB match's loserDest) takes slot A.
+        winnerDest = {
+          group: LOSERS_BRACKET_LABEL,
+          round: lbR + 1,
+          index: m,
+          slot: 'B',
+        };
+      } else {
+        // Major → next minor (count halves). Pair LB winners adjacent.
+        winnerDest = {
+          group: LOSERS_BRACKET_LABEL,
+          round: lbR + 1,
+          index: Math.floor(m / 2),
+          slot: m % 2 === 0 ? 'A' : 'B',
+        };
+      }
+      matches.push({
+        round: lbR,
+        indexInRound: m,
+        participantAId: null,
+        participantBId: null,
+        winnerId: null,
+        nextRoundIndex: null,
+        stage: 'main',
+        groupLabel: LOSERS_BRACKET_LABEL,
+        winnerDestGroup: winnerDest.group,
+        winnerDestRound: winnerDest.round,
+        winnerDestIndex: winnerDest.index,
+        winnerDestSlot: winnerDest.slot,
+        // LB losers are eliminated — no loser destination.
+      });
+    }
+  }
+
+  // ── Grand final ────────────────────────────────────────────────────────
+  matches.push({
+    round: 1,
+    indexInRound: 0,
+    participantAId: null,
+    participantBId: null,
+    winnerId: null,
+    nextRoundIndex: null,
+    stage: 'main',
+    groupLabel: GRAND_FINAL_LABEL,
+  });
+
+  return matches;
 }
 
 /**

@@ -32,6 +32,7 @@ function m(
             ? b
             : null,
     nextMatchId: null,
+    loserNextMatchId: null,
     scheduledAt: null,
     location: null,
     groupLabel: null,
@@ -219,6 +220,7 @@ describe('computeStandings with volleyball scoring', () => {
         scoreB: 0,
         winnerId: A.id,
         nextMatchId: null,
+        loserNextMatchId: null,
         scheduledAt: null,
         location: null,
         groupLabel: null,
@@ -236,6 +238,7 @@ describe('computeStandings with volleyball scoring', () => {
         scoreB: 3,
         winnerId: B.id,
         nextMatchId: null,
+        loserNextMatchId: null,
         scheduledAt: null,
         location: null,
         groupLabel: null,

@@ -160,14 +160,28 @@ export async function importTournamentJson(json: string): Promise<number> {
     }
 
     for (const m of backup.matches) {
-      if (m.nextMatchLocalId == null) continue;
-      const nextNew = matchIdMap.get(m.nextMatchLocalId);
       const meNew = matchIdMap.get(m.localId);
-      if (!nextNew || !meNew) continue;
-      await db.runAsync('UPDATE matches SET next_match_id = ? WHERE id = ?;', [
-        nextNew,
-        meNew,
-      ]);
+      if (!meNew) continue;
+      if (m.nextMatchLocalId != null) {
+        const nextNew = matchIdMap.get(m.nextMatchLocalId);
+        if (nextNew) {
+          await db.runAsync(
+            'UPDATE matches SET next_match_id = ? WHERE id = ?;',
+            [nextNew, meNew]
+          );
+        }
+      }
+      // v8: roundtrip the loser-next pointer for double-elim brackets.
+      // Pre-v8 backups omit the field — fall through and leave NULL.
+      if (m.loserNextMatchLocalId != null) {
+        const loserNextNew = matchIdMap.get(m.loserNextMatchLocalId);
+        if (loserNextNew) {
+          await db.runAsync(
+            'UPDATE matches SET loser_next_match_id = ? WHERE id = ?;',
+            [loserNextNew, meNew]
+          );
+        }
+      }
     }
   });
 

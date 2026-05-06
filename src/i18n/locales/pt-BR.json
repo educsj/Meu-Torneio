@@ -36,6 +36,7 @@
     "type": "Formato",
     "types": {
       "singleElimination": "Mata-mata",
+      "doubleElimination": "Dupla eliminação",
       "roundRobin": "Pontos corridos",
       "groupsKnockout": "Grupos + Mata-mata",
       "leaguePlayoff": "Liga + Playoffs",
@@ -44,6 +45,7 @@
     },
     "typesDescription": {
       "singleElimination": "Eliminação direta. Quem perde, sai.",
+      "doubleElimination": "Dupla eliminação: quem perde uma vez vai para a chave de perdedores; só está fora ao perder a segunda. 4, 8 ou 16 times.",
       "roundRobin": "Todos contra todos. Vence quem somar mais pontos.",
       "groupsKnockout": "Fase de grupos seguida de mata-mata.",
       "leaguePlayoff": "Pontos corridos ida-e-volta com pontuação de vôlei. Top-4 disputam final e 3º lugar.",
@@ -135,6 +137,9 @@
     "groupStage": "Fase de grupos",
     "leaguePhase": "Fase de liga",
     "thirdPlace": "Disputa de 3º lugar",
+    "winnersBracket": "Chave de vencedores",
+    "losersBracket": "Chave de perdedores",
+    "grandFinal": "Grande final",
     "noMatchesYet": "Nenhuma partida gerada ainda.",
     "noMatchesYetDescription": "Volte para a tela do torneio e toque em \"Gerar chaveamento\".",
     "onlySingleEliminationSupported": "Por enquanto só geramos chaveamento para Mata-mata.",
@@ -218,6 +223,7 @@
     "formats": {
       "roundRobin": "Liga",
       "singleElimination": "Mata-mata",
+      "doubleElimination": "Dupla eliminação",
       "placementPlayoff": "Playoffs"
     },
     "legsLabel": "Jogos por confronto",
@@ -240,7 +246,8 @@
       "qualifiersMustBeEven": "Os Playoffs precisam de um número par de classificados ({{got}} é ímpar).",
       "singleElimQualifiersUnsupported": "Mata-mata aceita 2, 4, 8 ou 16 classificados (você pediu {{got}}).",
       "singleElimMultiGroupUnsupported": "Mata-mata vindo de múltiplos grupos exige número par de grupos e classificados = 2× número de grupos (top-2 de cada).",
-      "secondPhaseMustNotBeRoundRobin": "A segunda fase precisa ser Mata-mata ou Playoffs."
+      "secondPhaseMustNotBeRoundRobin": "A segunda fase precisa ser Mata-mata ou Playoffs.",
+      "doubleElimMustBeStandalone": "Dupla eliminação precisa ser a única fase do torneio."
     }
   }
 }

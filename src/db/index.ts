@@ -217,7 +217,11 @@ async function backfillPhases(db: SQLite.SQLiteDatabase): Promise<void> {
 interface DefaultPhase {
   ordinal: number;
   name: string;
-  format: 'single_elimination' | 'round_robin' | 'placement_playoff';
+  format:
+    | 'single_elimination'
+    | 'double_elimination'
+    | 'round_robin'
+    | 'placement_playoff';
   legs: 1 | 2;
   groupCount: number;
   qualifiers: number | null;
@@ -287,6 +291,19 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           ordinal: 1,
           name: 'Playoffs',
           format: 'placement_playoff',
+          legs: 1,
+          groupCount: 1,
+          qualifiers: null,
+          scoring: 'fifa',
+          thirdPlace: false,
+        },
+      ];
+    case 'double_elimination':
+      return [
+        {
+          ordinal: 0,
+          name: 'Dupla eliminação',
+          format: 'double_elimination',
           legs: 1,
           groupCount: 1,
           qualifiers: null,

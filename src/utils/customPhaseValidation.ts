@@ -8,7 +8,8 @@ export type ValidationError =
   | { code: 'qualifiers_must_be_even'; index: number; got: number }
   | { code: 'single_elim_qualifiers_unsupported'; index: number; got: number }
   | { code: 'single_elim_multi_group_unsupported'; index: number }
-  | { code: 'second_phase_must_not_be_round_robin'; index: number };
+  | { code: 'second_phase_must_not_be_round_robin'; index: number }
+  | { code: 'double_elim_must_be_standalone'; index: number };
 
 const MAX_PHASES = 2;
 
@@ -43,6 +44,12 @@ export function validateCustomPhases(
     }
     if (!isLast && (phase.qualifiers == null || phase.qualifiers <= 0)) {
       errors.push({ code: 'first_phase_no_qualifiers', index: i });
+    }
+    // DE produces a 1st/2nd ranking via WB+LB+GF; chaining anything after
+    // it doesn't fit the "qualifiers feed next phase" model. Reject any DE
+    // phase that's not the only phase in the tournament.
+    if (phase.format === 'double_elimination' && phases.length > 1) {
+      errors.push({ code: 'double_elim_must_be_standalone', index: i });
     }
   }
 

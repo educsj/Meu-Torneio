@@ -12,6 +12,7 @@ export type PickerOption = TournamentType | 'world_cup';
 
 const OPTIONS: { value: PickerOption; key: string }[] = [
   { value: 'single_elimination', key: 'singleElimination' },
+  { value: 'double_elimination', key: 'doubleElimination' },
   { value: 'round_robin', key: 'roundRobin' },
   { value: 'groups_knockout', key: 'groupsKnockout' },
   { value: 'league_playoff', key: 'leaguePlayoff' },

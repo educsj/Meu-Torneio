@@ -33,6 +33,7 @@ import type {
 
 const TYPE_LABEL_KEY: Record<TournamentType, string> = {
   single_elimination: 'singleElimination',
+  double_elimination: 'doubleElimination',
   round_robin: 'roundRobin',
   groups_knockout: 'groupsKnockout',
   league_playoff: 'leaguePlayoff',
@@ -161,6 +162,7 @@ export default function TournamentDetailScreen() {
   }
 
   const isSingleElim = tournament.type === 'single_elimination';
+  const isDoubleElim = tournament.type === 'double_elimination';
   const isRoundRobin = tournament.type === 'round_robin';
   const isLeaguePlayoff = tournament.type === 'league_playoff';
   const isCustom = tournament.type === 'custom';
@@ -177,7 +179,10 @@ export default function TournamentDetailScreen() {
   const showStandings =
     (isRoundRobin || isLeaguePlayoff || isCustom) && !hasMultiGroupPhase;
   const minParticipants =
-    tournament.type === 'groups_knockout' || isLeaguePlayoff || isCustom
+    tournament.type === 'groups_knockout' ||
+    isLeaguePlayoff ||
+    isCustom ||
+    isDoubleElim
       ? 4
       : 2;
   const enoughParticipants = participants.length >= minParticipants;

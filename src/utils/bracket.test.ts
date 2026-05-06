@@ -4,15 +4,19 @@ import type { Participant } from '@/types/tournament';
 
 import {
   bracketSeedOrder,
+  generateDoubleEliminationBracket,
   generateGroupStageMatches,
   generateGroupsKnockoutPlaceholders,
   generatePlacementPlayoffPlaceholders,
   generateRoundRobinMatches,
   generateSingleEliminationBracket,
   generateSingleEliminationPlaceholders,
+  GRAND_FINAL_LABEL,
+  LOSERS_BRACKET_LABEL,
   nextPowerOfTwo,
   splitIntoGroups,
   THIRD_PLACE_LABEL,
+  WINNERS_BRACKET_LABEL,
 } from './bracket';
 
 function makeParticipants(n: number): Participant[] {
@@ -477,6 +481,114 @@ describe('thirdPlace option', () => {
   it('does not append a 3rd-place when option is omitted (default off)', () => {
     const matches = generateSingleEliminationPlaceholders(4);
     expect(matches.find((m) => m.groupLabel === THIRD_PLACE_LABEL)).toBeUndefined();
+  });
+});
+
+describe('generateDoubleEliminationBracket', () => {
+  it('rejects fewer than 4 participants', () => {
+    expect(() =>
+      generateDoubleEliminationBracket(makeParticipants(2))
+    ).toThrow(/at least 4/);
+  });
+
+  it('rejects non-power-of-two counts', () => {
+    expect(() =>
+      generateDoubleEliminationBracket(makeParticipants(6))
+    ).toThrow(/power-of-two/);
+  });
+
+  it('caps participant count at 16', () => {
+    expect(() =>
+      generateDoubleEliminationBracket(makeParticipants(32))
+    ).toThrow(/capped at 16/);
+  });
+
+  it('generates 6 matches for a 4-team bracket (3 WB + 2 LB + 1 GF)', () => {
+    const ms = generateDoubleEliminationBracket(makeParticipants(4));
+    expect(ms).toHaveLength(6);
+    const wb = ms.filter((m) => m.groupLabel === WINNERS_BRACKET_LABEL);
+    const lb = ms.filter((m) => m.groupLabel === LOSERS_BRACKET_LABEL);
+    const gf = ms.filter((m) => m.groupLabel === GRAND_FINAL_LABEL);
+    expect(wb).toHaveLength(3);
+    expect(lb).toHaveLength(2);
+    expect(gf).toHaveLength(1);
+  });
+
+  it('generates 14 matches for an 8-team bracket (7 WB + 6 LB + 1 GF)', () => {
+    const ms = generateDoubleEliminationBracket(makeParticipants(8));
+    expect(ms).toHaveLength(14);
+    const wb = ms.filter((m) => m.groupLabel === WINNERS_BRACKET_LABEL);
+    const lb = ms.filter((m) => m.groupLabel === LOSERS_BRACKET_LABEL);
+    const gf = ms.filter((m) => m.groupLabel === GRAND_FINAL_LABEL);
+    expect(wb).toHaveLength(7);
+    expect(lb).toHaveLength(6);
+    expect(gf).toHaveLength(1);
+  });
+
+  it('generates 30 matches for a 16-team bracket (15 WB + 14 LB + 1 GF)', () => {
+    const ms = generateDoubleEliminationBracket(makeParticipants(16));
+    expect(ms).toHaveLength(30);
+    const wb = ms.filter((m) => m.groupLabel === WINNERS_BRACKET_LABEL);
+    const lb = ms.filter((m) => m.groupLabel === LOSERS_BRACKET_LABEL);
+    expect(wb).toHaveLength(15);
+    expect(lb).toHaveLength(14);
+  });
+
+  it('seeds WB-R1 actual participants and leaves later rounds empty', () => {
+    const ms = generateDoubleEliminationBracket(makeParticipants(4));
+    const wbR1 = ms.filter(
+      (m) => m.groupLabel === WINNERS_BRACKET_LABEL && m.round === 1
+    );
+    expect(wbR1).toHaveLength(2);
+    for (const m of wbR1) {
+      expect(m.participantAId).not.toBeNull();
+      expect(m.participantBId).not.toBeNull();
+    }
+    // WB-Final and LB matches start empty.
+    const wbFinal = ms.find(
+      (m) => m.groupLabel === WINNERS_BRACKET_LABEL && m.round === 2
+    )!;
+    expect(wbFinal.participantAId).toBeNull();
+    expect(wbFinal.participantBId).toBeNull();
+  });
+
+  it('wires WB-R1 losers to LB-R1 with adjacent slot routing', () => {
+    const ms = generateDoubleEliminationBracket(makeParticipants(4));
+    const wbR1 = ms
+      .filter((m) => m.groupLabel === WINNERS_BRACKET_LABEL && m.round === 1)
+      .sort((a, b) => a.indexInRound - b.indexInRound);
+    // Both WB-R1 losers feed the same LB-R1 match (indexInRound=0), with
+    // M0 → slot A and M1 → slot B.
+    expect(wbR1[0].loserDestGroup).toBe(LOSERS_BRACKET_LABEL);
+    expect(wbR1[0].loserDestRound).toBe(1);
+    expect(wbR1[0].loserDestIndex).toBe(0);
+    expect(wbR1[0].loserDestSlot).toBe('A');
+    expect(wbR1[1].loserDestSlot).toBe('B');
+  });
+
+  it('routes WB-Final winner to GF slot A and LB-Final winner to GF slot B', () => {
+    const ms = generateDoubleEliminationBracket(makeParticipants(8));
+    const wbFinal = ms.find(
+      (m) => m.groupLabel === WINNERS_BRACKET_LABEL && m.round === 3
+    )!;
+    const lbFinal = ms.find(
+      // For 8 teams, LB-Final is the last LB round (= 4).
+      (m) => m.groupLabel === LOSERS_BRACKET_LABEL && m.round === 4
+    )!;
+    expect(wbFinal.winnerDestGroup).toBe(GRAND_FINAL_LABEL);
+    expect(wbFinal.winnerDestSlot).toBe('A');
+    expect(lbFinal.winnerDestGroup).toBe(GRAND_FINAL_LABEL);
+    expect(lbFinal.winnerDestSlot).toBe('B');
+  });
+
+  it('routes WB-Final loser to LB-Final', () => {
+    const ms = generateDoubleEliminationBracket(makeParticipants(8));
+    const wbFinal = ms.find(
+      (m) => m.groupLabel === WINNERS_BRACKET_LABEL && m.round === 3
+    )!;
+    expect(wbFinal.loserDestGroup).toBe(LOSERS_BRACKET_LABEL);
+    expect(wbFinal.loserDestRound).toBe(4); // LB-Final round for 8-team
+    expect(wbFinal.loserDestIndex).toBe(0);
   });
 });
 

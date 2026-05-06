@@ -1,6 +1,7 @@
 import type { MatchStage, Participant, Phase } from '@/types/tournament';
 
 import {
+  generateDoubleEliminationBracket,
   generateGroupStageMatches,
   generatePlacementPlayoffPlaceholders,
   generateRoundRobinMatches,
@@ -120,6 +121,19 @@ function matchesForPhase(
         stage,
       }));
     }
+
+    case 'double_elimination': {
+      // DE only supported as a standalone first phase in the initial release.
+      // Validation rejects DE as a non-first phase, so isFirstPhase is true.
+      if (!isFirstPhase) {
+        throw new Error('Double elimination must be the first phase.');
+      }
+      return generateDoubleEliminationBracket(participants).map((m) => ({
+        ...m,
+        stage,
+        groupLabel: m.groupLabel ?? null,
+      }));
+    }
   }
 }
 
@@ -136,6 +150,10 @@ export function computeMinParticipantsForPhases(phases: Phase[]): number {
   let formatMin = 2;
   if (first.format === 'round_robin' && first.groupCount > 1) {
     formatMin = first.groupCount * 2;
+  } else if (first.format === 'double_elimination') {
+    // DE requires a power-of-two count in [4, 16]. The minimum is 4 — UI
+    // surfaces this so the user can't generate an empty bracket.
+    formatMin = 4;
   }
 
   // First phase must produce enough qualifiers for the next phase to fill.

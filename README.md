@@ -17,7 +17,7 @@
 
 ### Recursos
 
-- 🏆 **Seis formatos**: Mata-mata, Pontos corridos, Grupos + Mata-mata, Liga + Playoffs (vôlei), **Copa do Mundo** (8 grupos × 4 → R16 → quartas → semis → final + 3º) e **Personalizado** (compõe fases livremente)
+- 🏆 **Sete formatos**: Mata-mata, **Dupla eliminação** (WB + LB + grande final), Pontos corridos, Grupos + Mata-mata, Liga + Playoffs (vôlei), **Copa do Mundo** (8 grupos × 4 → R16 → quartas → semis → final + 3º) e **Personalizado** (compõe fases livremente)
 - 🛠️ Builder de torneio personalizado: 1–2 fases, escolhe formato, **até 8 grupos**, ida-e-volta, classificados, regra de pontuação por fase e disputa de 3º lugar opcional
 - ⚖️ **Pontuação configurável**: estilo futebol (V3/E1/D0) ou vôlei oficial (3-0/3-1 → 3 / 3-2 → 2-1 / 0-3 → 0)
 - 🥇 **Critério de desempate por confronto direto** (head-to-head) — quando há empate de pontos, mini-tabela entre os times empatados decide
@@ -133,7 +133,7 @@ npm run typecheck
 
 ### Features
 
-- 🏆 **Six formats**: Single Elimination, Round Robin, Groups + Knockout, League + Playoffs (volleyball), **World Cup** (8 groups × 4 → R16 → QF → SF → Final + 3rd) and **Custom** (compose phases freely)
+- 🏆 **Seven formats**: Single Elimination, **Double Elimination** (WB + LB + grand final), Round Robin, Groups + Knockout, League + Playoffs (volleyball), **World Cup** (8 groups × 4 → R16 → QF → SF → Final + 3rd) and **Custom** (compose phases freely)
 - 🛠️ Custom tournament builder: 1–2 phases, configurable format, **up to 8 groups**, home-and-away, qualifiers, per-phase scoring rule and optional 3rd-place playoff
 - ⚖️ **Configurable scoring**: football-style (W3/D1/L0) or volleyball (3-0/3-1 → 3 / 3-2 → 2-1 / 0-3 → 0)
 - 🥇 **Head-to-head tiebreaker** — when teams tie on points, a mini-table among them decides the order

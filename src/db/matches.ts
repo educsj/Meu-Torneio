@@ -32,6 +32,11 @@ interface MatchRow {
   score_b: number | null;
   winner_id: number | null;
   next_match_id: number | null;
+  loser_next_match_id: number | null;
+  /** v8 (DE only). When set, overrides the "siblings sorted by id" rule
+   * used by single-elim winner propagation. */
+  next_slot: string | null;
+  loser_next_slot: string | null;
   scheduled_at: string | null;
   location: string | null;
   group_label: string | null;
@@ -51,6 +56,7 @@ function rowToMatch(row: MatchRow): Match {
     scoreB: row.score_b,
     winnerId: row.winner_id,
     nextMatchId: row.next_match_id,
+    loserNextMatchId: row.loser_next_match_id,
     scheduledAt: row.scheduled_at,
     location: row.location,
     groupLabel: row.group_label,
@@ -64,8 +70,8 @@ export async function listMatches(tournamentId: number): Promise<Match[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<MatchRow>(
     `SELECT id, tournament_id, round, participant_a_id, participant_b_id,
-            score_a, score_b, winner_id, next_match_id, scheduled_at, location,
-            group_label, stage, phase_id, walkover
+            score_a, score_b, winner_id, next_match_id, loser_next_match_id,
+            scheduled_at, location, group_label, stage, phase_id, walkover
      FROM matches
      WHERE tournament_id = ?
      ORDER BY stage, round, id;`,
@@ -124,8 +130,17 @@ export async function generateBracketForTournament(
 
     // Group/knockout-aware insertion: insert highest round per stage first
     // so earlier rounds within the same stage know the next match id.
+    // Key includes groupLabel because double elimination can have multiple
+    // matches sharing the same (stage, round, indexInRound) coordinate but
+    // distinguished by WB / LB / GF.
     const stages: MatchStage[] = ['main', 'group', 'knockout'];
-    const insertedIdByKey = new Map<string, number>(); // `${stage}-${round}-${idx}`
+    const insertedIdByKey = new Map<string, number>();
+    const keyOf = (
+      stage: MatchStage | string,
+      groupLabel: string | null | undefined,
+      round: number,
+      idx: number
+    ) => `${stage}-${groupLabel ?? ''}-${round}-${idx}`;
 
     for (const stage of stages) {
       const stageMatches = bracket.filter(
@@ -138,10 +153,13 @@ export async function generateBracketForTournament(
           .filter((m) => m.round === r)
           .sort((a, b) => a.indexInRound - b.indexInRound);
         for (const m of inRound) {
+          // Legacy same-group nextRoundIndex still works for SE / groups+SE.
+          // DE matches use winnerDest* (resolved in the post-pass below) and
+          // leave nextRoundIndex null.
           const nextMatchId =
             m.nextRoundIndex !== null
               ? (insertedIdByKey.get(
-                  `${stage}-${m.round + 1}-${m.nextRoundIndex}`
+                  keyOf(stage, m.groupLabel, m.round + 1, m.nextRoundIndex)
                 ) ?? null)
               : null;
           const result = await db.runAsync(
@@ -162,8 +180,50 @@ export async function generateBracketForTournament(
             ]
           );
           insertedIdByKey.set(
-            `${stage}-${m.round}-${m.indexInRound}`,
+            keyOf(stage, m.groupLabel, m.round, m.indexInRound),
             result.lastInsertRowId
+          );
+        }
+      }
+    }
+
+    // Cross-group destinations (double elimination): now that every match
+    // has an id, wire next_match_id + next_slot and loser_next_match_id +
+    // loser_next_slot for any match that declared winnerDest* / loserDest*.
+    for (const m of bracket) {
+      if (!m.winnerDestGroup && !m.loserDestGroup) continue;
+      const stage = m.stage ?? 'main';
+      const myId = insertedIdByKey.get(
+        keyOf(stage, m.groupLabel, m.round, m.indexInRound)
+      );
+      if (!myId) continue;
+      if (
+        m.winnerDestGroup &&
+        m.winnerDestRound != null &&
+        m.winnerDestIndex != null
+      ) {
+        const targetId = insertedIdByKey.get(
+          keyOf(stage, m.winnerDestGroup, m.winnerDestRound, m.winnerDestIndex)
+        );
+        if (targetId) {
+          await db.runAsync(
+            'UPDATE matches SET next_match_id = ?, next_slot = ? WHERE id = ?;',
+            [targetId, m.winnerDestSlot ?? null, myId]
+          );
+        }
+      }
+      if (
+        m.loserDestGroup &&
+        m.loserDestRound != null &&
+        m.loserDestIndex != null
+      ) {
+        const targetId = insertedIdByKey.get(
+          keyOf(stage, m.loserDestGroup, m.loserDestRound, m.loserDestIndex)
+        );
+        if (targetId) {
+          await db.runAsync(
+            'UPDATE matches SET loser_next_match_id = ?, loser_next_slot = ? WHERE id = ?;',
+            [targetId, m.loserDestSlot ?? null, myId]
           );
         }
       }
@@ -180,7 +240,9 @@ export async function generateBracketForTournament(
       .sort((a, b) => a.indexInRound - b.indexInRound);
     for (const m of seByes) {
       if (m.nextRoundIndex === null) continue;
-      const nextId = insertedIdByKey.get(`main-2-${m.nextRoundIndex}`);
+      const nextId = insertedIdByKey.get(
+        keyOf('main', m.groupLabel, 2, m.nextRoundIndex)
+      );
       if (!nextId) continue;
       const slot =
         m.indexInRound % 2 === 0 ? 'participant_a_id' : 'participant_b_id';
@@ -240,7 +302,8 @@ export async function setMatchScore(
   const db = await getDatabase();
   const match = await db.getFirstAsync<MatchRow>(
     `SELECT id, tournament_id, round, participant_a_id, participant_b_id,
-            score_a, score_b, winner_id, next_match_id, scheduled_at, location
+            score_a, score_b, winner_id, next_match_id, loser_next_match_id,
+            next_slot, loser_next_slot, scheduled_at, location
      FROM matches WHERE id = ?;`,
     [matchId]
   );
@@ -271,6 +334,7 @@ export async function setMatchScore(
     );
     await propagateWinnerToNextMatch(match, winnerId);
     await propagateLoserToThirdPlace(match, loserId);
+    await propagateLoserToLoserNext(match, loserId);
   });
 }
 
@@ -299,7 +363,8 @@ export async function clearMatchScore(matchId: number): Promise<void> {
   const db = await getDatabase();
   const match = await db.getFirstAsync<MatchRow>(
     `SELECT id, tournament_id, round, participant_a_id, participant_b_id,
-            score_a, score_b, winner_id, next_match_id, scheduled_at, location
+            score_a, score_b, winner_id, next_match_id, loser_next_match_id,
+            next_slot, loser_next_slot, scheduled_at, location
      FROM matches WHERE id = ?;`,
     [matchId]
   );
@@ -312,6 +377,7 @@ export async function clearMatchScore(matchId: number): Promise<void> {
     );
     await propagateWinnerToNextMatch(match, null);
     await propagateLoserToThirdPlace(match, null);
+    await propagateLoserToLoserNext(match, null);
   });
 }
 
@@ -330,18 +396,48 @@ async function propagateWinnerToNextMatch(
 ): Promise<void> {
   if (match.next_match_id == null) return;
   const db = await getDatabase();
-  const siblings = await db.getAllAsync<{ id: number }>(
-    'SELECT id FROM matches WHERE next_match_id = ? AND round = ? ORDER BY id ASC;',
-    [match.next_match_id, match.round]
-  );
-  const slotIsA = siblings.length > 0 && siblings[0].id === match.id;
-  const slotCol = slotIsA ? 'participant_a_id' : 'participant_b_id';
+  // DE matches store an explicit next_slot at generation time; fall back to
+  // the legacy "siblings sorted by id, smaller-id → slot A" rule for SE.
+  let slotCol: 'participant_a_id' | 'participant_b_id';
+  if (match.next_slot === 'A' || match.next_slot === 'B') {
+    slotCol = match.next_slot === 'A' ? 'participant_a_id' : 'participant_b_id';
+  } else {
+    const siblings = await db.getAllAsync<{ id: number }>(
+      'SELECT id FROM matches WHERE next_match_id = ? AND round = ? ORDER BY id ASC;',
+      [match.next_match_id, match.round]
+    );
+    const slotIsA = siblings.length > 0 && siblings[0].id === match.id;
+    slotCol = slotIsA ? 'participant_a_id' : 'participant_b_id';
+  }
 
   await db.runAsync(
     `UPDATE matches
      SET ${slotCol} = ?, score_a = NULL, score_b = NULL, winner_id = NULL
      WHERE id = ?;`,
     [newWinnerId, match.next_match_id]
+  );
+}
+
+/**
+ * Double-elimination loser propagation: when a WB match has a recorded
+ * loser, drop them into the LB slot that was wired up at generation time.
+ * No-op for matches without an explicit loser destination (i.e. anything
+ * outside DE; the SE 3rd-place playoff uses its own dedicated function).
+ */
+async function propagateLoserToLoserNext(
+  match: MatchRow,
+  newLoserId: number | null
+): Promise<void> {
+  if (match.loser_next_match_id == null) return;
+  if (match.loser_next_slot !== 'A' && match.loser_next_slot !== 'B') return;
+  const db = await getDatabase();
+  const slotCol =
+    match.loser_next_slot === 'A' ? 'participant_a_id' : 'participant_b_id';
+  await db.runAsync(
+    `UPDATE matches
+     SET ${slotCol} = ?, score_a = NULL, score_b = NULL, winner_id = NULL
+     WHERE id = ?;`,
+    [newLoserId, match.loser_next_match_id]
   );
 }
 

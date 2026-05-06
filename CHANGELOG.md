@@ -9,6 +9,12 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ### Added · Adicionado (mais recente / most recent)
 
+#### Dupla eliminação / Double elimination
+
+- **Formato `double_elimination`** — chave de vencedores (WB) + chave de perdedores (LB) + grande final. Cada perdedor da WB é propagado automaticamente para o slot correto da LB; perdedor da LB está eliminado. Suporte inicial para 4, 8 e 16 times. (Schema v8: nova coluna `loser_next_match_id` + slots explícitos.) / **`double_elimination` format** — winners + losers brackets with a single grand final. WB losers auto-drop to the right LB slot; LB losers are out. Initial release supports 4, 8, 16-team brackets (schema v8 adds `loser_next_match_id` + explicit slot columns).
+- **Tela de partidas com seções WB / LB / Grande Final** — cada bracket tem rótulo próprio e ordenação de rodadas independente. Disponível tanto no preset top-level quanto no construtor custom. / **Matches screen rendering with WB / LB / GF sections** — each bracket gets its own labeled block.
+- **Limitações desta release** (potenciais melhorias futuras): sem **bracket reset** (se o time da LB ganhar a grande final, ele leva o título em uma única partida — o reformat profissional teria uma 2ª partida); sem **árvore visual** (ela continua só nos formatos single-elim por enquanto); chave dupla cap em 16 times. / **Initial-release limitations**: no bracket reset (single-match grand final); no visual tree for DE yet; capped at 16 teams.
+
 #### Formatos com mais flexibilidade / More flexible formats
 
 - **Até 8 grupos no construtor custom** (era 4) — desbloqueia composições estilo Champions League / Copa do Mundo. Quando a próxima fase é mata-mata, o número de classificados é derivado automaticamente (top-2 de cada grupo) e exibido como campo somente-leitura, evitando configurações inválidas. Para liga única → mata-mata, o picker de classificados virou um toggle entre 2/4/8/16 (potências de 2 válidas). / **Up to 8 groups in the custom builder** (was 4) — unlocks Champions League / World Cup-style shapes. Qualifiers auto-derive from group count when the next phase is single-elim and lock to {2,4,8,16} otherwise.

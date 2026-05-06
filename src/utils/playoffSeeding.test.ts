@@ -37,6 +37,7 @@ function m(
             ? b
             : null,
     nextMatchId: null,
+    loserNextMatchId: null,
     scheduledAt: null,
     location: null,
     groupLabel: options?.groupLabel ?? null,

@@ -1,5 +1,6 @@
 export type TournamentType =
   | 'single_elimination'
+  | 'double_elimination'
   | 'round_robin'
   | 'groups_knockout'
   | 'league_playoff'
@@ -34,6 +35,12 @@ export interface Match {
   scoreB: number | null;
   winnerId: number | null;
   nextMatchId: number | null;
+  /**
+   * Double-elimination only: where the LOSER of this match drops to.
+   * Null for any non-DE match (and for terminal DE matches like the
+   * grand final where the loser is simply eliminated).
+   */
+  loserNextMatchId: number | null;
   scheduledAt: string | null;
   location: string | null;
   groupLabel: string | null;
@@ -59,6 +66,13 @@ export interface Match {
  */
 export type PhaseFormat =
   | 'single_elimination'
+  /**
+   * Double elimination: every team has to lose twice. Winners bracket (WB)
+   * plays single-elim; each WB loser drops into the losers bracket (LB);
+   * the WB and LB champions meet in a single grand final. Initial release
+   * supports 4/8/16-team brackets without a bracket-reset rematch.
+   */
+  | 'double_elimination'
   | 'round_robin'
   /**
    * Parallel placement matches: top-K seeds (K even) play head-to-head.

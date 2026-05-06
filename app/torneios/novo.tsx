@@ -251,6 +251,8 @@ function formatErrors(
           return t('phaseBuilder.errors.singleElimMultiGroupUnsupported');
         case 'second_phase_must_not_be_round_robin':
           return t('phaseBuilder.errors.secondPhaseMustNotBeRoundRobin');
+        case 'double_elim_must_be_standalone':
+          return t('phaseBuilder.errors.doubleElimMustBeStandalone');
       }
     })
     .join('\n');

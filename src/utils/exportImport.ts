@@ -66,6 +66,16 @@ export interface TournamentBackup {
     winnerLocalId: number | null;
     /** localId references into matches[].localId. */
     nextMatchLocalId: number | null;
+    /** v8 (double elimination): localId of the LB/GF match the loser drops
+     * to. Absent on v2 backups → import treats as null (legacy formats had
+     * no loser propagation). */
+    loserNextMatchLocalId?: number | null;
+    /** v8 (double elimination): explicit 'A' or 'B' slot in next-match /
+     * loser-next-match. Required for DE because cross-group propagation
+     * has no clean "siblings sorted by id" rule. Absent on pre-v8 backups
+     * → import leaves NULL and propagation falls back to siblings logic. */
+    nextSlot?: 'A' | 'B' | null;
+    loserNextSlot?: 'A' | 'B' | null;
     /** localId references into phases[].localId. v2+; absent on v1. */
     phaseLocalId?: number | null;
     scheduledAt: string | null;
@@ -140,6 +150,7 @@ export function serializeTournament(
       scoreB: m.scoreB,
       winnerLocalId: m.winnerId,
       nextMatchLocalId: m.nextMatchId,
+      loserNextMatchLocalId: m.loserNextMatchId,
       phaseLocalId: m.phaseId,
       scheduledAt: m.scheduledAt,
       location: m.location,

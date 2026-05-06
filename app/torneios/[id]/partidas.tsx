@@ -8,7 +8,12 @@ import { Screen } from '@/components/ui/Screen';
 import { listParticipants } from '@/db/participants';
 import { useThemeIcon } from '@/hooks/useThemeIcon';
 import { useTranslation } from '@/i18n/useTranslation';
-import { THIRD_PLACE_LABEL } from '@/utils/bracket';
+import {
+  GRAND_FINAL_LABEL,
+  LOSERS_BRACKET_LABEL,
+  THIRD_PLACE_LABEL,
+  WINNERS_BRACKET_LABEL,
+} from '@/utils/bracket';
 import { useMatchesStore } from '@/stores/useMatchesStore';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
 import type { Match, Participant } from '@/types/tournament';
@@ -33,6 +38,7 @@ export default function MatchesScreen() {
     s.tournaments.find((tt) => tt.id === tournamentId)
   );
   const isSingleElim = tournament?.type === 'single_elimination';
+  const isDoubleElim = tournament?.type === 'double_elimination';
   const isRoundRobin = tournament?.type === 'round_robin';
   const isGroupsKnockout = tournament?.type === 'groups_knockout';
   const isLeaguePlayoff = tournament?.type === 'league_playoff';
@@ -118,6 +124,27 @@ export default function MatchesScreen() {
 
   const thirdPlaceMatch = useMemo(
     () => matches.find((m) => m.groupLabel === THIRD_PLACE_LABEL) ?? null,
+    [matches]
+  );
+
+  // Double elimination: split matches by their bracket section so the UI
+  // can render WB / LB / GF as labelled blocks instead of one big "rounds".
+  const wbMatches = useMemo(
+    () =>
+      matches
+        .filter((m) => m.groupLabel === WINNERS_BRACKET_LABEL)
+        .sort((a, b) => a.round - b.round || a.id - b.id),
+    [matches]
+  );
+  const lbMatches = useMemo(
+    () =>
+      matches
+        .filter((m) => m.groupLabel === LOSERS_BRACKET_LABEL)
+        .sort((a, b) => a.round - b.round || a.id - b.id),
+    [matches]
+  );
+  const grandFinalMatch = useMemo(
+    () => matches.find((m) => m.groupLabel === GRAND_FINAL_LABEL) ?? null,
     [matches]
   );
 
@@ -213,6 +240,81 @@ export default function MatchesScreen() {
           <Text className="mt-1 text-center text-sm text-slate-600 dark:text-slate-400">
             {t('matches.noMatchesYetDescription')}
           </Text>
+        </View>
+      ) : isDoubleElim ? (
+        <View className="mt-4">
+          {/* Winners bracket */}
+          {wbMatches.length > 0 ? (
+            <View className="mb-6">
+              <Text className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('matches.winnersBracket')}
+              </Text>
+              {groupByRound(wbMatches).map(([round, roundMatches]) => (
+                <View key={round} className="mb-4">
+                  <Text className="mb-2 text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    {roundLabel(
+                      round,
+                      Math.max(...wbMatches.map((m) => m.round)),
+                      t
+                    )}
+                  </Text>
+                  <View className="gap-2">
+                    {roundMatches.map((m, idx) => (
+                      <MatchCard
+                        key={m.id}
+                        match={m}
+                        index={idx}
+                        participantsById={participantsById}
+                        onPress={() => setEditingMatchId(m.id)}
+                      />
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {/* Losers bracket */}
+          {lbMatches.length > 0 ? (
+            <View className="mb-6">
+              <Text className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('matches.losersBracket')}
+              </Text>
+              {groupByRound(lbMatches).map(([round, roundMatches]) => (
+                <View key={round} className="mb-4">
+                  <Text className="mb-2 text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    {t('matches.round', { n: round })}
+                  </Text>
+                  <View className="gap-2">
+                    {roundMatches.map((m, idx) => (
+                      <MatchCard
+                        key={m.id}
+                        match={m}
+                        index={idx}
+                        participantsById={participantsById}
+                        onPress={() => setEditingMatchId(m.id)}
+                      />
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {/* Grand final */}
+          {grandFinalMatch ? (
+            <View className="mb-6">
+              <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('matches.grandFinal')}
+              </Text>
+              <MatchCard
+                match={grandFinalMatch}
+                index={0}
+                participantsById={participantsById}
+                onPress={() => setEditingMatchId(grandFinalMatch.id)}
+              />
+            </View>
+          ) : null}
         </View>
       ) : isRoundRobin ? (
         <View className="mt-4">

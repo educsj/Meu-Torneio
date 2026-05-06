@@ -4,7 +4,7 @@ import type {
   TournamentStatus,
   TournamentType,
 } from '@/types/tournament';
-import { THIRD_PLACE_LABEL } from './bracket';
+import { GRAND_FINAL_LABEL, THIRD_PLACE_LABEL } from './bracket';
 
 /** Subset of Match needed to compute status — keeps callers DB-agnostic. */
 export interface StatusInputMatch {
@@ -52,6 +52,15 @@ export function computeTournamentStatus(
       (m) => m.nextMatchId == null && !isThirdPlace(m)
     );
     if (final && final.winnerId != null) return 'finished';
+    return anyPlayed ? 'ongoing' : 'draft';
+  }
+
+  if (type === 'double_elimination') {
+    // The grand final is the only terminal match in DE — it's marked with
+    // groupLabel='GF' at generation time. LB losers and the WB-Final loser
+    // also have nextMatchId=null but they're not the deciding match.
+    const grandFinal = matches.find((m) => m.groupLabel === GRAND_FINAL_LABEL);
+    if (grandFinal && grandFinal.winnerId != null) return 'finished';
     return anyPlayed ? 'ongoing' : 'draft';
   }
 

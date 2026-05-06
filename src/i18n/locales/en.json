@@ -36,6 +36,7 @@
     "type": "Format",
     "types": {
       "singleElimination": "Single Elimination",
+      "doubleElimination": "Double Elimination",
       "roundRobin": "Round Robin",
       "groupsKnockout": "Groups + Knockout",
       "leaguePlayoff": "League + Playoffs",
@@ -44,6 +45,7 @@
     },
     "typesDescription": {
       "singleElimination": "Lose once, you're out.",
+      "doubleElimination": "Double elimination: a loss drops you to the losers bracket; you're only out after a second loss. 4, 8, or 16 teams.",
       "roundRobin": "Everyone plays everyone. Most points wins.",
       "groupsKnockout": "Group stage followed by knockout.",
       "leaguePlayoff": "Home-and-away round-robin with volleyball scoring. Top 4 play the final and 3rd-place match.",
@@ -135,6 +137,9 @@
     "groupStage": "Group stage",
     "leaguePhase": "League phase",
     "thirdPlace": "3rd-place match",
+    "winnersBracket": "Winners bracket",
+    "losersBracket": "Losers bracket",
+    "grandFinal": "Grand final",
     "noMatchesYet": "No matches generated yet.",
     "noMatchesYetDescription": "Go back to the tournament and tap \"Generate bracket\".",
     "onlySingleEliminationSupported": "We only generate brackets for Single Elimination for now.",
@@ -218,6 +223,7 @@
     "formats": {
       "roundRobin": "League",
       "singleElimination": "Knockout",
+      "doubleElimination": "Double elimination",
       "placementPlayoff": "Playoffs"
     },
     "legsLabel": "Legs per match-up",
@@ -240,7 +246,8 @@
       "qualifiersMustBeEven": "Playoffs need an even number of qualifiers ({{got}} is odd).",
       "singleElimQualifiersUnsupported": "Knockout accepts 2, 4, 8 or 16 qualifiers (you set {{got}}).",
       "singleElimMultiGroupUnsupported": "Multi-group → knockout requires an even group count and qualifiers = 2× groups (top-2 from each).",
-      "secondPhaseMustNotBeRoundRobin": "The second phase must be Knockout or Playoffs."
+      "secondPhaseMustNotBeRoundRobin": "The second phase must be Knockout or Playoffs.",
+      "doubleElimMustBeStandalone": "Double elimination must be the only phase of the tournament."
     }
   }
 }

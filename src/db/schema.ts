@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 /**
  * Base schema — idempotent (CREATE TABLE IF NOT EXISTS).
@@ -75,4 +75,15 @@ export const MATCHES_EXTRA_COLUMNS: Record<string, string> = {
   /* v6: walkover flag. 0/1 boolean — true when the match was decided by
      forfeit; false otherwise. Existing matches default to 0. */
   walkover: `ALTER TABLE matches ADD COLUMN walkover INTEGER NOT NULL DEFAULT 0;`,
+  /* v8: where the LOSER of this match drops to (double-elimination only).
+     ON DELETE SET NULL keeps history when a match is deleted. Null for any
+     non-DE match. */
+  loser_next_match_id: `ALTER TABLE matches ADD COLUMN loser_next_match_id INTEGER REFERENCES matches(id) ON DELETE SET NULL;`,
+  /* v8: explicit slot ('A' or 'B') the winner / loser fills in the next
+     match. NULL falls back to the legacy "siblings sorted by id → A is
+     the smaller-id sibling" rule used by single-elim. DE matches need
+     explicit slots because winner-from-LB and loser-from-WB land in the
+     same downstream match without a clean sibling ordering. */
+  next_slot: `ALTER TABLE matches ADD COLUMN next_slot TEXT;`,
+  loser_next_slot: `ALTER TABLE matches ADD COLUMN loser_next_slot TEXT;`,
 };

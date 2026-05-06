@@ -21,6 +21,7 @@ interface Props {
 
 const TYPE_LABEL_KEY: Record<TournamentType, string> = {
   single_elimination: 'singleElimination',
+  double_elimination: 'doubleElimination',
   round_robin: 'roundRobin',
   groups_knockout: 'groupsKnockout',
   league_playoff: 'leaguePlayoff',

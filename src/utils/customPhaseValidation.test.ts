@@ -4,6 +4,19 @@ import type { CustomPhaseInput } from '@/types/tournament';
 
 import { validateCustomPhases } from './customPhaseValidation';
 
+function de(overrides: Partial<CustomPhaseInput> = {}): CustomPhaseInput {
+  return {
+    name: 'Dupla eliminação',
+    format: 'double_elimination',
+    legs: 1,
+    groupCount: 1,
+    qualifiers: null,
+    scoring: 'fifa',
+    thirdPlace: false,
+    ...overrides,
+  };
+}
+
 function rr(overrides: Partial<CustomPhaseInput> = {}): CustomPhaseInput {
   return {
     name: 'Liga',
@@ -193,5 +206,18 @@ describe('validateCustomPhases', () => {
     expect(
       validateCustomPhases([rr({ legs: 2, qualifiers: 4 }), pp()])
     ).toEqual([]);
+  });
+
+  it('accepts double elimination as the only phase', () => {
+    expect(validateCustomPhases([de()])).toEqual([]);
+  });
+
+  it('rejects double elimination chained with other phases', () => {
+    expect(
+      validateCustomPhases([rr({ qualifiers: 4 }), de()])
+    ).toContainEqual({ code: 'double_elim_must_be_standalone', index: 1 });
+    expect(
+      validateCustomPhases([de({ qualifiers: 4 }), pp()])
+    ).toContainEqual({ code: 'double_elim_must_be_standalone', index: 0 });
   });
 });

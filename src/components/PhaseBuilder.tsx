@@ -26,6 +26,7 @@ const DEFAULT_PHASE: CustomPhaseInput = {
 const FORMAT_KEYS: { value: PhaseFormat; key: string }[] = [
   { value: 'round_robin', key: 'roundRobin' },
   { value: 'single_elimination', key: 'singleElimination' },
+  { value: 'double_elimination', key: 'doubleElimination' },
   { value: 'placement_playoff', key: 'placementPlayoff' },
 ];
 
