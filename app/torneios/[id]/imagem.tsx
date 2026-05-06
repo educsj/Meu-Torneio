@@ -235,17 +235,27 @@ export default function TournamentImageScreen() {
         className="flex-1"
         contentContainerClassName="px-3 pb-4"
       >
-        <View
-          className="overflow-hidden rounded-2xl"
-        >
-          {style === 'champions' && championsAvailable ? (
-            <ChampionsBracket
-              ref={captureTargetRef}
-              matches={championsMatches}
-              participantsById={participantsById}
-              title={tournament.name}
-            />
-          ) : (
+        {style === 'champions' && championsAvailable ? (
+          // Champions bracket renders at full natural width (~1000-1400px
+          // depending on the size of the bracket) — let the user pan
+          // horizontally to preview, and let captureRef record the full
+          // intrinsic width regardless of the visible viewport.
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator
+            contentContainerStyle={{ paddingHorizontal: 4 }}
+          >
+            <View className="rounded-2xl">
+              <ChampionsBracket
+                ref={captureTargetRef}
+                matches={championsMatches}
+                participantsById={participantsById}
+                title={tournament.name}
+              />
+            </View>
+          </ScrollView>
+        ) : (
+          <View className="overflow-hidden rounded-2xl">
             <ShareableTournamentSummary
               ref={captureTargetRef}
               tournament={tournament}
@@ -253,8 +263,8 @@ export default function TournamentImageScreen() {
               matches={matches}
               phases={phases}
             />
-          )}
-        </View>
+          </View>
+        )}
       </ScrollView>
 
       <View className="gap-2 border-t border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">

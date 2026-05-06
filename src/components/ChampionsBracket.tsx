@@ -17,8 +17,23 @@ const SLOT_HEIGHT = 50;
 const SLOT_WIDTH = 150;
 const COL_GAP = 40;
 const CENTER_WIDTH = 220;
+const SIDE_PADDING = 16;
 const CONNECTOR_COLOR = '#facc15'; // yellow-400 — matches the reference's lines
 const TROPHY_COLOR = '#fbbf24';
+
+/** Width the bracket needs at full size, given how many side rounds exist
+ *  per half (R1 / QF / SF). Each side round adds one slot column + one
+ *  connector. Center occupies a fixed pillar width. Used to fix the
+ *  intrinsic width of the captured view so it doesn't get squished by a
+ *  narrower parent (which would otherwise make captureRef record a
+ *  cropped image). */
+function intrinsicWidth(sideRoundCount: number): number {
+  return (
+    SIDE_PADDING * 2 +
+    sideRoundCount * 2 * (SLOT_WIDTH + COL_GAP) +
+    CENTER_WIDTH
+  );
+}
 
 interface Props {
   matches: Match[];
@@ -73,9 +88,18 @@ export const ChampionsBracket = forwardRef<View, Props>(
   // bracket's vertical extent — that's where every team is listed.
   const r1Count = sideRounds.length > 0 ? sideRounds[0].left.length : 1;
   const totalHeight = Math.max(r1Count, 2) * SLOT_HEIGHT * 1.45;
+  // Pin the captured view's width so the bracket renders at full natural
+  // size. The preview ScrollView lets the user pan; without this the
+  // parent flex would squeeze columns and captureRef would record a
+  // cropped image.
+  const contentWidth = intrinsicWidth(sideRounds.length);
 
   return (
-    <View ref={ref} collapsable={false} style={{ backgroundColor: '#0b1424' }}>
+    <View
+      ref={ref}
+      collapsable={false}
+      style={{ backgroundColor: '#0b1424', width: contentWidth }}
+    >
       <BackgroundGradient height={totalHeight + 220} />
 
       <View style={{ paddingTop: 28, paddingHorizontal: 16, paddingBottom: 24 }}>
@@ -425,59 +449,68 @@ function Connector({
   const strokeWidth = 1.5;
   const isRight = direction === 'right';
 
+  // Build a flat, deduplicated list of <Line/> children with explicit
+  // unique keys. The previous flatMap-with-filter pattern produced a
+  // sparse array (the conditional `null` for the outward stub) that
+  // React's reconciler sometimes keyed by index, leading to duplicate
+  // `.$N` keys when multiple connectors rendered in the same scope.
+  const lines: React.ReactNode[] = [];
+  for (let j = 0; j < pairs; j++) {
+    const yA = (2 * j + 0.5) * slotHeight;
+    const yB = (2 * j + 1.5) * slotHeight;
+    const yNext = (2 * j + 1) * slotHeight;
+    const x0 = isRight ? 0 : COL_GAP;
+    const xMid = halfGap;
+    const xOut = isRight ? COL_GAP : 0;
+    lines.push(
+      <Line
+        key={`p${j}-a`}
+        x1={x0}
+        y1={yA}
+        x2={xMid}
+        y2={yA}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />,
+      <Line
+        key={`p${j}-b`}
+        x1={x0}
+        y1={yB}
+        x2={xMid}
+        y2={yB}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />,
+      <Line
+        key={`p${j}-v`}
+        x1={xMid}
+        y1={yA}
+        x2={xMid}
+        y2={yB}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+    );
+    if (!isLast) {
+      // Outward stub feeding the next column. Skipped on the connector
+      // closest to the center so the final card isn't crossed.
+      lines.push(
+        <Line
+          key={`p${j}-n`}
+          x1={xMid}
+          y1={yNext}
+          x2={xOut}
+          y2={yNext}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+        />
+      );
+    }
+  }
+
   return (
     <Svg width={COL_GAP} height={totalHeight}>
-      {Array.from({ length: pairs }).flatMap((_, j) => {
-        const yA = (2 * j + 0.5) * slotHeight;
-        const yB = (2 * j + 1.5) * slotHeight;
-        const yNext = (2 * j + 1) * slotHeight;
-        // For the right side, mirror the X coordinates (start from COL_GAP).
-        const x0 = isRight ? 0 : COL_GAP;
-        const xMid = isRight ? halfGap : halfGap;
-        const xOut = isRight ? COL_GAP : 0;
-        return [
-          <Line
-            key={`a-${j}`}
-            x1={x0}
-            y1={yA}
-            x2={xMid}
-            y2={yA}
-            stroke={stroke}
-            strokeWidth={strokeWidth}
-          />,
-          <Line
-            key={`b-${j}`}
-            x1={x0}
-            y1={yB}
-            x2={xMid}
-            y2={yB}
-            stroke={stroke}
-            strokeWidth={strokeWidth}
-          />,
-          <Line
-            key={`v-${j}`}
-            x1={xMid}
-            y1={yA}
-            x2={xMid}
-            y2={yB}
-            stroke={stroke}
-            strokeWidth={strokeWidth}
-          />,
-          // Outward stub feeding the next column. On the last connector
-          // (closest to center) we skip it so the final card isn't crossed.
-          isLast ? null : (
-            <Line
-              key={`n-${j}`}
-              x1={xMid}
-              y1={yNext}
-              x2={xOut}
-              y2={yNext}
-              stroke={stroke}
-              strokeWidth={strokeWidth}
-            />
-          ),
-        ].filter(Boolean) as React.ReactNode[];
-      })}
+      {lines}
     </Svg>
   );
 }
