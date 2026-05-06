@@ -185,7 +185,7 @@
   "about": {
     "title": "About",
     "version": "Version",
-    "description": "Tournament Master is an offline-first app for managing amateur tournaments — sports or otherwise. It supports single elimination, round robin and groups + knockout formats.",
+    "description": "Run your tournaments anywhere — no internet needed. Pick the format, add the players, and enter the scores — the app builds the bracket and tracks the standings. From a Sunday kickabout to a championship with friends.",
     "openSource": "Open source project",
     "repository": "Repository",
     "developer": "Developer",
