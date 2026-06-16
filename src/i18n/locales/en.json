@@ -109,9 +109,23 @@
     "empty": "No participants yet.",
     "emptyDescription": "Add participants to see the standings.",
     "legend": "P = Played · W = Wins · D = Draws · L = Losses · GD = Goal Diff · Pts = Points",
-    "tiebreakers": "Tiebreakers: points · head-to-head · goal diff · goals for · alphabetical",
+    "tiebreakerPreset": "Tiebreaker ({{name}}): {{order}}",
     "scoringFifa": "Scoring: W → 3 · D → 1 · L → 0",
     "scoringVolleyball": "Scoring: 3-0/3-1 → 3 · 3-2 → 2-1 · 0/1-3 → 0"
+  },
+  "tiebreaker": {
+    "fifa": {
+      "name": "FIFA",
+      "order": "points · goal diff · goals for · head-to-head · alphabetical"
+    },
+    "conmebol": {
+      "name": "CONMEBOL",
+      "order": "points · head-to-head · goal diff · goals for · alphabetical"
+    },
+    "volleyball": {
+      "name": "Volleyball",
+      "order": "points · wins · set diff · sets won · head-to-head"
+    }
   },
   "matches": {
     "title": "Matches",
@@ -253,6 +267,7 @@
     "scoringLabel": "Scoring",
     "scoringFifa": "Football (W3 / D1 / L0)",
     "scoringVolleyball": "Volleyball (3 / 2 / 1 / 0)",
+    "tiebreakerLabel": "Tiebreaker",
     "addPhase": "Add phase",
     "errors": {
       "noPhases": "Add at least one phase.",

@@ -6,6 +6,7 @@ import type {
   CustomPhaseInput,
   PhaseFormat,
   ScoringRule,
+  TiebreakerPreset,
 } from '@/types/tournament';
 
 interface Props {
@@ -20,9 +21,16 @@ const DEFAULT_PHASE: CustomPhaseInput = {
   groupCount: 1,
   qualifiers: null,
   scoring: 'fifa',
+  tiebreaker: 'fifa',
   thirdPlace: false,
   bracketReset: false,
 };
+
+const TIEBREAKER_KEYS: { value: TiebreakerPreset; key: string }[] = [
+  { value: 'fifa', key: 'fifa' },
+  { value: 'conmebol', key: 'conmebol' },
+  { value: 'volleyball', key: 'volleyball' },
+];
 
 const FORMAT_KEYS: { value: PhaseFormat; key: string }[] = [
   { value: 'round_robin', key: 'roundRobin' },
@@ -88,6 +96,7 @@ export function PhaseBuilder({ value, onChange }: Props) {
         groupCount: 1,
         qualifiers: null,
         scoring: 'fifa',
+        tiebreaker: 'fifa',
         thirdPlace: false,
         bracketReset: false,
       },
@@ -189,6 +198,11 @@ export function PhaseBuilder({ value, onChange }: Props) {
                     update(index, { scoring: scoring as ScoringRule })
                   }
                 />
+                <TiebreakerPicker
+                  value={phase.tiebreaker}
+                  onChange={(tiebreaker) => update(index, { tiebreaker })}
+                  t={t}
+                />
               </>
             ) : null}
 
@@ -275,6 +289,53 @@ function FormatPicker({
           );
         })}
       </View>
+    </View>
+  );
+}
+
+function TiebreakerPicker({
+  value,
+  onChange,
+  t,
+}: {
+  value: TiebreakerPreset;
+  onChange: (v: TiebreakerPreset) => void;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  return (
+    <View className="gap-1.5">
+      <Text className="text-xs font-medium text-slate-700 dark:text-slate-300">
+        {t('phaseBuilder.tiebreakerLabel')}
+      </Text>
+      <View className="flex-row gap-2">
+        {TIEBREAKER_KEYS.map((opt) => {
+          const selected = opt.value === value;
+          return (
+            <Pressable
+              key={opt.value}
+              onPress={() => onChange(opt.value)}
+              className={`flex-1 rounded-xl border px-2 py-2 ${
+                selected
+                  ? 'border-brand-500 bg-brand-50 dark:border-brand-400 dark:bg-brand-950'
+                  : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800'
+              }`}
+            >
+              <Text
+                className={`text-center text-xs font-medium ${
+                  selected
+                    ? 'text-brand-700 dark:text-brand-200'
+                    : 'text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {t(`tiebreaker.${opt.key}.name`)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Text className="text-[11px] text-slate-500 dark:text-slate-400">
+        {t(`tiebreaker.${value}.order`)}
+      </Text>
     </View>
   );
 }
@@ -546,6 +607,7 @@ export const WORLD_CUP_PHASES: CustomPhaseInput[] = [
     groupCount: 8,
     qualifiers: 16,
     scoring: 'fifa',
+    tiebreaker: 'fifa',
     thirdPlace: false,
     bracketReset: false,
   },
@@ -556,6 +618,7 @@ export const WORLD_CUP_PHASES: CustomPhaseInput[] = [
     groupCount: 1,
     qualifiers: null,
     scoring: 'fifa',
+    tiebreaker: 'fifa',
     thirdPlace: true,
     bracketReset: false,
   },

@@ -1,4 +1,9 @@
-import type { Match, Participant, ScoringRule } from '@/types/tournament';
+import type {
+  Match,
+  Participant,
+  ScoringRule,
+  TiebreakerPreset,
+} from '@/types/tournament';
 
 export interface StandingRow {
   participantId: number;
@@ -78,30 +83,89 @@ export function pointsForMatch(
 }
 
 /**
+ * A single tiebreaker step, applied in order. 'head_to_head' builds a
+ * mini-table among the still-tied teams (mini-points → mini-goal-diff →
+ * mini-goals-for); the others are simple overall fields compared descending
+ * (except 'name', ascending). 'name' is the deterministic final fallback and
+ * is appended automatically when a preset omits it.
+ */
+export type TiebreakerCriterion =
+  | 'points'
+  | 'wins'
+  | 'goal_diff'
+  | 'goals_for'
+  | 'head_to_head'
+  | 'name';
+
+/**
+ * The criterion order behind each named preset (see TiebreakerPreset).
+ *   fifa       → points → GD → GF → head-to-head → name
+ *   conmebol   → points → head-to-head → GD → GF → name
+ *   volleyball → points → wins → set-diff → sets-won → head-to-head → name
+ *
+ * For volleyball, scoreA/scoreB are sets, so goalDiff == set-diff and
+ * goalsFor == sets won — the closest honest mapping to the FIVB criteria
+ * given we only store set tallies (not per-set points).
+ */
+export const TIEBREAKER_PRESETS: Record<
+  TiebreakerPreset,
+  TiebreakerCriterion[]
+> = {
+  fifa: ['points', 'goal_diff', 'goals_for', 'head_to_head', 'name'],
+  conmebol: ['points', 'head_to_head', 'goal_diff', 'goals_for', 'name'],
+  volleyball: [
+    'points',
+    'wins',
+    'goal_diff',
+    'goals_for',
+    'head_to_head',
+    'name',
+  ],
+};
+
+/**
+ * Order used when no tiebreaker is specified. Matches the behavior shipped
+ * before configurable tiebreakers existed (points → H2H → GD → GF → name) so
+ * existing tournaments rank identically — this is the 'conmebol' preset.
+ */
+const DEFAULT_TIEBREAKER: TiebreakerCriterion[] = TIEBREAKER_PRESETS.conmebol;
+
+function resolveCriteria(
+  tiebreaker?: TiebreakerPreset | TiebreakerCriterion[]
+): TiebreakerCriterion[] {
+  let criteria: TiebreakerCriterion[];
+  if (!tiebreaker) criteria = DEFAULT_TIEBREAKER;
+  else if (Array.isArray(tiebreaker)) criteria = tiebreaker;
+  else criteria = TIEBREAKER_PRESETS[tiebreaker] ?? DEFAULT_TIEBREAKER;
+  // Guarantee a deterministic final fallback.
+  return criteria.includes('name') ? criteria : [...criteria, 'name'];
+}
+
+/**
  * Compute a standings table from a list of matches and participants.
  *
- * Tiebreaker order:
- *   1. points desc
- *   2. head-to-head (mini-table among the points-tied teams: mini-points
- *      → mini-goal-diff → mini-goals-for)
- *   3. goal diff desc (overall)
- *   4. goals for desc (overall)
- *   5. name asc
+ * The tiebreaker order is configurable via `options.tiebreaker` — either a
+ * named preset ('fifa' | 'conmebol' | 'volleyball') or an explicit criterion
+ * list. When omitted it falls back to the legacy points → H2H → GD → GF →
+ * name order, so callers that don't pass one keep their previous behavior.
  *
- * H2H only kicks in when 2+ teams tie on points; for unique points there's
- * nothing to disambiguate. The mini-table is built from the subset of
- * matches where BOTH participants are in the tied group, so it works
- * correctly inside a multi-group tournament too.
+ * Head-to-head only kicks in when 2+ teams remain tied after the prior
+ * criteria; the mini-table is built from the subset of matches where BOTH
+ * participants are in the tied group, so it works correctly inside a
+ * multi-group tournament too.
  */
 export function computeStandings(
   matches: Match[],
   participants: Participant[],
-  options: { scoring?: ScoringRule } = {}
+  options: {
+    scoring?: ScoringRule;
+    tiebreaker?: TiebreakerPreset | TiebreakerCriterion[];
+  } = {}
 ): StandingRow[] {
   const scoring = options.scoring ?? 'fifa';
+  const criteria = resolveCriteria(options.tiebreaker);
   const baseRows = accumulateStats(matches, participants, scoring);
-  const baseSorted = sortByOverall(baseRows);
-  return applyHeadToHeadTiebreaker(baseSorted, matches, scoring);
+  return rankRows(baseRows, matches, scoring, criteria);
 }
 
 /** Walk the matches once, tally per-participant counters. Returns the
@@ -168,75 +232,113 @@ function accumulateStats(
   return [...rows.values()];
 }
 
-/** Tiebreakers without head-to-head (used both as the base sort and
- *  inside the H2H mini-table). */
-function sortByOverall(rows: StandingRow[]): StandingRow[] {
-  return [...rows].sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
-    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-    return a.name.localeCompare(b.name);
-  });
+/** Overall (non-H2H) numeric field for a criterion. Higher ranks first. */
+function fieldValue(row: StandingRow, crit: TiebreakerCriterion): number {
+  switch (crit) {
+    case 'points':
+      return row.points;
+    case 'wins':
+      return row.wins;
+    case 'goal_diff':
+      return row.goalDiff;
+    case 'goals_for':
+      return row.goalsFor;
+    default:
+      return 0;
+  }
 }
 
-/** For each consecutive run of points-tied rows, recompute the mini-table
- *  using only matches between those teams and re-rank the run. Rows in
- *  groups of size 1 are left untouched. */
-function applyHeadToHeadTiebreaker(
-  sorted: StandingRow[],
+/**
+ * Rank rows by applying the criteria in order. Each criterion sorts the
+ * current group; any sub-run still tied on that criterion is broken by the
+ * next criterion (recursively). 'head_to_head' ranks the tied group by a
+ * mini-table of the matches played among them.
+ */
+function rankRows(
+  rows: StandingRow[],
   allMatches: Match[],
-  scoring: ScoringRule
+  scoring: ScoringRule,
+  criteria: TiebreakerCriterion[]
 ): StandingRow[] {
-  const result = [...sorted];
-  let i = 0;
-  while (i < result.length) {
-    let j = i;
-    while (j + 1 < result.length && result[j + 1].points === result[i].points) {
-      j++;
+  function refine(group: StandingRow[], idx: number): StandingRow[] {
+    if (group.length <= 1) return group;
+    if (idx >= criteria.length) {
+      // Exhausted every criterion; stable, deterministic fallback by id.
+      return [...group].sort((a, b) => a.participantId - b.participantId);
     }
-    const groupSize = j - i + 1;
-    if (groupSize > 1) {
-      const tiedIds = new Set<number>();
-      const tiedParticipants: Participant[] = [];
-      for (let k = i; k <= j; k++) {
-        const row = result[k];
-        tiedIds.add(row.participantId);
-        tiedParticipants.push({
-          id: row.participantId,
-          tournamentId: 0,
-          name: row.name,
-          seed: null,
-          icon: null,
-          iconColor: null,
-        });
-      }
-      const h2hMatches = allMatches.filter(
-        (m) =>
-          m.participantAId != null &&
-          m.participantBId != null &&
-          tiedIds.has(m.participantAId) &&
-          tiedIds.has(m.participantBId)
-      );
-      if (h2hMatches.length > 0) {
-        const miniRows = accumulateStats(h2hMatches, tiedParticipants, scoring);
-        const miniSorted = sortByOverall(miniRows);
-        const rank = new Map<number, number>();
-        miniSorted.forEach((r, idx) => rank.set(r.participantId, idx));
-        const tied = result.slice(i, j + 1);
-        // Re-sort the tied group by mini-rank; rows with the same mini-rank
-        // (i.e. still tied even after H2H) keep their incoming order, which
-        // is the overall-tiebreaker order from sortByOverall.
-        tied.sort((a, b) => {
-          const ra = rank.get(a.participantId) ?? 0;
-          const rb = rank.get(b.participantId) ?? 0;
-          return ra - rb;
-        });
-        for (let k = 0; k < tied.length; k++) {
-          result[i + k] = tied[k];
-        }
-      }
+    const crit = criteria[idx];
+    if (crit === 'name') {
+      const sorted = [...group].sort((a, b) => a.name.localeCompare(b.name));
+      return partition(sorted, idx, (a, b) => a.name.localeCompare(b.name) === 0);
     }
-    i = j + 1;
+    if (crit === 'head_to_head') {
+      return headToHead(group, idx);
+    }
+    const sorted = [...group].sort(
+      (a, b) => fieldValue(b, crit) - fieldValue(a, crit)
+    );
+    return partition(
+      sorted,
+      idx,
+      (a, b) => fieldValue(a, crit) === fieldValue(b, crit)
+    );
   }
-  return result;
+
+  /** Walk a sorted group, recursing into each run the current criterion left
+   *  tied (per `equal`) with the next criterion. */
+  function partition(
+    sorted: StandingRow[],
+    idx: number,
+    equal: (a: StandingRow, b: StandingRow) => boolean
+  ): StandingRow[] {
+    const out: StandingRow[] = [];
+    let k = 0;
+    while (k < sorted.length) {
+      let j = k;
+      while (j + 1 < sorted.length && equal(sorted[j], sorted[j + 1])) j++;
+      if (j > k) out.push(...refine(sorted.slice(k, j + 1), idx + 1));
+      else out.push(sorted[k]);
+      k = j + 1;
+    }
+    return out;
+  }
+
+  function headToHead(group: StandingRow[], idx: number): StandingRow[] {
+    const tiedIds = new Set(group.map((r) => r.participantId));
+    const h2hMatches = allMatches.filter(
+      (m) =>
+        m.participantAId != null &&
+        m.participantBId != null &&
+        tiedIds.has(m.participantAId) &&
+        tiedIds.has(m.participantBId)
+    );
+    // No matches among the tied teams → can't break here; defer to next.
+    if (h2hMatches.length === 0) return refine(group, idx + 1);
+    const tiedParticipants: Participant[] = group.map((r) => ({
+      id: r.participantId,
+      tournamentId: 0,
+      name: r.name,
+      seed: null,
+      icon: null,
+      iconColor: null,
+    }));
+    const mini = accumulateStats(h2hMatches, tiedParticipants, scoring);
+    const miniById = new Map(mini.map((r) => [r.participantId, r]));
+    const miniKey = (r: StandingRow): [number, number, number] => {
+      const mr = miniById.get(r.participantId);
+      return mr ? [mr.points, mr.goalDiff, mr.goalsFor] : [0, 0, 0];
+    };
+    const sorted = [...group].sort((a, b) => {
+      const ka = miniKey(a);
+      const kb = miniKey(b);
+      return kb[0] - ka[0] || kb[1] - ka[1] || kb[2] - ka[2];
+    });
+    return partition(sorted, idx, (a, b) => {
+      const ka = miniKey(a);
+      const kb = miniKey(b);
+      return ka[0] === kb[0] && ka[1] === kb[1] && ka[2] === kb[2];
+    });
+  }
+
+  return refine(rows, 0);
 }

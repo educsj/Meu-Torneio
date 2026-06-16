@@ -5,6 +5,7 @@ import type {
   PhaseFormat,
   PhaseStatus,
   ScoringRule,
+  TiebreakerPreset,
   Tournament,
   TournamentType,
 } from '@/types/tournament';
@@ -59,6 +60,9 @@ export interface TournamentBackup {
     /** v9+: double-elimination bracket-reset flag. Pre-v9 backups omit
      * this — default to false on import. */
     bracketReset?: boolean;
+    /** v11+: tiebreaker preset. Pre-v11 backups omit this — import treats
+     * absent as 'fifa' (matching how legacy phases render). */
+    tiebreaker?: TiebreakerPreset;
   }>;
   matches: Array<{
     localId: number;
@@ -100,6 +104,11 @@ const VALID_PHASE_FORMATS: PhaseFormat[] = [
 ];
 const VALID_PHASE_STATUS: PhaseStatus[] = ['pending', 'ongoing', 'finished'];
 const VALID_SCORING: ScoringRule[] = ['fifa', 'volleyball'];
+const VALID_TIEBREAKERS: TiebreakerPreset[] = [
+  'fifa',
+  'conmebol',
+  'volleyball',
+];
 const VALID_TYPES: TournamentType[] = [
   'single_elimination',
   'round_robin',
@@ -148,6 +157,7 @@ export function serializeTournament(
       scoring: p.scoring,
       thirdPlace: p.thirdPlace,
       bracketReset: p.bracketReset,
+      tiebreaker: p.tiebreaker,
     })),
     matches: matches.map((m) => ({
       localId: m.id,
@@ -290,6 +300,17 @@ export function parseBackup(json: string): TournamentBackup {
       ) {
         throw new BackupParseError(
           `Fase #${i + 1}: pontuação inválida (${String(pp.scoring)}).`
+        );
+      }
+      // tiebreaker is optional for backwards compat with pre-v11 backups —
+      // they get 'fifa' on import. When present it must be a known preset.
+      if (
+        pp.tiebreaker != null &&
+        (typeof pp.tiebreaker !== 'string' ||
+          !VALID_TIEBREAKERS.includes(pp.tiebreaker as TiebreakerPreset))
+      ) {
+        throw new BackupParseError(
+          `Fase #${i + 1}: critério de desempate inválido (${String(pp.tiebreaker)}).`
         );
       }
     }

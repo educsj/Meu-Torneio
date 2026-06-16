@@ -121,6 +121,7 @@ export default function TournamentImageScreen() {
       const groupParticipants = participants.filter((p) => ids.has(p.id));
       const standings = computeStandings(ms, groupParticipants, {
         scoring: sourcePhase?.scoring,
+        tiebreaker: sourcePhase?.tiebreaker,
       });
       return { label, standings };
     });

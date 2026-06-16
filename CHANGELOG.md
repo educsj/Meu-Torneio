@@ -9,6 +9,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ### Added · Adicionado (mais recente / most recent)
 
+#### Critérios de desempate por fase / Per-phase tiebreakers
+
+- **Desempate configurável por fase** — toggle no construtor de fases (formato pontos corridos) entre três presets: **FIFA** (pontos → saldo → gols pró → confronto direto → ordem alfabética), **CONMEBOL** (pontos → confronto direto → saldo → gols pró → ordem alfabética) e **Vôlei** (pontos → vitórias → saldo de sets → sets pró → confronto direto). A classificação, os grupos, a imagem exportada e o chaveamento dos playoffs passam a respeitar o preset da fase de origem. (Schema v11: nova coluna `tiebreaker` em `phases`; torneios antigos preservam a ordem legada via backfill para `conmebol`.) / **Configurable tiebreaker preset per round-robin phase** — pick FIFA, CONMEBOL, or Volleyball in the phase builder. Standings, group tables, the exported image, and playoff seeding all honor the source phase's preset. Schema v11 adds a `tiebreaker` column; existing tournaments keep their legacy order (backfilled to `conmebol`).
+- **Motor de desempate generalizado** — `computeStandings` agora aceita uma ordem de critérios (preset nomeado ou lista explícita) e quebra empates recursivamente, com confronto direto montando uma mini-tabela só entre os times empatados. / **Generalized ranking engine** — `computeStandings` takes an ordered criterion list (named preset or explicit array) and breaks ties recursively; head-to-head builds a mini-table among only the tied teams.
+
 #### Ícones de participantes / Participant badges
 
 - **Catálogo de 28 ícones** + paleta de 10 cores. Cada participante pode ter um ícone (Trophy, Star, Crown, Shield, Flame, Sword, Skull, Rocket, Diamond, etc.) sobre uma cor de fundo, exibido em listas, cards de partida, árvore de chaveamento e na imagem Champions exportada. Sem ícone, o app cai pra iniciais sobre fundo neutro. (Schema v10: colunas `icon` + `icon_color` em participants, ambas nullable.) / **28-icon catalog + 10-color palette.** Each participant can pick an icon over a colored circle; renders across lists, match cards, the bracket tree, and the Champions-style export. No icon → falls back to initials on a neutral background (schema v10).

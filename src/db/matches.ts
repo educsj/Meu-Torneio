@@ -657,6 +657,7 @@ export async function seedPlayoffFromLeague(
   const sourcePhase = phases.find((p) => p.ordinal === 0);
   const seeding = computeLeaguePlayoffSeeding(leagueMatches, participants, {
     scoring: sourcePhase?.scoring,
+    tiebreaker: sourcePhase?.tiebreaker,
   });
   if (!seeding) return;
 
@@ -704,11 +705,12 @@ export async function seedKnockoutFromGroups(
       groupMatches,
       participants,
       qualifiers,
-      { scoring: sourcePhase.scoring }
+      { scoring: sourcePhase.scoring, tiebreaker: sourcePhase.tiebreaker }
     );
   } else {
     seeding = computeGroupsKnockoutSeeding(groupMatches, participants, {
       scoring: sourcePhase?.scoring,
+      tiebreaker: sourcePhase?.tiebreaker,
     });
   }
   if (!seeding) return;

@@ -111,6 +111,18 @@ export type PhaseStatus = 'pending' | 'ongoing' | 'finished';
  */
 export type ScoringRule = 'fifa' | 'volleyball';
 
+/**
+ * Named tiebreaker rule set applied to a round_robin phase's standings.
+ *
+ *   'fifa'       → points → goal diff → goals for → head-to-head → name
+ *   'conmebol'   → points → head-to-head → goal diff → goals for → name
+ *   'volleyball' → points → wins → set diff → sets won → head-to-head → name
+ *
+ * The full criterion order for each preset lives in `src/utils/standings.ts`
+ * (TIEBREAKER_PRESETS). Only meaningful for phases that produce standings.
+ */
+export type TiebreakerPreset = 'fifa' | 'conmebol' | 'volleyball';
+
 export interface Phase {
   id: number;
   tournamentId: number;
@@ -127,6 +139,12 @@ export interface Phase {
   status: PhaseStatus;
   /** Scoring system for standings. Only used for round_robin phases. */
   scoring: ScoringRule;
+  /**
+   * Tiebreaker rule set for standings. Only used for round_robin phases.
+   * Defaults to 'fifa' for tournaments created after this shipped; legacy
+   * rows fall back to the pre-existing points→H2H→GD→GF→name order.
+   */
+  tiebreaker: TiebreakerPreset;
   /**
    * single_elimination only: when true, an extra match between the two
    * semifinal losers is generated alongside the final. Requires a bracket
@@ -150,6 +168,7 @@ export interface CustomPhaseInput {
   groupCount: number;
   qualifiers: number | null;
   scoring: ScoringRule;
+  tiebreaker: TiebreakerPreset;
   thirdPlace: boolean;
   bracketReset: boolean;
 }

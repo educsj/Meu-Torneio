@@ -98,6 +98,17 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
       `ALTER TABLE phases ADD COLUMN bracket_reset INTEGER NOT NULL DEFAULT 0;`
     );
   }
+  // v11: per-phase tiebreaker preset. New phases default to 'fifa'. Existing
+  // phases are backfilled to 'conmebol' (= the legacy points→H2H→GD→GF→name
+  // order) so already-created tournaments rank exactly as before. The UPDATE
+  // runs only on the upgrade that first adds the column — once it exists this
+  // block is skipped, so it never clobbers a user's later choice.
+  if (!phaseHas.has('tiebreaker')) {
+    await db.execAsync(
+      `ALTER TABLE phases ADD COLUMN tiebreaker TEXT NOT NULL DEFAULT 'fifa';`
+    );
+    await db.execAsync(`UPDATE phases SET tiebreaker = 'conmebol';`);
+  }
 
   // v10: participants gain optional icon + icon_color (curated badge picker).
   // Default NULL so all existing participants render exactly as before.
@@ -196,8 +207,8 @@ async function backfillPhases(db: SQLite.SQLiteDatabase): Promise<void> {
       const r = await db.runAsync(
         `INSERT INTO phases
           (tournament_id, ordinal, name, format, legs, group_count, qualifiers,
-           status, scoring, third_place, bracket_reset)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+           status, scoring, third_place, bracket_reset, tiebreaker)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         [
           t.id,
           p.ordinal,
@@ -210,6 +221,9 @@ async function backfillPhases(db: SQLite.SQLiteDatabase): Promise<void> {
           p.scoring,
           p.thirdPlace ? 1 : 0,
           p.bracketReset ? 1 : 0,
+          // Legacy tournaments predate per-phase tiebreakers — keep their
+          // old ranking order (points→H2H→GD→GF→name = 'conmebol').
+          'conmebol',
         ]
       );
       ordinalToPhaseId.set(p.ordinal, r.lastInsertRowId);
@@ -248,6 +262,7 @@ interface DefaultPhase {
   groupCount: number;
   qualifiers: number | null;
   scoring: 'fifa' | 'volleyball';
+  tiebreaker: 'fifa' | 'conmebol' | 'volleyball';
   thirdPlace: boolean;
   bracketReset: boolean;
 }
@@ -268,6 +283,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           groupCount: 1,
           qualifiers: null,
           scoring: 'fifa',
+          tiebreaker: 'fifa',
           thirdPlace: false,
           bracketReset: false,
         },
@@ -282,6 +298,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           groupCount: 2,
           qualifiers: 4,
           scoring: 'fifa',
+          tiebreaker: 'fifa',
           thirdPlace: false,
           bracketReset: false,
         },
@@ -293,6 +310,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           groupCount: 1,
           qualifiers: null,
           scoring: 'fifa',
+          tiebreaker: 'fifa',
           thirdPlace: false,
           bracketReset: false,
         },
@@ -311,6 +329,8 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           // the natural default. Users wanting FIFA on this shape pick
           // "Personalizado" and configure scoring=Futebol.
           scoring: 'volleyball',
+          // Vôlei: pontos → vitórias → saldo de sets → sets pró → confronto.
+          tiebreaker: 'volleyball',
           thirdPlace: false,
           bracketReset: false,
         },
@@ -322,6 +342,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           groupCount: 1,
           qualifiers: null,
           scoring: 'fifa',
+          tiebreaker: 'fifa',
           thirdPlace: false,
           bracketReset: false,
         },
@@ -336,6 +357,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           groupCount: 1,
           qualifiers: null,
           scoring: 'fifa',
+          tiebreaker: 'fifa',
           thirdPlace: false,
           bracketReset: false,
         },
@@ -351,6 +373,7 @@ export function defaultPhasesForType(type: string): DefaultPhase[] {
           groupCount: 1,
           qualifiers: null,
           scoring: 'fifa',
+          tiebreaker: 'fifa',
           thirdPlace: false,
           bracketReset: false,
         },

@@ -4,6 +4,7 @@ import type {
   PhaseFormat,
   PhaseStatus,
   ScoringRule,
+  TiebreakerPreset,
 } from '@/types/tournament';
 
 import { defaultPhasesForType, getDatabase } from './index';
@@ -21,6 +22,7 @@ interface PhaseRow {
   scoring: string | null;
   third_place: number | null;
   bracket_reset: number | null;
+  tiebreaker: string | null;
 }
 
 function rowToPhase(row: PhaseRow): Phase {
@@ -36,6 +38,8 @@ function rowToPhase(row: PhaseRow): Phase {
     status: row.status,
     // Defensive default for very old rows that somehow predate the v5 column.
     scoring: (row.scoring as ScoringRule) ?? 'fifa',
+    // Defensive default for rows predating the v11 column.
+    tiebreaker: (row.tiebreaker as TiebreakerPreset) ?? 'fifa',
     thirdPlace: row.third_place === 1,
     bracketReset: row.bracket_reset === 1,
   };
@@ -45,7 +49,7 @@ export async function listPhases(tournamentId: number): Promise<Phase[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<PhaseRow>(
     `SELECT id, tournament_id, ordinal, name, format, legs, group_count,
-            qualifiers, status, scoring, third_place, bracket_reset
+            qualifiers, status, scoring, third_place, bracket_reset, tiebreaker
      FROM phases
      WHERE tournament_id = ?
      ORDER BY ordinal ASC;`,
@@ -77,8 +81,8 @@ export async function createDefaultPhasesForType(
     await db.runAsync(
       `INSERT INTO phases
         (tournament_id, ordinal, name, format, legs, group_count, qualifiers,
-         status, scoring, third_place, bracket_reset)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+         status, scoring, third_place, bracket_reset, tiebreaker)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       [
         tournamentId,
         p.ordinal,
@@ -91,6 +95,7 @@ export async function createDefaultPhasesForType(
         scoring,
         p.thirdPlace ? 1 : 0,
         p.bracketReset ? 1 : 0,
+        p.tiebreaker,
       ]
     );
   }
@@ -114,8 +119,8 @@ export async function createCustomPhases(
     await db.runAsync(
       `INSERT INTO phases
         (tournament_id, ordinal, name, format, legs, group_count, qualifiers,
-         status, scoring, third_place, bracket_reset)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+         status, scoring, third_place, bracket_reset, tiebreaker)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       [
         tournamentId,
         i,
@@ -128,6 +133,7 @@ export async function createCustomPhases(
         p.scoring,
         p.thirdPlace ? 1 : 0,
         p.bracketReset ? 1 : 0,
+        p.tiebreaker,
       ]
     );
   }

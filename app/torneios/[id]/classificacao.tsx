@@ -13,6 +13,7 @@ import type {
   Match,
   Participant,
   ScoringRule,
+  TiebreakerPreset,
 } from '@/types/tournament';
 import { computeStandings, type StandingRow } from '@/utils/standings';
 
@@ -32,6 +33,7 @@ export default function StandingsScreen() {
 
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [scoring, setScoring] = useState<ScoringRule>('fifa');
+  const [tiebreaker, setTiebreaker] = useState<TiebreakerPreset>('fifa');
 
   useEffect(() => {
     if (!Number.isFinite(tournamentId)) return;
@@ -46,7 +48,10 @@ export default function StandingsScreen() {
     listPhases(tournamentId).then((phases) => {
       if (cancelled) return;
       const source = phases.find((p) => p.ordinal === 0);
-      if (source) setScoring(source.scoring);
+      if (source) {
+        setScoring(source.scoring);
+        setTiebreaker(source.tiebreaker);
+      }
     });
     return () => {
       cancelled = true;
@@ -61,8 +66,8 @@ export default function StandingsScreen() {
   );
 
   const rows: StandingRow[] = useMemo(
-    () => computeStandings(leagueMatches, participants, { scoring }),
-    [leagueMatches, participants, scoring]
+    () => computeStandings(leagueMatches, participants, { scoring, tiebreaker }),
+    [leagueMatches, participants, scoring, tiebreaker]
   );
 
   return (
@@ -101,7 +106,7 @@ export default function StandingsScreen() {
       )}
 
       <View className="mt-4">
-        <Legend t={t} scoring={scoring} />
+        <Legend t={t} scoring={scoring} tiebreaker={tiebreaker} />
       </View>
     </Screen>
   );
@@ -193,9 +198,11 @@ function Cell({
 function Legend({
   t,
   scoring,
+  tiebreaker,
 }: {
   t: (key: string, options?: Record<string, unknown>) => string;
   scoring: ScoringRule;
+  tiebreaker: TiebreakerPreset;
 }) {
   const scoringKey =
     scoring === 'volleyball'
@@ -210,7 +217,10 @@ function Legend({
         {t(scoringKey)}
       </Text>
       <Text className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-        {t('standings.tiebreakers')}
+        {t('standings.tiebreakerPreset', {
+          name: t(`tiebreaker.${tiebreaker}.name`),
+          order: t(`tiebreaker.${tiebreaker}.order`),
+        })}
       </Text>
     </View>
   );

@@ -45,8 +45,9 @@ export const ShareableTournamentSummary = forwardRef<View, Props>(
     ref
   ) {
     const { t } = useTranslation();
-    const sourcePhaseScoring =
-      phases.find((p) => p.ordinal === 0)?.scoring ?? 'fifa';
+    const sourcePhase = phases.find((p) => p.ordinal === 0);
+    const sourcePhaseScoring = sourcePhase?.scoring ?? 'fifa';
+    const sourcePhaseTiebreaker = sourcePhase?.tiebreaker ?? 'fifa';
 
     const participantsById = useMemo(
       () => new Map(participants.map((p) => [p.id, p])),
@@ -74,9 +75,16 @@ export const ShareableTournamentSummary = forwardRef<View, Props>(
         showStandings
           ? computeStandings(standingsMatches, participants, {
               scoring: sourcePhaseScoring,
+              tiebreaker: sourcePhaseTiebreaker,
             })
           : [],
-      [showStandings, standingsMatches, participants, sourcePhaseScoring]
+      [
+        showStandings,
+        standingsMatches,
+        participants,
+        sourcePhaseScoring,
+        sourcePhaseTiebreaker,
+      ]
     );
 
     // Section grouping for the matches block:

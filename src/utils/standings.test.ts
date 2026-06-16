@@ -373,3 +373,52 @@ describe('computeStandings', () => {
     expect(rows[0].name).toBe('A'); // A < B alphabetically
   });
 });
+
+describe('configurable tiebreakers', () => {
+  // A and B finish tied on points (4 each). A won the head-to-head but B has
+  // the better overall goal difference — the canonical case where the FIFA
+  // and CONMEBOL orders disagree.
+  const parts = [p(1, 'A'), p(2, 'B'), p(3, 'C'), p(4, 'D'), p(5, 'E')];
+  const matches = [
+    m(1, 1, 2, 1, 0), // A beats B 1-0 (head-to-head goes to A)
+    m(2, 1, 3, 0, 0), // A draws C            → A: 4 pts, GD +1
+    m(3, 2, 4, 5, 0), // B thrashes D 5-0 (boosts B's GD)
+    m(4, 2, 5, 0, 0), // B draws E            → B: 4 pts, GD +4
+  ];
+
+  it('FIFA ranks goal difference ahead of head-to-head', () => {
+    const rows = computeStandings(matches, parts, { tiebreaker: 'fifa' });
+    expect(rows[0].name).toBe('B'); // better GD
+    expect(rows[1].name).toBe('A');
+  });
+
+  it('CONMEBOL ranks head-to-head ahead of goal difference', () => {
+    const rows = computeStandings(matches, parts, { tiebreaker: 'conmebol' });
+    expect(rows[0].name).toBe('A'); // won the direct match
+    expect(rows[1].name).toBe('B');
+  });
+
+  it('defaults to the legacy order (head-to-head before GD)', () => {
+    const rows = computeStandings(matches, parts);
+    expect(rows[0].name).toBe('A');
+    expect(rows[1].name).toBe('B');
+  });
+
+  it('honors an explicit criterion list — wins before the fallback', () => {
+    // A and B both 3 pts / GD 0 / GF 0, but A has a win and B only draws.
+    const ps = [p(1, 'A'), p(2, 'B'), p(10, 'X'), p(11, 'Y'), p(12, 'Z')];
+    const ms = [
+      m(1, 1, 10, 1, 0), // A beats X
+      m(2, 1, 11, 0, 1), // A loses to Y  → A: 3 pts, 1 win, GD 0
+      m(3, 2, 10, 0, 0), // B draws X
+      m(4, 2, 11, 0, 0), // B draws Y
+      m(5, 2, 12, 0, 0), // B draws Z     → B: 3 pts, 0 wins, GD 0
+    ];
+    const rows = computeStandings(ms, ps, {
+      tiebreaker: ['points', 'wins', 'name'],
+    });
+    const ia = rows.findIndex((r) => r.name === 'A');
+    const ib = rows.findIndex((r) => r.name === 'B');
+    expect(ia).toBeLessThan(ib);
+  });
+});

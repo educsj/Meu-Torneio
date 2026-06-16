@@ -13,6 +13,7 @@ import type {
   Match,
   Participant,
   ScoringRule,
+  TiebreakerPreset,
 } from '@/types/tournament';
 import { computeStandings, type StandingRow } from '@/utils/standings';
 
@@ -32,6 +33,7 @@ export default function GroupsScreen() {
 
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [scoring, setScoring] = useState<ScoringRule>('fifa');
+  const [tiebreaker, setTiebreaker] = useState<TiebreakerPreset>('fifa');
 
   useEffect(() => {
     if (!Number.isFinite(tournamentId)) return;
@@ -44,7 +46,10 @@ export default function GroupsScreen() {
     listPhases(tournamentId).then((phases) => {
       if (cancelled) return;
       const groupPhase = phases.find((p) => p.ordinal === 0);
-      if (groupPhase) setScoring(groupPhase.scoring);
+      if (groupPhase) {
+        setScoring(groupPhase.scoring);
+        setTiebreaker(groupPhase.tiebreaker);
+      }
     });
     return () => {
       cancelled = true;
@@ -74,11 +79,11 @@ export default function GroupsScreen() {
       return {
         label,
         matches: ms,
-        standings: computeStandings(ms, ps, { scoring }),
+        standings: computeStandings(ms, ps, { scoring, tiebreaker }),
         participantsById: byId,
       };
     });
-  }, [matches, participants, scoring]);
+  }, [matches, participants, scoring, tiebreaker]);
 
   return (
     <Screen scroll>

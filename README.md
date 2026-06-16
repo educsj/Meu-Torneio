@@ -112,9 +112,9 @@ npm run typecheck
 - [x] Aviso de re-seed antes de sobrescrever playoffs já jogados
 - [x] Brackets de mata-mata variáveis (4/8/16) saindo de liga única
 - [x] Multi-grupo → bracket grande via cross-pairing adjacente
-- [x] Testes unitários (Vitest) — atualmente 142 testes
+- [x] Testes unitários (Vitest) — atualmente 169 testes
 - [ ] 3+ fases customizadas (hoje cap em 2)
-- [ ] Tiebreakers configuráveis por fase (CONMEBOL, FIFA, vôlei…)
+- [x] Tiebreakers configuráveis por fase (FIFA, CONMEBOL, vôlei)
 - [ ] Edição de participantes após geração do bracket sem regenerar
 - [ ] Estatísticas multi-torneio (artilharia geral, defesa, etc.)
 - [ ] Polimento de empty states e loading skeletons
@@ -228,9 +228,9 @@ npm run typecheck
 - [x] Re-seed warning before overwriting already-played playoffs
 - [x] Variable knockout brackets (4/8/16) from a single league
 - [x] Multi-group → larger bracket via adjacent cross-pairing
-- [x] Unit tests (Vitest) — currently 142 tests
+- [x] Unit tests (Vitest) — currently 169 tests
 - [ ] 3+ custom phases (currently capped at 2)
-- [ ] Per-phase configurable tiebreakers (CONMEBOL, FIFA, FIVB…)
+- [x] Per-phase configurable tiebreakers (FIFA, CONMEBOL, Volleyball)
 - [ ] Edit participants after bracket generation without regenerating
 - [ ] Multi-tournament statistics (top scorer overall, etc.)
 - [ ] Empty states and loading skeleton polish

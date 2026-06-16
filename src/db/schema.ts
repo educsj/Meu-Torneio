@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;
 
 /**
  * Base schema — idempotent (CREATE TABLE IF NOT EXISTS).
@@ -41,7 +41,7 @@ export const BASE_TABLES: string[] = [
   `CREATE INDEX IF NOT EXISTS idx_matches_tournament
     ON matches(tournament_id);`,
   /* v3: phases table — see migrate(). Idempotent. v5 adds `scoring`,
-     v7 adds `third_place`, v9 adds `bracket_reset`. */
+     v7 adds `third_place`, v9 adds `bracket_reset`, v11 adds `tiebreaker`. */
   `CREATE TABLE IF NOT EXISTS phases (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tournament_id INTEGER NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
@@ -54,7 +54,8 @@ export const BASE_TABLES: string[] = [
     status TEXT NOT NULL DEFAULT 'pending',
     scoring TEXT NOT NULL DEFAULT 'fifa',
     third_place INTEGER NOT NULL DEFAULT 0,
-    bracket_reset INTEGER NOT NULL DEFAULT 0
+    bracket_reset INTEGER NOT NULL DEFAULT 0,
+    tiebreaker TEXT NOT NULL DEFAULT 'fifa'
   );`,
   `CREATE INDEX IF NOT EXISTS idx_phases_tournament
     ON phases(tournament_id);`,

@@ -1,7 +1,17 @@
-import type { Match, Participant, ScoringRule } from '@/types/tournament';
+import type {
+  Match,
+  Participant,
+  ScoringRule,
+  TiebreakerPreset,
+} from '@/types/tournament';
 
 import { bracketSeedOrder } from './bracket';
 import { computeStandings } from './standings';
+
+/** Standings options threaded through every seeding helper so the playoff /
+ *  knockout phase ranks its source league exactly as that phase's screen
+ *  does (same scoring rule and tiebreaker preset). */
+type StandingsOptions = { scoring?: ScoringRule; tiebreaker?: TiebreakerPreset };
 
 /** Pair of participant ids that should occupy slot A and slot B of a
  * knockout match. Returned by the seeding helpers so the DB layer can
@@ -23,7 +33,7 @@ export interface SlotPair {
 export function computeLeaguePlayoffSeeding(
   leagueMatches: Match[],
   participants: Participant[],
-  options: { scoring?: ScoringRule } = {}
+  options: StandingsOptions = {}
 ): SlotPair[] | null {
   const standings = computeStandings(leagueMatches, participants, options);
   if (standings.length < 4) return null;
@@ -54,7 +64,7 @@ export function computeSingleLeagueBracketSeeding(
   leagueMatches: Match[],
   participants: Participant[],
   qualifiers: number,
-  options: { scoring?: ScoringRule } = {}
+  options: StandingsOptions = {}
 ): SlotPair[] | null {
   if (
     qualifiers < 2 ||
@@ -93,7 +103,7 @@ export function computeSingleLeagueBracketSeeding(
 export function computeGroupsKnockoutSeeding(
   groupMatches: Match[],
   participants: Participant[],
-  options: { scoring?: ScoringRule } = {}
+  options: StandingsOptions = {}
 ): SlotPair[] | null {
   const groupLabels = Array.from(
     new Set(
