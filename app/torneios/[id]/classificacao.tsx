@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, ListOrdered } from 'lucide-react-native';
 
 import { Screen } from '@/components/ui/Screen';
+import { SkeletonList } from '@/components/ui/Skeleton';
 import { listParticipants } from '@/db/participants';
 import { listPhases } from '@/db/phases';
 import { useThemeIcon } from '@/hooks/useThemeIcon';
@@ -29,11 +30,16 @@ export default function StandingsScreen() {
   const matches = useMatchesStore(
     (s) => s.byTournament[tournamentId] ?? EMPTY_MATCHES
   ) as Match[];
+  const matchesLoaded = useMatchesStore(
+    (s) => s.byTournament[tournamentId] !== undefined
+  );
   const load = useMatchesStore((s) => s.load);
 
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [participantsLoaded, setParticipantsLoaded] = useState(false);
   const [scoring, setScoring] = useState<ScoringRule>('fifa');
   const [tiebreaker, setTiebreaker] = useState<TiebreakerPreset>('fifa');
+  const loading = !matchesLoaded || !participantsLoaded;
 
   useEffect(() => {
     if (!Number.isFinite(tournamentId)) return;
@@ -42,6 +48,7 @@ export default function StandingsScreen() {
     listParticipants(tournamentId).then((list) => {
       if (cancelled) return;
       setParticipants(list);
+      setParticipantsLoaded(true);
     });
     // Load the standings-producing phase to know which scoring rule to apply.
     // For all currently-supported configurations this is phase ordinal 0.
@@ -84,7 +91,11 @@ export default function StandingsScreen() {
         </Text>
       </View>
 
-      {participants.length === 0 ? (
+      {loading ? (
+        <View className="mt-4">
+          <SkeletonList rows={6} />
+        </View>
+      ) : participants.length === 0 ? (
         <View className="mt-16 items-center px-6">
           <View className="mb-4 rounded-full bg-slate-100 p-5 dark:bg-slate-800">
             <ListOrdered size={32} color="#94a3b8" />
@@ -105,9 +116,11 @@ export default function StandingsScreen() {
         </View>
       )}
 
-      <View className="mt-4">
-        <Legend t={t} scoring={scoring} tiebreaker={tiebreaker} />
-      </View>
+      {!loading ? (
+        <View className="mt-4">
+          <Legend t={t} scoring={scoring} tiebreaker={tiebreaker} />
+        </View>
+      ) : null}
     </Screen>
   );
 }

@@ -17,6 +17,9 @@ import type {
 interface TournamentsState {
   tournaments: Tournament[];
   loading: boolean;
+  /** True once the first refresh() has resolved — lets screens tell
+   *  "still loading" apart from "loaded and genuinely empty". */
+  loaded: boolean;
   error: string | null;
   refresh: () => Promise<void>;
   add: (input: {
@@ -34,14 +37,15 @@ interface TournamentsState {
 export const useTournamentsStore = create<TournamentsState>((set, get) => ({
   tournaments: [],
   loading: false,
+  loaded: false,
   error: null,
   refresh: async () => {
     set({ loading: true, error: null });
     try {
       const tournaments = await listTournaments();
-      set({ tournaments, loading: false });
+      set({ tournaments, loading: false, loaded: true });
     } catch (err) {
-      set({ loading: false, error: (err as Error).message });
+      set({ loading: false, loaded: true, error: (err as Error).message });
     }
   },
   add: async (input) => {

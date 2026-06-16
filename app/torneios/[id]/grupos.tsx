@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, Users } from 'lucide-react-native';
 
 import { Screen } from '@/components/ui/Screen';
+import { SkeletonList } from '@/components/ui/Skeleton';
 import { listParticipants } from '@/db/participants';
 import { listPhases } from '@/db/phases';
 import { useThemeIcon } from '@/hooks/useThemeIcon';
@@ -29,9 +30,13 @@ export default function GroupsScreen() {
   const matches = useMatchesStore(
     (s) => s.byTournament[tournamentId] ?? EMPTY_MATCHES
   ) as Match[];
+  const matchesLoaded = useMatchesStore(
+    (s) => s.byTournament[tournamentId] !== undefined
+  );
   const load = useMatchesStore((s) => s.load);
 
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [participantsLoaded, setParticipantsLoaded] = useState(false);
   const [scoring, setScoring] = useState<ScoringRule>('fifa');
   const [tiebreaker, setTiebreaker] = useState<TiebreakerPreset>('fifa');
 
@@ -42,6 +47,7 @@ export default function GroupsScreen() {
     listParticipants(tournamentId).then((list) => {
       if (cancelled) return;
       setParticipants(list);
+      setParticipantsLoaded(true);
     });
     listPhases(tournamentId).then((phases) => {
       if (cancelled) return;
@@ -99,7 +105,11 @@ export default function GroupsScreen() {
         </Text>
       </View>
 
-      {groupBuckets.length === 0 ? (
+      {!matchesLoaded || !participantsLoaded ? (
+        <View className="mt-4">
+          <SkeletonList rows={4} />
+        </View>
+      ) : groupBuckets.length === 0 ? (
         <View className="mt-16 items-center px-6">
           <View className="mb-4 rounded-full bg-slate-100 p-5 dark:bg-slate-800">
             <Users size={32} color="#94a3b8" />

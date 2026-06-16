@@ -9,6 +9,10 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ### Added · Adicionado (mais recente / most recent)
 
+#### Skeletons de carregamento / Loading skeletons
+
+- **Placeholders animados** enquanto os dados carregam do SQLite — a lista de torneios, classificação, partidas, chaveamento e grupos agora mostram cartões "pulsando" em vez de piscar o estado vazio antes dos dados aparecerem. Novo componente reutilizável `Skeleton` / `SkeletonList` (`src/components/ui/Skeleton.tsx`). O estado vazio só aparece depois que o carregamento conclui de fato (flag `loaded` no store de torneios; sinal "ainda não carregado" via `byTournament[id] === undefined` nas telas de partidas). / **Animated placeholders** while data loads from SQLite — tournaments list, standings, matches, bracket and groups show pulsing cards instead of flashing the empty state. New reusable `Skeleton` / `SkeletonList`. Empty states now appear only after loading truly completes.
+
 #### Critérios de desempate por fase / Per-phase tiebreakers
 
 - **Desempate configurável por fase** — toggle no construtor de fases (formato pontos corridos) entre três presets: **FIFA** (pontos → saldo → gols pró → confronto direto → ordem alfabética), **CONMEBOL** (pontos → confronto direto → saldo → gols pró → ordem alfabética) e **Vôlei** (pontos → vitórias → saldo de sets → sets pró → confronto direto). A classificação, os grupos, a imagem exportada e o chaveamento dos playoffs passam a respeitar o preset da fase de origem. (Schema v11: nova coluna `tiebreaker` em `phases`; torneios antigos preservam a ordem legada via backfill para `conmebol`.) / **Configurable tiebreaker preset per round-robin phase** — pick FIFA, CONMEBOL, or Volleyball in the phase builder. Standings, group tables, the exported image, and playoff seeding all honor the source phase's preset. Schema v11 adds a `tiebreaker` column; existing tournaments keep their legacy order (backfilled to `conmebol`).

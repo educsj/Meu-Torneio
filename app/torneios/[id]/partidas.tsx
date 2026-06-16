@@ -6,6 +6,7 @@ import { Calendar, ChevronLeft, MapPin, Trophy } from 'lucide-react-native';
 import { ParticipantBadge } from '@/components/ParticipantBadge';
 import { ScoreEntryModal } from '@/components/ScoreEntryModal';
 import { Screen } from '@/components/ui/Screen';
+import { SkeletonList } from '@/components/ui/Skeleton';
 import { listParticipants } from '@/db/participants';
 import { useThemeIcon } from '@/hooks/useThemeIcon';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -31,6 +32,9 @@ export default function MatchesScreen() {
   const matches = useMatchesStore(
     (s) => s.byTournament[tournamentId] ?? EMPTY_MATCHES
   ) as Match[];
+  const matchesLoaded = useMatchesStore(
+    (s) => s.byTournament[tournamentId] !== undefined
+  );
   const load = useMatchesStore((s) => s.load);
   const setScore = useMatchesStore((s) => s.setScore);
   const clearScore = useMatchesStore((s) => s.clearScore);
@@ -243,7 +247,11 @@ export default function MatchesScreen() {
         </Text>
       </View>
 
-      {matches.length === 0 ? (
+      {!matchesLoaded ? (
+        <View className="mt-4">
+          <SkeletonList rows={5} />
+        </View>
+      ) : matches.length === 0 ? (
         <View className="mt-16 items-center px-6">
           <View className="mb-4 rounded-full bg-slate-100 p-5 dark:bg-slate-800">
             <Trophy size={32} color="#94a3b8" />

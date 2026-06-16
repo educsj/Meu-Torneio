@@ -117,7 +117,7 @@ npm run typecheck
 - [x] Tiebreakers configuráveis por fase (FIFA, CONMEBOL, vôlei)
 - [ ] Edição de participantes após geração do bracket sem regenerar
 - [ ] Estatísticas multi-torneio (artilharia geral, defesa, etc.)
-- [ ] Polimento de empty states e loading skeletons
+- [x] Polimento de empty states e loading skeletons
 
 ### Licença
 
@@ -233,7 +233,7 @@ npm run typecheck
 - [x] Per-phase configurable tiebreakers (FIFA, CONMEBOL, Volleyball)
 - [ ] Edit participants after bracket generation without regenerating
 - [ ] Multi-tournament statistics (top scorer overall, etc.)
-- [ ] Empty states and loading skeleton polish
+- [x] Empty states and loading skeleton polish
 
 ### License
 
