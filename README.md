@@ -115,7 +115,7 @@ npm run typecheck
 - [x] Testes unitários (Vitest) — atualmente 169 testes
 - [ ] 3+ fases customizadas (hoje cap em 2)
 - [x] Tiebreakers configuráveis por fase (FIFA, CONMEBOL, vôlei)
-- [ ] Edição de participantes após geração do bracket sem regenerar
+- [x] Edição de participantes após geração do bracket sem regenerar (renome / ícone ao vivo; add / remover avisam)
 - [ ] Estatísticas multi-torneio (artilharia geral, defesa, etc.)
 - [x] Polimento de empty states e loading skeletons
 
@@ -231,7 +231,7 @@ npm run typecheck
 - [x] Unit tests (Vitest) — currently 169 tests
 - [ ] 3+ custom phases (currently capped at 2)
 - [x] Per-phase configurable tiebreakers (FIFA, CONMEBOL, Volleyball)
-- [ ] Edit participants after bracket generation without regenerating
+- [x] Edit participants after bracket generation without regenerating (rename / badge live; add / remove warn)
 - [ ] Multi-tournament statistics (top scorer overall, etc.)
 - [x] Empty states and loading skeleton polish
 

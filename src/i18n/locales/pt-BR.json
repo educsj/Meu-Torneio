@@ -189,6 +189,10 @@
     "emptyDescription": "Adicione participantes para começar a gerar as partidas.",
     "deleteTitle": "Remover participante?",
     "deleteMessage": "Tem certeza que deseja remover este participante?",
+    "deleteWhileBracketMessage": "O chaveamento já foi gerado. Remover este participante deixará os jogos dele em branco — regenere o chaveamento depois para corrigir (isso zera os placares).",
+    "bracketLockedNotice": "Chaveamento gerado. Renomear e trocar ícones é seguro e aparece na hora. Adicionar ou remover participantes exige regenerar o chaveamento (zera os placares).",
+    "addWhileBracketTitle": "Adicionar mesmo assim?",
+    "addWhileBracketMessage": "O chaveamento já foi gerado. O novo participante só entrará em jogo se você regenerar o chaveamento, o que zera os placares já lançados.",
     "count": {
       "one": "1 participante",
       "other": "{{count}} participantes"

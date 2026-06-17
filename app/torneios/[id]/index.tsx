@@ -306,7 +306,10 @@ export default function TournamentDetailScreen() {
         <Text className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           {t('tournament.participants')}
         </Text>
-        <ParticipantList tournamentId={tournamentId} />
+        <ParticipantList
+          tournamentId={tournamentId}
+          bracketGenerated={hasMatches}
+        />
       </View>
 
       <View className="mt-6">

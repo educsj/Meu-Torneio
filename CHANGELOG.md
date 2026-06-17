@@ -9,6 +9,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ### Added · Adicionado (mais recente / most recent)
 
+#### Edição de participantes pós-chaveamento / Editing participants after generation
+
+- **Renomear e trocar ícones continua livre e instantâneo** mesmo depois do chaveamento gerado — as partidas referenciam o participante por id, então o nome/ícone novo aparece em todas as telas sem regenerar nada. Um aviso no topo da lista deixa isso explícito. / **Renaming and badge edits stay free and live** after the bracket exists — matches reference participants by id, so the change shows everywhere without regenerating. A banner makes this explicit.
+- **Adicionar/remover passa a avisar** quando o chaveamento já existe: o app explica que a mudança estrutural só entra em campo regenerando o chaveamento (o que zera os placares), em vez de ignorar o novo participante ou esvaziar silenciosamente os jogos de quem foi removido. / **Adding/removing now warns** when a bracket exists — the app explains the structural change only takes effect by regenerating (which clears scores), instead of silently ignoring the newcomer or blanking a removed player's matches.
+
 #### Skeletons de carregamento / Loading skeletons
 
 - **Placeholders animados** enquanto os dados carregam do SQLite — a lista de torneios, classificação, partidas, chaveamento e grupos agora mostram cartões "pulsando" em vez de piscar o estado vazio antes dos dados aparecerem. Novo componente reutilizável `Skeleton` / `SkeletonList` (`src/components/ui/Skeleton.tsx`). O estado vazio só aparece depois que o carregamento conclui de fato (flag `loaded` no store de torneios; sinal "ainda não carregado" via `byTournament[id] === undefined` nas telas de partidas). / **Animated placeholders** while data loads from SQLite — tournaments list, standings, matches, bracket and groups show pulsing cards instead of flashing the empty state. New reusable `Skeleton` / `SkeletonList`. Empty states now appear only after loading truly completes.

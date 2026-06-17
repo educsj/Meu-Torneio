@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
-import { Trash2, UserPlus, Users } from 'lucide-react-native';
+import { Info, Trash2, UserPlus, Users } from 'lucide-react-native';
 
 import { EditParticipantNameModal } from '@/components/EditParticipantNameModal';
 import { ParticipantBadge } from '@/components/ParticipantBadge';
@@ -13,11 +13,18 @@ import type { Participant } from '@/types/tournament';
 
 interface Props {
   tournamentId: number;
+  /**
+   * True once a bracket/matches have been generated. Renaming and badge edits
+   * stay fully live (matches reference participants by id), but adding or
+   * removing a participant changes the field of play — so those two actions
+   * warn that the bracket must be regenerated to reflect the change.
+   */
+  bracketGenerated?: boolean;
 }
 
 const EMPTY_PARTICIPANTS: readonly Participant[] = Object.freeze([]);
 
-export function ParticipantList({ tournamentId }: Props) {
+export function ParticipantList({ tournamentId, bracketGenerated }: Props) {
   const { t } = useTranslation();
   const participants = useParticipantsStore(
     (s) => s.byTournament[tournamentId] ?? EMPTY_PARTICIPANTS
@@ -52,9 +59,7 @@ export function ParticipantList({ tournamentId }: Props) {
     ? participants.find((p) => p.id === renamingId)
     : null;
 
-  const handleAdd = async () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
+  const doAdd = async (trimmed: string) => {
     setAdding(true);
     try {
       await add(tournamentId, trimmed, {
@@ -69,8 +74,32 @@ export function ParticipantList({ tournamentId }: Props) {
     }
   };
 
+  const handleAdd = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    // Adding after the bracket exists doesn't reseat anyone — warn that a
+    // regeneration is needed for the newcomer to actually play.
+    if (bracketGenerated) {
+      Alert.alert(
+        t('participants.addWhileBracketTitle'),
+        t('participants.addWhileBracketMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('common.confirm'), onPress: () => doAdd(trimmed) },
+        ]
+      );
+      return;
+    }
+    await doAdd(trimmed);
+  };
+
   const handleRemove = (id: number) => {
-    Alert.alert(t('participants.deleteTitle'), t('participants.deleteMessage'), [
+    // After generation, removing a participant empties their bracket slots —
+    // make that consequence explicit instead of silently breaking the bracket.
+    const message = bracketGenerated
+      ? t('participants.deleteWhileBracketMessage')
+      : t('participants.deleteMessage');
+    Alert.alert(t('participants.deleteTitle'), message, [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('common.delete'),
@@ -82,6 +111,15 @@ export function ParticipantList({ tournamentId }: Props) {
 
   return (
     <View className="flex-1">
+      {bracketGenerated ? (
+        <View className="mb-3 flex-row gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
+          <Info size={16} color="#d97706" />
+          <Text className="flex-1 text-xs text-amber-800 dark:text-amber-200">
+            {t('participants.bracketLockedNotice')}
+          </Text>
+        </View>
+      ) : null}
+
       <View className="mb-4 gap-2">
         <View className="flex-row items-center gap-2">
           <Pressable

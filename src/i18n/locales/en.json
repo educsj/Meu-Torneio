@@ -189,6 +189,10 @@
     "emptyDescription": "Add participants to start generating matches.",
     "deleteTitle": "Remove participant?",
     "deleteMessage": "Are you sure you want to remove this participant?",
+    "deleteWhileBracketMessage": "The bracket is already generated. Removing this participant will leave their matches blank — regenerate the bracket afterwards to fix it (this clears all scores).",
+    "bracketLockedNotice": "Bracket generated. Renaming and changing badges is safe and shows up instantly. Adding or removing participants requires regenerating the bracket (clears scores).",
+    "addWhileBracketTitle": "Add anyway?",
+    "addWhileBracketMessage": "The bracket is already generated. The new participant will only play if you regenerate the bracket, which clears any scores already entered.",
     "count": {
       "one": "1 participant",
       "other": "{{count}} participants"
