@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Tabs } from 'expo-router';
-import { Info, Settings, Trophy } from 'lucide-react-native';
+import { BarChart3, Info, Settings, Trophy } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 
 import { useTranslation } from '@/i18n/useTranslation';
@@ -31,6 +31,15 @@ export default function TabsLayout() {
           title: t('tabs.tournaments'),
           tabBarIcon: ({ color, size }) => (
             <Trophy color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="statistics"
+        options={{
+          title: t('tabs.statistics'),
+          tabBarIcon: ({ color, size }) => (
+            <BarChart3 color={color} size={size} />
           ),
         }}
       />

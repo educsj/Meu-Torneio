@@ -9,6 +9,10 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ### Added · Adicionado (mais recente / most recent)
 
+#### Estatísticas multi-torneio / Multi-tournament statistics
+
+- **Nova aba "Estatísticas"** — desempenho acumulado por participante (agrupado por nome) somando todos os torneios: títulos, torneios disputados, jogos, vitórias/empates/derrotas, gols pró e saldo. Ordenável por gols, vitórias ou títulos. Os títulos são detectados por formato (final do mata-mata, grande final da dupla eliminação, final dos playoffs, topo da liga). Lógica pura e testada (`src/utils/stats.ts`), derivada dos placares já existentes — sem novo schema. / **New "Statistics" tab** — cumulative per-participant performance (keyed by name) across every tournament: titles, tournaments played, games, W/D/L, goals for and goal difference. Sort by goals, wins or titles. Champions are detected per format. Pure, tested logic derived from existing match scores — no schema change.
+
 #### Edição de participantes pós-chaveamento / Editing participants after generation
 
 - **Renomear e trocar ícones continua livre e instantâneo** mesmo depois do chaveamento gerado — as partidas referenciam o participante por id, então o nome/ícone novo aparece em todas as telas sem regenerar nada. Um aviso no topo da lista deixa isso explícito. / **Renaming and badge edits stay free and live** after the bracket exists — matches reference participants by id, so the change shows everywhere without regenerating. A banner makes this explicit.

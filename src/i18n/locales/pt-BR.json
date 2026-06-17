@@ -27,8 +27,28 @@
   },
   "tabs": {
     "tournaments": "Torneios",
+    "statistics": "Estatísticas",
     "settings": "Configurações",
     "about": "Sobre"
+  },
+  "statistics": {
+    "title": "Estatísticas",
+    "subtitle": "Desempenho acumulado em todos os torneios.",
+    "empty": "Sem estatísticas ainda",
+    "emptyDescription": "Crie torneios e lance placares para ver o desempenho acumulado por participante.",
+    "sortGoals": "Gols",
+    "sortWins": "Vitórias",
+    "sortTitles": "Títulos",
+    "colName": "Participante",
+    "colTitles": "Tít",
+    "colTournaments": "Tor",
+    "colPlayed": "J",
+    "colWins": "V",
+    "colDraws": "E",
+    "colLosses": "D",
+    "colGoalsFor": "GP",
+    "colGoalDiff": "SG",
+    "note": "Tít = títulos · Tor = torneios · J = jogos · V/E/D · GP = gols pró · SG = saldo. Os gols são por participante (placar dos jogos); a artilharia individual por jogador entra numa atualização futura."
   },
   "newTournament": {
     "title": "Novo Torneio",

@@ -27,8 +27,28 @@
   },
   "tabs": {
     "tournaments": "Tournaments",
+    "statistics": "Statistics",
     "settings": "Settings",
     "about": "About"
+  },
+  "statistics": {
+    "title": "Statistics",
+    "subtitle": "Cumulative performance across all tournaments.",
+    "empty": "No statistics yet",
+    "emptyDescription": "Create tournaments and enter scores to see cumulative per-participant performance.",
+    "sortGoals": "Goals",
+    "sortWins": "Wins",
+    "sortTitles": "Titles",
+    "colName": "Participant",
+    "colTitles": "Tit",
+    "colTournaments": "Trn",
+    "colPlayed": "P",
+    "colWins": "W",
+    "colDraws": "D",
+    "colLosses": "L",
+    "colGoalsFor": "GF",
+    "colGoalDiff": "GD",
+    "note": "Tit = titles · Trn = tournaments · P = played · W/D/L · GF = goals for · GD = goal diff. Goals are per participant (match scores); individual top-scorer tracking lands in a future update."
   },
   "newTournament": {
     "title": "New Tournament",
