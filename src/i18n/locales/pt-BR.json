@@ -34,8 +34,15 @@
   "statistics": {
     "title": "Estatísticas",
     "subtitle": "Desempenho acumulado em todos os torneios.",
+    "viewOverall": "Geral",
+    "viewScorers": "Artilheiros",
     "empty": "Sem estatísticas ainda",
     "emptyDescription": "Crie torneios e lance placares para ver o desempenho acumulado por participante.",
+    "scorersEmpty": "Sem artilheiros ainda",
+    "scorersEmptyDescription": "Ao lançar o placar de uma partida, adicione os autores dos gols para ver o ranking de artilheiros.",
+    "colPlayer": "Jogador",
+    "colGoals": "Gols",
+    "colMatches": "Jogos",
     "sortGoals": "Gols",
     "sortWins": "Vitórias",
     "sortTitles": "Títulos",
@@ -48,7 +55,12 @@
     "colLosses": "D",
     "colGoalsFor": "GP",
     "colGoalDiff": "SG",
-    "note": "Tít = títulos · Tor = torneios · J = jogos · V/E/D · GP = gols pró · SG = saldo. Os gols são por participante (placar dos jogos); a artilharia individual por jogador entra numa atualização futura."
+    "note": "Tít = títulos · Tor = torneios · J = jogos · V/E/D · GP = gols pró · SG = saldo. Os gols são por participante (placar dos jogos); a artilharia individual por jogador está na aba Artilheiros."
+  },
+  "scorers": {
+    "title": "Artilheiros",
+    "playerPlaceholder": "Nome do jogador",
+    "addScorer": "Adicionar artilheiro"
   },
   "newTournament": {
     "title": "Novo Torneio",

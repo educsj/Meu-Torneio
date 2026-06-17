@@ -5,29 +5,40 @@ import { BarChart3 } from 'lucide-react-native';
 
 import { Screen } from '@/components/ui/Screen';
 import { SkeletonList } from '@/components/ui/Skeleton';
+import { listAllScorerEntries } from '@/db/scorers';
 import { loadAllTournamentBundles } from '@/db/stats';
 import { useTranslation } from '@/i18n/useTranslation';
 import {
   aggregateParticipantStats,
+  aggregateScorers,
   type AggregateStatRow,
+  type ScorerEntry,
+  type TopScorerRow,
   type TournamentBundle,
 } from '@/utils/stats';
 
 type SortKey = 'goalsFor' | 'wins' | 'titles';
+type StatsView = 'overall' | 'scorers';
 
 export default function StatisticsScreen() {
   const { t } = useTranslation();
   const [bundles, setBundles] = useState<TournamentBundle[] | null>(null);
+  const [scorerEntries, setScorerEntries] = useState<ScorerEntry[]>([]);
   const [sortBy, setSortBy] = useState<SortKey>('goalsFor');
+  const [view, setView] = useState<StatsView>('overall');
 
   // Reload every time the tab regains focus — stats change as the user enters
   // scores and finishes tournaments elsewhere in the app.
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      loadAllTournamentBundles().then((list) => {
-        if (!cancelled) setBundles(list);
-      });
+      Promise.all([loadAllTournamentBundles(), listAllScorerEntries()]).then(
+        ([list, scorers]) => {
+          if (cancelled) return;
+          setBundles(list);
+          setScorerEntries(scorers);
+        }
+      );
       return () => {
         cancelled = true;
       };
@@ -37,6 +48,10 @@ export default function StatisticsScreen() {
   const rows = useMemo(
     () => (bundles ? aggregateParticipantStats(bundles, sortBy) : []),
     [bundles, sortBy]
+  );
+  const topScorers = useMemo(
+    () => aggregateScorers(scorerEntries),
+    [scorerEntries]
   );
 
   const hasData = rows.some((r) => r.played > 0 || r.titles > 0);
@@ -56,55 +71,154 @@ export default function StatisticsScreen() {
         <View className="mt-4">
           <SkeletonList rows={6} />
         </View>
-      ) : !hasData ? (
-        <View className="mt-16 items-center px-6">
-          <View className="mb-4 rounded-full bg-slate-100 p-5 dark:bg-slate-800">
-            <BarChart3 size={32} color="#94a3b8" />
-          </View>
-          <Text className="text-base font-semibold text-slate-900 dark:text-white">
-            {t('statistics.empty')}
-          </Text>
-          <Text className="mt-1 text-center text-sm text-slate-600 dark:text-slate-400">
-            {t('statistics.emptyDescription')}
-          </Text>
-        </View>
       ) : (
         <>
           <View className="mt-2 flex-row gap-2">
             <SortChip
-              label={t('statistics.sortGoals')}
-              active={sortBy === 'goalsFor'}
-              onPress={() => setSortBy('goalsFor')}
+              label={t('statistics.viewOverall')}
+              active={view === 'overall'}
+              onPress={() => setView('overall')}
             />
             <SortChip
-              label={t('statistics.sortWins')}
-              active={sortBy === 'wins'}
-              onPress={() => setSortBy('wins')}
-            />
-            <SortChip
-              label={t('statistics.sortTitles')}
-              active={sortBy === 'titles'}
-              onPress={() => setSortBy('titles')}
+              label={t('statistics.viewScorers')}
+              active={view === 'scorers'}
+              onPress={() => setView('scorers')}
             />
           </View>
 
-          <View className="mt-4 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View>
-                <HeaderRow t={t} />
-                {rows.map((row, idx) => (
-                  <Row key={row.name} row={row} position={idx + 1} />
-                ))}
-              </View>
-            </ScrollView>
-          </View>
+          {view === 'overall' ? (
+            !hasData ? (
+              <EmptyState
+                icon={<BarChart3 size={32} color="#94a3b8" />}
+                title={t('statistics.empty')}
+                description={t('statistics.emptyDescription')}
+              />
+            ) : (
+              <>
+                <View className="mt-3 flex-row gap-2">
+                  <SortChip
+                    label={t('statistics.sortGoals')}
+                    active={sortBy === 'goalsFor'}
+                    onPress={() => setSortBy('goalsFor')}
+                  />
+                  <SortChip
+                    label={t('statistics.sortWins')}
+                    active={sortBy === 'wins'}
+                    onPress={() => setSortBy('wins')}
+                  />
+                  <SortChip
+                    label={t('statistics.sortTitles')}
+                    active={sortBy === 'titles'}
+                    onPress={() => setSortBy('titles')}
+                  />
+                </View>
 
-          <Text className="mt-3 text-[11px] text-slate-500 dark:text-slate-400">
-            {t('statistics.note')}
-          </Text>
+                <View className="mt-4 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View>
+                      <HeaderRow t={t} />
+                      {rows.map((row, idx) => (
+                        <Row key={row.name} row={row} position={idx + 1} />
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+
+                <Text className="mt-3 text-[11px] text-slate-500 dark:text-slate-400">
+                  {t('statistics.note')}
+                </Text>
+              </>
+            )
+          ) : topScorers.length === 0 ? (
+            <EmptyState
+              icon={<BarChart3 size={32} color="#94a3b8" />}
+              title={t('statistics.scorersEmpty')}
+              description={t('statistics.scorersEmptyDescription')}
+            />
+          ) : (
+            <View className="mt-4 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+              <ScorerHeaderRow t={t} />
+              {topScorers.map((row, idx) => (
+                <ScorerRow key={row.name} row={row} position={idx + 1} />
+              ))}
+            </View>
+          )}
         </>
       )}
     </Screen>
+  );
+}
+
+function EmptyState({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <View className="mt-16 items-center px-6">
+      <View className="mb-4 rounded-full bg-slate-100 p-5 dark:bg-slate-800">
+        {icon}
+      </View>
+      <Text className="text-base font-semibold text-slate-900 dark:text-white">
+        {title}
+      </Text>
+      <Text className="mt-1 text-center text-sm text-slate-600 dark:text-slate-400">
+        {description}
+      </Text>
+    </View>
+  );
+}
+
+function ScorerHeaderRow({
+  t,
+}: {
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  return (
+    <View className="flex-row items-center bg-slate-50 px-3 py-2 dark:bg-slate-900">
+      <Text className="w-6 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        #
+      </Text>
+      <Text className="flex-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        {t('statistics.colPlayer')}
+      </Text>
+      <Stat label={t('statistics.colGoals')} />
+      <Stat label={t('statistics.colMatches')} />
+      <Stat label={t('statistics.colTournaments')} />
+    </View>
+  );
+}
+
+function ScorerRow({
+  row,
+  position,
+}: {
+  row: TopScorerRow;
+  position: number;
+}) {
+  return (
+    <View
+      className={`flex-row items-center border-t border-slate-100 px-3 py-2.5 dark:border-slate-800 ${
+        position === 1 ? 'bg-brand-50/50 dark:bg-brand-950/30' : ''
+      }`}
+    >
+      <Text className="w-6 text-center text-sm font-medium text-slate-700 dark:text-slate-300">
+        {position}
+      </Text>
+      <Text
+        className="flex-1 pr-2 text-sm text-slate-900 dark:text-slate-100"
+        numberOfLines={1}
+      >
+        {row.name}
+      </Text>
+      <Cell value={row.goals} bold={position === 1} />
+      <Cell value={row.matches} />
+      <Cell value={row.tournaments} />
+    </View>
   );
 }
 

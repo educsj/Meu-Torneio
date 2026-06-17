@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -10,11 +10,24 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { X } from 'lucide-react-native';
+import { Plus, Trash2, X } from 'lucide-react-native';
 
 import { Button } from '@/components/ui/Button';
 import { useTranslation } from '@/i18n/useTranslation';
-import type { Match, Participant } from '@/types/tournament';
+import type {
+  Match,
+  Participant,
+  Scorer,
+  ScorerInput,
+} from '@/types/tournament';
+
+/** Editable scorer row in the modal. `side` ties it to participant A or B. */
+interface ScorerRow {
+  key: string;
+  side: 'A' | 'B';
+  name: string;
+  goalsStr: string;
+}
 
 interface Props {
   visible: boolean;
@@ -22,6 +35,8 @@ interface Props {
   participantA: Participant | null;
   participantB: Participant | null;
   allowDraws?: boolean;
+  /** Existing scorers for the open match (empty when none recorded yet). */
+  scorers?: Scorer[];
   onClose: () => void;
   onSave: (
     scoreA: number,
@@ -33,6 +48,9 @@ interface Props {
     scheduledAt: string | null,
     location: string | null
   ) => Promise<void> | void;
+  /** Persist the full scorer list for the match (replaces existing). Optional
+   *  — when omitted the scorers section is hidden. */
+  onSaveScorers?: (rows: ScorerInput[]) => Promise<void> | void;
 }
 
 /** Conventional forfeit score across formats — 3-0 is the standard
@@ -46,10 +64,12 @@ export function ScoreEntryModal({
   participantA,
   participantB,
   allowDraws = false,
+  scorers,
   onClose,
   onSave,
   onClear,
   onSaveSchedule,
+  onSaveScorers,
 }: Props) {
   const { t } = useTranslation();
   const [scoreAStr, setScoreAStr] = useState('');
@@ -58,7 +78,11 @@ export function ScoreEntryModal({
   const [dateStr, setDateStr] = useState('');
   const [timeStr, setTimeStr] = useState('');
   const [locationStr, setLocationStr] = useState('');
+  const [scorerRows, setScorerRows] = useState<ScorerRow[]>([]);
+  const [scorersDirty, setScorersDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const keyCounter = useRef(0);
+  const nextKey = () => `s${keyCounter.current++}`;
 
   useEffect(() => {
     if (!match) return;
@@ -71,7 +95,34 @@ export function ScoreEntryModal({
     setDateStr(parsed.dateStr);
     setTimeStr(parsed.timeStr);
     setLocationStr(match.location ?? '');
-  }, [match]);
+    // Seed scorer rows from the persisted list, mapping participant id → side.
+    const seeded: ScorerRow[] = (scorers ?? []).map((s) => ({
+      key: nextKey(),
+      side: s.participantId === match.participantBId ? 'B' : 'A',
+      name: s.name,
+      goalsStr: String(s.goals),
+    }));
+    setScorerRows(seeded);
+    setScorersDirty(false);
+  }, [match, scorers]);
+
+  const addScorer = (side: 'A' | 'B') => {
+    setScorerRows((rows) => [
+      ...rows,
+      { key: nextKey(), side, name: '', goalsStr: '1' },
+    ]);
+    setScorersDirty(true);
+  };
+  const updateScorer = (key: string, partial: Partial<ScorerRow>) => {
+    setScorerRows((rows) =>
+      rows.map((r) => (r.key === key ? { ...r, ...partial } : r))
+    );
+    setScorersDirty(true);
+  };
+  const removeScorer = (key: string) => {
+    setScorerRows((rows) => rows.filter((r) => r.key !== key));
+    setScorersDirty(true);
+  };
 
   const markWalkover = (sideAWins: boolean) => {
     setScoreAStr(String(sideAWins ? WALKOVER_WIN : WALKOVER_LOSS));
@@ -121,6 +172,7 @@ export function ScoreEntryModal({
     !!participantA &&
     !!participantB &&
     ((scoreValid && scoreChanged) ||
+      (scorersDirty && onSaveScorers != null) ||
       (scheduleChanged && (dateStr === '' || isValidDate(dateStr))) &&
         (timeStr === '' || isValidTime(timeStr)));
 
@@ -155,6 +207,17 @@ export function ScoreEntryModal({
         const iso = combineToIso(dateStr, timeStr);
         const loc = locationStr.trim() === '' ? null : locationStr.trim();
         await onSaveSchedule(iso, loc);
+      }
+
+      if (scorersDirty && onSaveScorers && participantA && participantB) {
+        const rows: ScorerInput[] = scorerRows
+          .map((r) => ({
+            participantId: r.side === 'A' ? participantA.id : participantB.id,
+            name: r.name.trim(),
+            goals: Number(r.goalsStr) || 0,
+          }))
+          .filter((r) => r.name.length > 0 && r.goals > 0);
+        await onSaveScorers(rows);
       }
       onClose();
     } catch (err) {
@@ -251,6 +314,33 @@ export function ScoreEntryModal({
               </View>
             )}
 
+            {onSaveScorers && participantA && participantB ? (
+              <>
+                <View className="my-5 h-px bg-slate-100 dark:bg-slate-800" />
+                <Text className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  {t('scorers.title')}
+                </Text>
+                <View className="gap-4">
+                  <ScorerSide
+                    teamName={participantA.name}
+                    rows={scorerRows.filter((r) => r.side === 'A')}
+                    onAdd={() => addScorer('A')}
+                    onChange={updateScorer}
+                    onRemove={removeScorer}
+                    t={t}
+                  />
+                  <ScorerSide
+                    teamName={participantB.name}
+                    rows={scorerRows.filter((r) => r.side === 'B')}
+                    onAdd={() => addScorer('B')}
+                    onChange={updateScorer}
+                    onRemove={removeScorer}
+                    t={t}
+                  />
+                </View>
+              </>
+            ) : null}
+
             <View className="my-5 h-px bg-slate-100 dark:bg-slate-800" />
 
             <Text className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -341,6 +431,70 @@ function ScoreField({
         placeholder="–"
         placeholderTextColor="#94a3b8"
       />
+    </View>
+  );
+}
+
+function ScorerSide({
+  teamName,
+  rows,
+  onAdd,
+  onChange,
+  onRemove,
+  t,
+}: {
+  teamName: string;
+  rows: ScorerRow[];
+  onAdd: () => void;
+  onChange: (key: string, partial: Partial<ScorerRow>) => void;
+  onRemove: (key: string) => void;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  return (
+    <View className="gap-2">
+      <Text
+        className="text-xs font-medium text-slate-700 dark:text-slate-300"
+        numberOfLines={1}
+      >
+        {teamName}
+      </Text>
+      {rows.map((row) => (
+        <View key={row.key} className="flex-row items-center gap-2">
+          <TextInput
+            value={row.name}
+            onChangeText={(v) => onChange(row.key, { name: v })}
+            placeholder={t('scorers.playerPlaceholder')}
+            placeholderTextColor="#94a3b8"
+            className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+          <TextInput
+            value={row.goalsStr}
+            onChangeText={(v) =>
+              onChange(row.key, { goalsStr: v.replace(/[^0-9]/g, '') })
+            }
+            keyboardType="number-pad"
+            maxLength={2}
+            className="w-12 rounded-xl border border-slate-300 bg-white px-2 py-2 text-center text-base font-semibold text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+            placeholder="1"
+            placeholderTextColor="#94a3b8"
+          />
+          <Pressable
+            onPress={() => onRemove(row.key)}
+            className="rounded-full p-1.5 active:bg-red-50 dark:active:bg-red-950"
+          >
+            <Trash2 size={16} color="#dc2626" />
+          </Pressable>
+        </View>
+      ))}
+      <Pressable
+        onPress={onAdd}
+        className="flex-row items-center gap-1.5 self-start rounded-lg px-1 py-1 active:bg-slate-100 dark:active:bg-slate-800"
+      >
+        <Plus size={14} color="#475569" />
+        <Text className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          {t('scorers.addScorer')}
+        </Text>
+      </Pressable>
     </View>
   );
 }

@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 /**
  * Base schema — idempotent (CREATE TABLE IF NOT EXISTS).
@@ -59,6 +59,19 @@ export const BASE_TABLES: string[] = [
   );`,
   `CREATE INDEX IF NOT EXISTS idx_phases_tournament
     ON phases(tournament_id);`,
+  /* v12: per-match goal scorers (artilharia). One row per player per match;
+     `name` is free text, `goals` how many they scored. ON DELETE CASCADE on
+     the match so regenerating a bracket (which deletes matches) clears them
+     too; participant_id SET NULL keeps history if a participant is removed. */
+  `CREATE TABLE IF NOT EXISTS scorers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id INTEGER NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+    participant_id INTEGER REFERENCES participants(id) ON DELETE SET NULL,
+    name TEXT NOT NULL,
+    goals INTEGER NOT NULL DEFAULT 1
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_scorers_match
+    ON scorers(match_id);`,
 ];
 
 /**

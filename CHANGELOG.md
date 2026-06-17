@@ -9,6 +9,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/) e este projeto a
 
 ### Added · Adicionado (mais recente / most recent)
 
+#### Artilharia por jogador / Per-player top scorers
+
+- **Lançamento de gols por jogador** no modal de placar — para cada lado da partida, adicione os autores dos gols (nome livre + quantidade). Os artilheiros são salvos junto da partida (schema v12: tabela `scorers`, com `ON DELETE CASCADE` para sumir quando o chaveamento é regenerado). Limpar o placar também remove os artilheiros daquela partida. / **Goal-scorer entry** in the score modal — for each side, list the players who scored (free-text name + count). Saved per match (schema v12 `scorers` table, cascade-deleted with the match). Clearing a result also clears its scorers.
+- **Ranking de artilheiros** na aba Estatísticas (visão "Artilheiros") — soma os gols por nome de jogador em todos os torneios, com jogos e torneios disputados. Lógica pura e testada (`aggregateScorers`). / **Top-scorer ranking** in the Statistics tab — sums goals by player name across every tournament, with games and tournaments played.
+
 #### Estatísticas multi-torneio / Multi-tournament statistics
 
 - **Nova aba "Estatísticas"** — desempenho acumulado por participante (agrupado por nome) somando todos os torneios: títulos, torneios disputados, jogos, vitórias/empates/derrotas, gols pró e saldo. Ordenável por gols, vitórias ou títulos. Os títulos são detectados por formato (final do mata-mata, grande final da dupla eliminação, final dos playoffs, topo da liga). Lógica pura e testada (`src/utils/stats.ts`), derivada dos placares já existentes — sem novo schema. / **New "Statistics" tab** — cumulative per-participant performance (keyed by name) across every tournament: titles, tournaments played, games, W/D/L, goals for and goal difference. Sort by goals, wins or titles. Champions are detected per format. Pure, tested logic derived from existing match scores — no schema change.

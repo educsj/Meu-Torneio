@@ -8,6 +8,11 @@ import { ScoreEntryModal } from '@/components/ScoreEntryModal';
 import { Screen } from '@/components/ui/Screen';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { listParticipants } from '@/db/participants';
+import {
+  deleteScorersForMatch,
+  listScorersForMatch,
+  setScorersForMatch,
+} from '@/db/scorers';
 import { useThemeIcon } from '@/hooks/useThemeIcon';
 import { useTranslation } from '@/i18n/useTranslation';
 import {
@@ -18,7 +23,12 @@ import {
 } from '@/utils/bracket';
 import { useMatchesStore } from '@/stores/useMatchesStore';
 import { useTournamentsStore } from '@/stores/useTournamentsStore';
-import type { Match, Participant } from '@/types/tournament';
+import type {
+  Match,
+  Participant,
+  Scorer,
+  ScorerInput,
+} from '@/types/tournament';
 
 const EMPTY_MATCHES: readonly Match[] = Object.freeze([]);
 
@@ -64,6 +74,7 @@ export default function MatchesScreen() {
     Map<number, Participant>
   >(() => new Map());
   const [editingMatchId, setEditingMatchId] = useState<number | null>(null);
+  const [editingScorers, setEditingScorers] = useState<Scorer[]>([]);
 
   useEffect(() => {
     if (!Number.isFinite(tournamentId)) return;
@@ -223,6 +234,10 @@ export default function MatchesScreen() {
   const handleClearScore = useCallback(async () => {
     if (!editingMatch) return;
     await clearScore(tournamentId, editingMatch.id);
+    // Clearing the result drops its scorers too — they no longer correspond
+    // to anything.
+    await deleteScorersForMatch(editingMatch.id);
+    setEditingScorers([]);
   }, [editingMatch, clearScore, tournamentId]);
 
   const handleSaveSchedule = useCallback(
@@ -232,6 +247,30 @@ export default function MatchesScreen() {
     },
     [editingMatch, saveSchedule, tournamentId]
   );
+
+  const handleSaveScorers = useCallback(
+    async (rows: ScorerInput[]) => {
+      if (!editingMatch) return;
+      await setScorersForMatch(editingMatch.id, rows);
+      setEditingScorers(await listScorersForMatch(editingMatch.id));
+    },
+    [editingMatch]
+  );
+
+  // Load the open match's scorers so the modal can show/edit them.
+  useEffect(() => {
+    if (editingMatchId == null) {
+      setEditingScorers([]);
+      return;
+    }
+    let cancelled = false;
+    listScorersForMatch(editingMatchId).then((list) => {
+      if (!cancelled) setEditingScorers(list);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [editingMatchId]);
 
   return (
     <Screen scroll>
@@ -488,10 +527,12 @@ export default function MatchesScreen() {
         participantA={editingA}
         participantB={editingB}
         allowDraws={allowDrawsFor(editingMatch)}
+        scorers={editingScorers}
         onClose={() => setEditingMatchId(null)}
         onSave={handleSaveScore}
         onClear={handleClearScore}
         onSaveSchedule={handleSaveSchedule}
+        onSaveScorers={handleSaveScorers}
       />
     </Screen>
   );

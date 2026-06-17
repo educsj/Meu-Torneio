@@ -34,8 +34,15 @@
   "statistics": {
     "title": "Statistics",
     "subtitle": "Cumulative performance across all tournaments.",
+    "viewOverall": "Overall",
+    "viewScorers": "Top scorers",
     "empty": "No statistics yet",
     "emptyDescription": "Create tournaments and enter scores to see cumulative per-participant performance.",
+    "scorersEmpty": "No top scorers yet",
+    "scorersEmptyDescription": "When entering a match score, add the goal scorers to build the top-scorer ranking.",
+    "colPlayer": "Player",
+    "colGoals": "Goals",
+    "colMatches": "Games",
     "sortGoals": "Goals",
     "sortWins": "Wins",
     "sortTitles": "Titles",
@@ -48,7 +55,12 @@
     "colLosses": "L",
     "colGoalsFor": "GF",
     "colGoalDiff": "GD",
-    "note": "Tit = titles · Trn = tournaments · P = played · W/D/L · GF = goals for · GD = goal diff. Goals are per participant (match scores); individual top-scorer tracking lands in a future update."
+    "note": "Tit = titles · Trn = tournaments · P = played · W/D/L · GF = goals for · GD = goal diff. Goals are per participant (match scores); individual top-scorer tracking is in the Top scorers tab."
+  },
+  "scorers": {
+    "title": "Goal scorers",
+    "playerPlaceholder": "Player name",
+    "addScorer": "Add scorer"
   },
   "newTournament": {
     "title": "New Tournament",

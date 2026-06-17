@@ -78,6 +78,27 @@ export interface Match {
 }
 
 /**
+ * A goal-scorer line tied to a single match. `participantId` is the team/side
+ * the player scored for (nullable so history survives a participant deletion);
+ * `name` is the free-text player name; `goals` is how many they scored in that
+ * match. Top-scorer rankings aggregate these by name across all tournaments.
+ */
+export interface Scorer {
+  id: number;
+  matchId: number;
+  participantId: number | null;
+  name: string;
+  goals: number;
+}
+
+/** Scorer line as provided by the UI before it's persisted (no id yet). */
+export interface ScorerInput {
+  participantId: number | null;
+  name: string;
+  goals: number;
+}
+
+/**
  * Phase model — a tournament is an ordered list of phases, each with its own
  * format. Existing presets (single_elim / round_robin / groups+knockout) all
  * map onto 1 or 2 phases of these formats. New formats (e.g. placement

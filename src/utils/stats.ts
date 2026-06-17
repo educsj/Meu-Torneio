@@ -23,6 +23,60 @@ export interface TournamentBundle {
   scoring?: ScoringRule;
 }
 
+/** A single goal-scorer line flattened across tournaments (see
+ *  db/scorers.ts → listAllScorerEntries). */
+export interface ScorerEntry {
+  name: string;
+  goals: number;
+  matchId: number;
+  tournamentId: number;
+}
+
+/** One aggregated top-scorer row, merged by (trimmed) player name. */
+export interface TopScorerRow {
+  name: string;
+  goals: number;
+  matches: number;
+  tournaments: number;
+}
+
+/**
+ * Aggregate goal-scorer entries into a top-scorer ranking, merged by player
+ * name. Sorted by goals desc, then fewer matches (better strike rate), then
+ * alphabetically.
+ */
+export function aggregateScorers(entries: ScorerEntry[]): TopScorerRow[] {
+  const rows = new Map<
+    string,
+    { name: string; goals: number; matches: Set<number>; tournaments: Set<number> }
+  >();
+  for (const e of entries) {
+    const name = e.name.trim();
+    if (!name || e.goals <= 0) continue;
+    let row = rows.get(name);
+    if (!row) {
+      row = { name, goals: 0, matches: new Set(), tournaments: new Set() };
+      rows.set(name, row);
+    }
+    row.goals += e.goals;
+    row.matches.add(e.matchId);
+    row.tournaments.add(e.tournamentId);
+  }
+  return [...rows.values()]
+    .map((r) => ({
+      name: r.name,
+      goals: r.goals,
+      matches: r.matches.size,
+      tournaments: r.tournaments.size,
+    }))
+    .sort(
+      (a, b) =>
+        b.goals - a.goals ||
+        a.matches - b.matches ||
+        a.name.localeCompare(b.name)
+    );
+}
+
 /** One aggregated row, keyed by the participant's (trimmed) name so the same
  *  competitor across different tournaments is merged. */
 export interface AggregateStatRow {

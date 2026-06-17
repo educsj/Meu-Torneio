@@ -4,7 +4,9 @@ import type { Match, Participant } from '@/types/tournament';
 
 import {
   aggregateParticipantStats,
+  aggregateScorers,
   championParticipantId,
+  type ScorerEntry,
   type TournamentBundle,
 } from './stats';
 
@@ -121,5 +123,42 @@ describe('aggregateParticipantStats', () => {
     };
     const rows = aggregateParticipantStats([b]);
     expect(rows.every((r) => r.played === 0)).toBe(true);
+  });
+});
+
+describe('aggregateScorers', () => {
+  const entry = (
+    name: string,
+    goals: number,
+    matchId: number,
+    tournamentId: number
+  ): ScorerEntry => ({ name, goals, matchId, tournamentId });
+
+  it('sums goals by player name across matches and tournaments', () => {
+    const rows = aggregateScorers([
+      entry('Pelé', 2, 1, 100),
+      entry('Pelé', 1, 2, 100),
+      entry('Pelé', 3, 9, 200), // different tournament
+      entry('Zico', 4, 3, 100),
+    ]);
+    expect(rows[0]).toMatchObject({
+      name: 'Pelé',
+      goals: 6,
+      matches: 3,
+      tournaments: 2,
+    });
+    // Zico (4) ranks below Pelé (6).
+    expect(rows[1].name).toBe('Zico');
+  });
+
+  it('merges names case/space-insensitively on trim and drops empties', () => {
+    const rows = aggregateScorers([
+      entry('  Romário ', 2, 1, 1),
+      entry('Romário', 1, 2, 1),
+      entry('   ', 5, 3, 1), // blank → ignored
+      entry('Bebeto', 0, 4, 1), // zero goals → ignored
+    ]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ name: 'Romário', goals: 3, matches: 2 });
   });
 });
